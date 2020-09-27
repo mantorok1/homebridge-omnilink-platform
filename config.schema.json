@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "OmniLinkPlatform",
   "pluginType": "platform",
   "singular": true,
   "schema": {
@@ -9,8 +9,225 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "default": "Omni"
+      },
+      "address": {
+        "title": "IP Address",
+        "type": "string",
+        "format": "ipv4",
+        "required": true
+      },
+      "port": {
+        "title": "Port",
+        "type": "number",
+        "required": true,
+        "default": 4369,
+        "minimum": 0,
+        "maximum": 65535
+      },
+      "key1": {
+        "title": "Key 1",
+        "type": "string",
+        "placeholder": "00-00-00-00-00-00-00-00",
+        "pattern": "^([A-Fa-f0-9]{2}-){7}[A-Fa-f0-9]{2}$",
+        "required": true
+      },
+      "key2": {
+        "title": "Key 2",
+        "type": "string",
+        "placeholder": "00-00-00-00-00-00-00-00",
+        "pattern": "^([A-Fa-f0-9]{2}-){7}[A-Fa-f0-9]{2}$",
+        "required": true
+      },
+      "includeAreas": {
+        "title": "Include Areas (shown as Security System accessories)",
+        "type": "boolean",
+        "default": true,
+        "required": false
+      },
+      "includeZones": {
+        "title": "Include Zones (shown as Sensor accessories)",
+        "type": "boolean",
+        "default": true,
+        "required": false
+      },
+      "includeButtons": {
+        "title": "Include Buttons (shown as Switch accessories)",
+        "type": "boolean",
+        "default": true,
+        "required": false
+      },
+      "setHomeToAway": {
+        "title": "Set Home mode to Away mode",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "setNightToAway": {
+        "title": "Set Night mode to Away mode",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "securityCode": {
+        "title": "Security Code",
+        "description": "4 digit code to arm/disarm security system",
+        "type": "string",
+        "minLength": 4,
+        "maxLength": 4,
+        "placeholder": "0000",
+        "pattern": "^[0-9]{4}$",
+        "required": false
+      },
+      "sensors": {
+        "title": "Zone Sensor Overrides",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "zoneId": {
+              "title": "Zone Number",
+              "type": "number",
+              "minimum": 1,
+              "maximum": 200,
+              "required": true
+            },
+            "sensorType": {
+              "title": "Sensor Type",
+              "type": "string",
+              "enum": ["Motion", "Smoke", "Contact", "None"],
+              "required": true
+            }
+          }
+        }
+      },
+      "garageDoors": {
+        "title": "Garage Doors",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "buttonId": {
+              "title": "Button Number",
+              "type": "number",
+              "minimum": 1,
+              "maximum": 200,
+              "required": true
+            },
+            "zoneId": {
+              "title": "Zone Number",
+              "type": "number",
+              "minimum": 1,
+              "maximum": 200,
+              "required": true
+            },
+            "openTime": {
+              "title": "Time taken to open (secs)",
+              "type": "number",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 60,
+              "required": true
+            }
+          }
+        }
+      },
+      "clearCache": {
+        "title": "Clear plugin's accessory cache",
+        "type": "boolean",
+        "default": false,
+        "required": false
       }
     }
-  }
+  },
+  "layout": [
+    "name",
+    {
+      "type": "flex",
+      "flex-flow": "row wrap",
+      "items": [ "address", "port" ]
+    },
+    {
+      "type": "flex",
+      "flex-flow": "row wrap",
+      "items": [ "key1", "key2" ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Accessory Settings",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        "includeAreas",
+        "includeZones",
+        "includeButtons",
+        {
+          "type": "section",
+          "title": "Security Settings",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            "setHomeToAway",
+            "setNightToAway",
+            "securityCode"
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Sensor Settings",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            {
+              "type": "array",
+              "orderable": false,
+              "buttonText": "Add Zone Sensor Override",
+              "items": [
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "sensors[].zoneId",
+                    "sensors[].sensorType"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Garage Door Opener Settings",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            {
+              "type": "array",
+              "orderable": false,
+              "buttonText": "Add Garage Door",
+              "items": [
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "garageDoors[].buttonId",
+                    "garageDoors[].zoneId",
+                    "garageDoors[].openTime"
+                  ]
+                }
+              ]
+            }
+          ]        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Other Settings",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        "clearCache"
+      ]
+    }
+  ]
 }

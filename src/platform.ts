@@ -1,116 +1,99 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
-
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { ExamplePlatformAccessory } from './platformAccessory';
+import { Settings } from './models/Settings';
+import { OmniService } from './omni/OmniService';
+import { AccessoryService } from './accessories/AccessoryService';
 
-/**
- * HomebridgePlatform
- * This class is the main constructor for your plugin, this is where you should
- * parse the user config and discover/register accessories with Homebridge.
- */
-export class ExampleHomebridgePlatform implements DynamicPlatformPlugin {
+export class OmniLinkPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
 
-  // this is used to track restored cached accessories
-  public readonly accessories: PlatformAccessory[] = [];
+  private deletedAccessories: PlatformAccessory[] = [];
+
+  public readonly settings!: Settings;
+  public readonly omniService!: OmniService;
+  public readonly accessoryService!: AccessoryService;
 
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.log.debug('Finished initializing platform:', this.config.name);
+    try {
+      this.log.debug('Finished initializing platform:', this.config.name);
 
-    // When this event is fired it means Homebridge has restored all cached accessories from disk.
-    // Dynamic Platform plugins should only register new accessories after this event was fired,
-    // in order to ensure they weren't added to homebridge already. This event can also be used
-    // to start discovery of new accessories.
-    this.api.on('didFinishLaunching', () => {
-      log.debug('Executed didFinishLaunching callback');
-      // run the method to discover / register your devices as accessories
-      this.discoverDevices();
-    });
+      this.settings = new Settings(config);
+      this.omniService = new OmniService(this);
+      this.accessoryService = new AccessoryService(this);
+
+      this.api.on('didFinishLaunching', () => {
+        this.log.debug('Finished launching plugin');
+        this.discoverDevices();
+      });
+
+      this.api.on('shutdown', () => {
+        this.log.debug('Shutting down plugin');
+        this.omniService.terminate();
+      });
+    } catch(error) {
+      this.log.error(error);
+    }
   }
 
-  /**
-   * This function is invoked when homebridge restores cached accessories from disk at startup.
-   * It should be used to setup event handlers for characteristics and update respective values.
-   */
-  configureAccessory(accessory: PlatformAccessory) {
-    this.log.info('Loading accessory from cache:', accessory.displayName);
+  configureAccessory(platformAccessory: PlatformAccessory) {
+    this.log.debug(this.constructor.name, 'configureAccessory');
 
-    // add the restored accessory to the accessories cache so we can track if it has already been registered
-    this.accessories.push(accessory);
-  }
-
-  /**
-   * This is an example method showing how to register discovered accessories.
-   * Accessories must only be registered once, previously created accessories
-   * must not be registered again to prevent "duplicate UUID" errors.
-   */
-  discoverDevices() {
-
-    // EXAMPLE ONLY
-    // A real plugin you would discover accessories from the local network, cloud services
-    // or a user-defined array in the platform config.
-    const exampleDevices = [
-      {
-        exampleUniqueId: 'ABCD',
-        exampleDisplayName: 'Bedroom',
-      },
-      {
-        exampleUniqueId: 'EFGH',
-        exampleDisplayName: 'Kitchen',
-      },
-    ];
-
-    // loop over the discovered devices and register each one if it has not already been registered
-    for (const device of exampleDevices) {
-
-      // generate a unique id for the accessory this should be generated from
-      // something globally unique, but constant, for example, the device serial
-      // number or MAC address
-      const uuid = this.api.hap.uuid.generate(device.exampleUniqueId);
-
-      // see if an accessory with the same uuid has already been registered and restored from
-      // the cached devices we stored in the `configureAccessory` method above
-      const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
-
-      if (existingAccessory) {
-        // the accessory already exists
-        this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
-
-        // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
-        // existingAccessory.context.device = device;
-        // this.api.updatePlatformAccessories([existingAccessory]);
-
-        // create the accessory handler for the restored accessory
-        // this is imported from `platformAccessory.ts`
-        new ExamplePlatformAccessory(this, existingAccessory);
-
-      } else {
-        // the accessory does not yet exist, so we need to create it
-        this.log.info('Adding new accessory:', device.exampleDisplayName);
-
-        // create a new accessory
-        const accessory = new this.api.platformAccessory(device.exampleDisplayName, uuid);
-
-        // store a copy of the device object in the `accessory.context`
-        // the `context` property can be used to store any data about the accessory you may need
-        accessory.context.device = device;
-
-        // create the accessory handler for the newly create accessory
-        // this is imported from `platformAccessory.ts`
-        new ExamplePlatformAccessory(this, accessory);
-
-        // link the accessory to your platform
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-      }
-
-      // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
-      // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+    if (this.settings.clearCache) {
+      this.deletedAccessories.push(platformAccessory);
+      return;
     }
 
+    this.accessoryService.configure(platformAccessory);
+  }
+
+  async discoverDevices(): Promise<void> {
+    try {
+      this.log.debug(this.constructor.name, 'discoverDevices');
+
+      if (!this.settings.isValid) {
+        this.log.warn('Cannot start plugin as settings are invalid');
+        return;
+      }
+
+      // Clear cached accessories if required
+      if (this.settings.clearCache) {
+        this.log.info('Clear Cached Accessories');
+        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, this.deletedAccessories);
+        this.deletedAccessories = [];
+      }
+
+      await this.omniService.init();
+
+      await this.omniService.discover();
+
+      this.log.info(`Found: ${this.omniService.model} [Firmware version: ${this.omniService.version}]`);
+
+      // Display found devices
+      this.log.info('Areas found:', this.omniService.areas.size);
+      for (const [index, area] of this.omniService.areas) {
+        this.log.info(`  ${index}: ${area.name}`);
+      }
+
+      this.log.info('Zones found:', this.omniService.zones.size);
+      for (const [index, zone] of this.omniService.zones) {
+        this.log.info(`  ${index}: ${zone.name}`);
+      }
+
+      this.log.info('Buttons found:', this.omniService.buttons.size);
+      for (const [index, button] of this.omniService.buttons) {
+        this.log.info(`  ${index}: ${button.name}`);
+      }
+
+      // Add/Remove accessories
+      this.accessoryService.discover();
+
+    } catch (error) {
+      this.log.error(error);
+    }
   }
 }

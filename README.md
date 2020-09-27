@@ -1,150 +1,112 @@
+# Omni-Link Platform
 
-<p align="center">
+[![npm](https://badgen.net/npm/v/homebridge-omnilink-platform) ![npm](https://badgen.net/npm/dt/homebridge-omnilink-platform)](https://www.npmjs.com/package/homebridge-omnilink-platform)
 
-<img src="https://github.com/homebridge/branding/raw/master/logos/homebridge-wordmark-logo-vertical.png" width="150">
+This Homebridge Plugin allows you to control a HAI/Leviton Omni Security & Home Automation System via the Omni-Link II protocol over a TCP/IP connection.
 
-</p>
+Functions available:
+* Arm and disarm the security system
+* Notify when alarm system is triggered
+* Notify when sensors are tripped
+* Execute buttons
+* Open/close garage doors
 
+## Minimum Requirements
+This plugin supports Omni systems that meet the following requirements:
+* Connectivity via TCP/IP
+* Omni-Link II Protocol
+* Firmware 3.0 or higher (earlier versions may partially work)
 
-# Homebridge Platform Plugin Template
+## Accessories
+The plugin will discover what features your system has and create Homekit accessories for them. The following are the currently supported Omni-Link objects and the default Homekit accessory they map to.
 
-This is a template Homebridge platform plugin and can be used as a base to help you get started developing your own plugin.
+|Omni-Link Object|Homekit Accessory|
+|-|-|
+|`Area`|`Security System` (1 per area)|
+|`Zone` (Fire Emergency)|`Smoke Sensor`|
+|`Zone` (all other types)|`Motion Sensor`|
+|`Button`|`Switch`|
 
-This template should be use in conjunction with the [developer documentation](https://developers.homebridge.io/). A full list of all supported service types, and their characteristics is available on this site.
+The zones can be overriden to another type of sensor. Currently the plugin supports `Smoke`, `Motion` and `Contact` sensors.
 
-## Clone As Template
+A combination of a button and zone can also be defined as a `Garage Door Opener`.
 
-Click the link below to create a new GitHub Repository using this template, or click the *Use This Template* button above.
+## Installation
+Note: This plugin requires Homebridge (version 1.0.0 or above) to be installed first.
 
-<span align="center">
+It is highly recommended that you use Homebridge Config UI X to install and configure the plugin. Alternatively you can install from the command line as follows:
 
-### [Create New Repository From Template](https://github.com/homebridge/homebridge-plugin-template/generate)
+    npm install -g homebridge-omnilink-plugin
 
-</span>
+## Configuration
+This is a platform plugin that will register accessories and their services with the bridge provided by Homebridge. The plugin will attempt to discover your Omni system's objects (ie. zones, areas, buttons) automatically thus requiring minimal configuration to the config.json file.
 
-## Setup Development Environment
+If you find the default config is not correct for your system or some are not to your liking there are some overrides you can define in the config.json file.
 
-To develop Homebridge plugins you must have Node.js 12 or later installed, and a modern code editor such as [VS Code](https://code.visualstudio.com/). This plugin template uses [TypeScript](https://www.typescriptlang.org/) to make development easier and comes with pre-configured settings for [VS Code](https://code.visualstudio.com/) and ESLint. If you are using VS Code install these extensions:
+|Option|Required|Type|Description|Default Value (if not supplied)|
+|-|-|-|-|-|
+|`platform`|Yes|string|Must be `"OmniLinkPlatform"`||
+|`name`|No|string|The name of the platform|`"Omni"`|
+|`address`|Yes|string|IP Address of the controller||
+|`port`|Yes|number|Port of the controller|`4369`|
+|`key1`|Yes|string|First part of the hexadecimal private key<br/>Format: 00-00-00-00-00-00-00-00||
+|`key2`|Yes|string|Second part of the hexadecimal private key<br/>Format: 00-00-00-00-00-00-00-00||
+|`includeAreas`|No|boolean|Include all enabled areas from the Omni controller. Each area will be added as a "Security System" accessory|`true`|
+|`includeZones`|No|boolean|Include all named zones from the Omni controller. Each zone will be added as a "Sensor" accessory. By default a zone with a type of `Fire Emergency` will shown as a "Smoke Sensor" and all other types will be shown as a "Motion Sensor"|`true`|
+|`includeButtons`|No|boolean|Include all named buttons from the Omni controller. Each button will be added as a "Switch" accessory|`true`|
+|`setHomeAsAway`|No|boolean|Changes the security mode to "Away" if "Home" is selected. This may be useful if you don't use the "Home" mode and want to ensure the alarm is set to "Away" if accidently set to "Home"|`false`|
+|`setNightAsAway`|No|boolean|Changes the security mode to "Away" if "Night" is selected. Likewise, useful if you don't use the "Night" mode|`false`|
+|`securityCode`|No|string|The 4 digit security code used to arm and disarm the security system. Without this the security system cannot be operated||
+|`sensors`|No|array|Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of Homekit sensor accessory to use (valid options: `Motion`, `Smoke`, `Contact`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "Contact" }`||
+|`garageDoors`|No|array|Defines 1 or more garage door accessories. Each definition requires the following properties:<br/><ul><li>`buttonId` - the button number correspnding to the button that opens/closes the door<li>`zoneId` - the zone number corresponding to the sensor that determines if the garage door is closed or not<li>`openTime` - the time taken (in seconds) for the garage door to fully open</ul>Example garage door definition: `{ "buttonId": 2, "zoneId": 3, "openTime": 10 }`||
+|`clearCache`|No|boolean|Clear all the plugin's cached accessories from Homebridge to force full discovery of accessories on restart|`false`|
 
-* [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+*TIP:* The area, zone and button numbers are displayed in the Homebridge logs when it starts up.
 
-## Install Development Dependencies
+#### Example:
 
-Using a terminal, navigate to the project folder and run this command to install the development dependencies:
+    "platforms": [
+      {
+        "platform": "OmniLinkPlatform",
+        "name": "OmniPro",
+        "address": "10.0.0.200",
+        "port": 4369,
+        "key1": "00-00-00-00-00-00-00-00",
+        "key2": "00-00-00-00-00-00-00-00",
+        "includeAreas": true,
+        "includeZones": true,
+        "includeButtons": true,
+        "setHomeToAway": true,
+        "setNightToAway": true,
+        "securityCode": "0000",
+        "sensors": [
+          {
+            "zoneId": 7,
+            "sensorType": "Contact"
+          },
+          {
+            "zoneId": 8,
+            "sensorType": "Contact"
+          }        
+        ],
+        "garageDoors": [
+          {
+            "buttonId": 2,
+            "zoneId": 11,
+            "openTime": 10
+          },
+          {
+            "buttonId": 3,
+            "zoneId": 12,
+            "openTime": 10
+          }
+        ]
+      }
+    ],
 
-```
-npm install
-```
+## Version History
+See [Change Log](CHANGELOG.md).
 
-## Update package.json
-
-Open the [`package.json`](./package.json) and change the following attributes:
-
-* `name` - this should be prefixed with `homebridge-` or `@username/homebridge-` and contain no spaces or special characters apart from a dashes
-* `displayName` - this is the "nice" name displayed in the Homebridge UI
-* `repository.url` - Link to your GitHub repo
-* `bugs.url` - Link to your GitHub repo issues page
-
-When you are ready to publish the plugin you should set `private` to false, or remove the attribute entirely.
-
-## Update Plugin Defaults
-
-Open the [`src/settings.ts`](./src/settings.ts) file and change the default values:
-
-* `PLATFORM_NAME` - Set this to be the name of your platform. This is the name of the platform that users will use to register the plugin in the Homebridge `config.json`.
-* `PLUGIN_NAME` - Set this to be the same name you set in the [`package.json`](./package.json) file. 
-
-Open the [`config.schema.json`](./config.schema.json) file and change the following attribute:
-
-* `pluginAlias` - set this to match the `PLATFORM_NAME` you defined in the previous step.
-
-## Build Plugin
-
-TypeScript needs to be compiled into JavaScript before it can run. The following command will compile the contents of your [`src`](./src) directory and put the resulting code into the `dist` folder.
-
-```
-npm run build
-```
-
-## Link To Homebridge
-
-Run this command so your global install of Homebridge can discover the plugin in your development environment:
-
-```
-npm link
-```
-
-You can now start Homebridge, use the `-D` flag so you can see debug log messages in your plugin:
-
-```
-homebridge -D
-```
-
-## Watch For Changes and Build Automatically
-
-If you want to have your code compile automatically as you make changes, and restart Homebridge automatically between changes you can run:
-
-```
-npm run watch
-```
-
-This will launch an instance of Homebridge in debug mode which will restart every time you make a change to the source code. It will load the config stored in the default location under `~/.homebridge`. You may need to stop other running instances of Homebridge while using this command to prevent conflicts. You can adjust the Homebridge startup command in the [`nodemon.json`](./nodemon.json) file.
-
-## Customise Plugin
-
-You can now start customising the plugin template to suit your requirements.
-
-* [`src/platform.ts`](./src/platform.ts) - this is where your device setup and discovery should go.
-* [`src/platformAccessory.ts`](./src/platformAccessory.ts) - this is where your accessory control logic should go, you can rename or create multiple instances of this file for each accessory type you need to implement as part of your platform plugin. You can refer to the [developer documentation](https://developers.homebridge.io/) to see what characteristics you need to implement for each service type.
-* [`config.schema.json`](./config.schema.json) - update the config schema to match the config you expect from the user. See the [Plugin Config Schema Documentation](https://developers.homebridge.io/#/config-schema).
-
-## Versioning Your Plugin
-
-Given a version number `MAJOR`.`MINOR`.`PATCH`, such as `1.4.3`, increment the:
-
-1. **MAJOR** version when you make breaking changes to your plugin,
-2. **MINOR** version when you add functionality in a backwards compatible manner, and
-3. **PATCH** version when you make backwards compatible bug fixes.
-
-You can use the `npm version` command to help you with this:
-
-```bash
-# major update / breaking changes
-npm version major
-
-# minor update / new features
-npm version update
-
-# patch / bugfixes
-npm version patch
-```
-
-## Publish Package
-
-When you are ready to publish your plugin to [npm](https://www.npmjs.com/), make sure you have removed the `private` attribute from the [`package.json`](./package.json) file then run:
-
-```
-npm publish
-```
-
-If you are publishing a scoped plugin, i.e. `@username/homebridge-xxx` you will need to add `--access=public` to command the first time you publish.
-
-#### Publishing Beta Versions
-
-You can publish *beta* versions of your plugin for other users to test before you release it to everyone.
-
-```bash
-# create a new pre-release version (eg. 2.1.0-beta.1)
-npm version prepatch --preid beta
-
-# publsh to @beta
-npm publish --tag=beta
-```
-
-Users can then install the  *beta* version by appending `@beta` to the install command, for example:
-
-```
-sudo npm install -g homebridge-example-plugin@beta
-```
-
-
+## Known Limitations
+* I've only been able to test this plugin using my own system. I can't guarantee it will work on others.
+* This plugin only supports a subset of the functionality provided by the Omni-Link II protocol
