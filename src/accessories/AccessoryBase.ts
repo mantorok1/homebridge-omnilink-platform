@@ -35,7 +35,10 @@ export abstract class AccessoryBase {
   ): Promise<void> {
     this.platform.log.debug('AccessoryBase', 'getCharacteristicValue', 'getValue', characteristic, 'callback');
 
-    this.platform.log.info(`${this.platformAccessory.displayName}: Getting characteristic '${characteristic}'`);
+    if (this.platform.settings.showHomebridgeEvents) {
+      this.platform.log.info(`${this.platformAccessory.displayName}: Getting characteristic '${characteristic}'`);
+    }
+
     try {
       const value = await getValue();
 
@@ -54,7 +57,10 @@ export abstract class AccessoryBase {
   ): Promise<void> {
     this.platform.log.debug('AccessoryBase', 'setCharacteristic', 'setValue', characteristic, value, 'callback');
 
-    this.platform.log.info(`${this.platformAccessory.displayName}: Setting characteristic '${characteristic}' to '${value}'`);
+    if (this.platform.settings.showHomebridgeEvents) {
+      this.platform.log.info(`${this.platformAccessory.displayName}: Setting characteristic '${characteristic}' to '${value}'`);
+    }
+    
     try {
       await setValue(value);
 

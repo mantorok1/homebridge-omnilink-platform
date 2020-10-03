@@ -1,7 +1,7 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
-import { AlarmStates, AlarmModes, AreaStatus } from '../omni/OmniService';
+import { AlarmModes, AreaStatus } from '../omni/OmniService';
 
 export class SecuritySystem extends AccessoryBase {
   constructor(
@@ -49,7 +49,7 @@ export class SecuritySystem extends AccessoryBase {
   private getCurrentState(areaStatus: AreaStatus): number {
     this.platform.log.debug(this.constructor.name, 'getCurrentState', areaStatus);
 
-    if (areaStatus!.alarmState === AlarmStates.Triggered) {
+    if (areaStatus!.burglaryTriggered) {
       return this.platform.Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
     }
 

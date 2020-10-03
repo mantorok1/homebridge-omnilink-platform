@@ -11,6 +11,7 @@ import { ZonePropertiesResponse } from './messages/ZonePropertiesResponse';
 import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse';
 import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse';
 import { CodePropertiesResponse } from './messages/CodePropertiesResponse';
+import { SetTimeCommandRequest } from './messages/SetTimeCommandRequest';
 import { ControllerCommandRequest } from './messages/ControllerCommandRequest';
 import { EnableNotificationsRequest } from './messages/EnableNotificationsRequest';
 import { SystemInformationRequest } from './messages/SystemInformationRequest';
@@ -23,11 +24,6 @@ import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidatio
 
 export { ZoneTypes } from './messages/ZonePropertiesResponse';
 
-export enum AlarmStates {
-  Off = 0,
-  Triggered = 1
-}
-
 export enum AlarmModes {
   Disarmed = 0,
   ArmedDay = 1,
@@ -36,7 +32,14 @@ export enum AlarmModes {
 }
 
 export type AreaStatus = {
-  alarmState: AlarmStates,
+  burglaryTriggered: boolean,
+  fireTriggered: boolean,
+  gasTriggered: boolean,
+  auxiliaryTriggered: boolean,
+  freezeTriggered: boolean,
+  waterTriggered: boolean,
+  duressTriggered: boolean,
+  temperatureTriggered: boolean,
   alarmMode: AlarmModes
 }
 
@@ -48,6 +51,7 @@ export type ZoneStatus = {
 export class OmniService extends events.EventEmitter {
   private readonly session: OmniSession;
   private pingIntervalId?: NodeJS.Timeout;
+  private syncTimeIntervalId?: NodeJS.Timeout;
   private _model?: string;
   private _version?: string;
   private _zones: Map<number, ZonePropertiesResponse>;
@@ -117,8 +121,15 @@ export class OmniService extends events.EventEmitter {
       // Ping controller so it doesn't close connection
       this.pingIntervalId = setInterval(() => {
         this.getSystemInformation();
-      }, 60000);
+      }, 60000); // every minute
 
+      // Sync time
+      if (this.platform.settings.syncTime) {
+        await this.setTime();
+        this.syncTimeIntervalId = setInterval(async () => {
+          await this.setTime();
+        }, 86400000); // every 24 hours
+      }
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
@@ -138,6 +149,11 @@ export class OmniService extends events.EventEmitter {
     if (this.pingIntervalId) {
       clearInterval(this.pingIntervalId);
       this.pingIntervalId = undefined;
+    }
+
+    if (this.syncTimeIntervalId) {
+      clearInterval(this.syncTimeIntervalId);
+      this.syncTimeIntervalId = undefined;
     }
 
     this.session.closeConnection();
@@ -346,6 +362,40 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  async setTime(): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setTime');
+
+    const now = new Date();
+
+    try {
+      this.platform.log.info('Sync controller\'s date and time with host:', now.toLocaleString());
+
+      const message = new SetTimeCommandRequest({
+        year: now.getFullYear() - 2000,
+        month: now.getMonth() + 1,
+        day: now.getDate(),
+        dayOfWeek: now.getDay() + 1,
+        hour: now.getHours(),
+        minute: now.getMinutes(),
+        daylightSavings: this.isDaylightSavings(now) ? 1 : 0,
+      });
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`Set Time failed: ${error.message}`);
+    }
+  }
+
+  private isDaylightSavings(date: Date) {
+    const jan = new Date(date.getFullYear(), 0, 1).getTimezoneOffset();
+    const jul = new Date(date.getFullYear(), 6, 1).getTimezoneOffset();
+    return Math.max(jan, jul) !== date.getTimezoneOffset(); 
+  }
+
   async executeButton(buttonId: number): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'executeButton', buttonId);
 
@@ -424,10 +474,6 @@ export class OmniService extends events.EventEmitter {
   private createAreaStatus(area: ExtendedAreaStatus): AreaStatus {
     this.platform.log.debug(this.constructor.name, 'createAreaStatus', area);
 
-    const alarmState = (area!.alarms & Alarms.Burglary) === Alarms.Burglary
-      ? AlarmStates.Triggered
-      : AlarmStates.Off;
-
     let alarmMode: AlarmModes;
     
     switch (area.mode) {
@@ -452,7 +498,14 @@ export class OmniService extends events.EventEmitter {
     }
 
     return {
-      alarmState: alarmState,
+      burglaryTriggered: (area!.alarms & Alarms.Burglary) === Alarms.Burglary,
+      fireTriggered: (area!.alarms & Alarms.Fire) === Alarms.Fire,
+      gasTriggered: (area!.alarms & Alarms.Gas) === Alarms.Gas,
+      auxiliaryTriggered: (area!.alarms & Alarms.Auxiliary) === Alarms.Auxiliary,
+      freezeTriggered: (area!.alarms & Alarms.Freeze) === Alarms.Freeze,
+      waterTriggered: (area!.alarms & Alarms.Water) === Alarms.Water,
+      duressTriggered: (area!.alarms & Alarms.Duress) === Alarms.Duress,
+      temperatureTriggered: (area!.alarms & Alarms.Temperature) === Alarms.Temperature,
       alarmMode: alarmMode,
     };
   }
@@ -562,16 +615,56 @@ export class OmniService extends events.EventEmitter {
   areaStatusHandler(areas: Map<number, ExtendedAreaStatus>): void {
     this.platform.log.debug(this.constructor.name, 'areaStatusHandler', areas);
 
-    for(const [areaId, status] of areas.entries()) {
-      this.emit(`area-${areaId}`, this.createAreaStatus(status));
+    try {
+      for(const [areaId, status] of areas.entries()) {
+        const areaStatus = this.createAreaStatus(status);
+        if (this.platform.settings.showOmniEvents) {
+          this.platform.log.info(this.areaStatusMessage(areaId, areaStatus));
+        }
+        this.emit(`area-${areaId}`, areaStatus);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
     }
+  }
+
+  private areaStatusMessage(areaId: number, areaStatus: AreaStatus): string {
+    const areaName = this.areas.get(areaId)!.name;
+
+    let mode = 'Disarmed';
+    switch(areaStatus.alarmMode) {
+      case AlarmModes.ArmedAway:
+        mode = 'Armed Away';
+        break;
+      case AlarmModes.ArmedDay:
+        mode = 'Armed Day';
+        break;
+      case AlarmModes.ArmedNight:
+        mode = 'Armed Night';
+        break;
+    }
+
+    const triggered = areaStatus.burglaryTriggered || areaStatus.fireTriggered || areaStatus.gasTriggered
+      || areaStatus.auxiliaryTriggered || areaStatus.freezeTriggered || areaStatus.waterTriggered
+      || areaStatus.duressTriggered || areaStatus.temperatureTriggered;
+
+    return `${areaName}: ${mode}${triggered ? ', Alarm triggered' : ''}`;
   }
 
   zoneStatusHandler(zones: Map<number, ExtendedZoneStatus>): void {
     this.platform.log.debug(this.constructor.name, 'zoneStatusHandler', zones);
 
-    for(const [zoneId, status] of zones.entries()) {
-      this.emit(`zone-${zoneId}`, this.createZoneStatus(status));
+    try {
+      for(const [zoneId, status] of zones.entries()) {
+        const zoneStatus = this.createZoneStatus(status);
+        if (this.platform.settings.showOmniEvents) {
+          const name = this.zones.get(zoneId)!.name;
+          this.platform.log.info(`${name}: ${zoneStatus.ready ? 'Ready' : 'Not Ready'}${zoneStatus.trouble ? ', Trouble' : ''}`);
+        }
+        this.emit(`zone-${zoneId}`, zoneStatus);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
     }
   }
 

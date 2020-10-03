@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.1.0 (2020-10-04)
+
+* Sync Omni controller's date and time with Homebridge host
+* New sensors supported: Carbon Dioxide, Carbon Monoxide, Leak, Occupancy
+* Pushover notifications
+* New Logging options
+* Update dependencies
+
 ## 1.0.0 (2020-09-28)
 
 * Homebridge dynamic platform

@@ -4,6 +4,7 @@ export enum MessageTypes {
   NegativeAchnowledge = 0x02,
   EndOfData = 0x03,
 
+  SetTimeCommandRequest = 0x13,
   ControllerCommandRequest = 0x14,
   EnableNotificationsRequest = 0x15,
   SystemInformationRequest = 0x16,

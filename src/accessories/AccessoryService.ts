@@ -8,6 +8,10 @@ import { ButtonSwitch } from './ButtonSwitch';
 import { MotionSensor } from './MotionSensor';
 import { SmokeSensor } from './SmokeSensor';
 import { ContactSensor } from './ContactSensor';
+import { CarbonDioxideSensor } from './CarbonDioxideSensor';
+import { CarbonMonoxideSensor } from './CarbonMonoxideSensor';
+import { LeakSensor } from './LeakSensor';
+import { OccupancySensor } from './OccupancySensor';
 import { GarageDoorOpener } from './GarageDoorOpener';
 
 export class AccessoryService {
@@ -25,6 +29,10 @@ export class AccessoryService {
       this.discoverZoneMotionSensors();
       this.discoverZoneSmokeSensors();
       this.discoverZoneContactSensors();
+      this.discoverZoneCarbonDioxideSensors();
+      this.discoverZoneCarbonMonoxideSensors();
+      this.discoverZoneLeakSensors();
+      this.discoverZoneOccupancySensors();
       this.discoverButtonSwitches();
       this.discoverGarageDoors();
     } catch (error) {
@@ -67,7 +75,7 @@ export class AccessoryService {
         if (sensorType === undefined && zone.zoneType === ZoneTypes.FireEmergency) {
           continue;
         }
-        if (sensorType !== undefined && sensorType !== 'Motion') {
+        if (sensorType !== undefined && sensorType.toLowerCase() !== 'motion') {
           continue;
         }
         if (this.platform.settings.garageDoorZones.includes(index)) {
@@ -101,7 +109,7 @@ export class AccessoryService {
         if (sensorType === undefined && zone.zoneType !== ZoneTypes.FireEmergency) {
           continue;
         }
-        if (sensorType !== undefined && sensorType !== 'Smoke') {
+        if (sensorType !== undefined && sensorType.toLowerCase() !== 'smoke') {
           continue;
         }
         if (this.platform.settings.garageDoorZones.includes(index)) {
@@ -135,7 +143,7 @@ export class AccessoryService {
         if (sensorType === undefined) {
           continue;
         }
-        if (sensorType !== undefined && sensorType !== 'Contact') {
+        if (sensorType !== undefined && sensorType.toLowerCase() !== 'contact') {
           continue;
         }
         if (this.platform.settings.garageDoorZones.includes(index)) {
@@ -153,6 +161,142 @@ export class AccessoryService {
       if (accessory instanceof ContactSensor) {
         if (!zones.has(accessory.platformAccessory.context.index)) {
           this.removeAccessory(ContactSensor.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
+  discoverZoneCarbonDioxideSensors(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverZoneCarbonDioxideSensors');
+
+    const zones = new Map<number, string>();
+
+    if (this.platform.settings.includeZones) {
+      for(const [index, zone] of this.platform.omniService.zones) {
+        const sensorType = this.platform.settings.sensors.get(index);
+        if (sensorType === undefined) {
+          continue;
+        }
+        if (sensorType !== undefined && sensorType.toLowerCase() !== 'carbondioxide') {
+          continue;
+        }
+        if (this.platform.settings.garageDoorZones.includes(index)) {
+          continue;
+        }
+        zones.set(index, zone.name);
+      }
+    }
+
+    for(const [index, name] of zones) {
+      this.addAccessory(CarbonDioxideSensor, CarbonDioxideSensor.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof CarbonDioxideSensor) {
+        if (!zones.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(CarbonDioxideSensor.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
+  discoverZoneCarbonMonoxideSensors(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverZoneCarbonMonoxideSensors');
+
+    const zones = new Map<number, string>();
+
+    if (this.platform.settings.includeZones) {
+      for(const [index, zone] of this.platform.omniService.zones) {
+        const sensorType = this.platform.settings.sensors.get(index);
+        if (sensorType === undefined) {
+          continue;
+        }
+        if (sensorType !== undefined && sensorType.toLowerCase() !== 'carbonmonoxide') {
+          continue;
+        }
+        if (this.platform.settings.garageDoorZones.includes(index)) {
+          continue;
+        }
+        zones.set(index, zone.name);
+      }
+    }
+
+    for(const [index, name] of zones) {
+      this.addAccessory(CarbonMonoxideSensor, CarbonMonoxideSensor.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof CarbonMonoxideSensor) {
+        if (!zones.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(CarbonMonoxideSensor.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
+  discoverZoneLeakSensors(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverZoneLeakSensors');
+
+    const zones = new Map<number, string>();
+
+    if (this.platform.settings.includeZones) {
+      for(const [index, zone] of this.platform.omniService.zones) {
+        const sensorType = this.platform.settings.sensors.get(index);
+        if (sensorType === undefined) {
+          continue;
+        }
+        if (sensorType !== undefined && sensorType.toLowerCase() !== 'leak') {
+          continue;
+        }
+        if (this.platform.settings.garageDoorZones.includes(index)) {
+          continue;
+        }
+        zones.set(index, zone.name);
+      }
+    }
+
+    for(const [index, name] of zones) {
+      this.addAccessory(LeakSensor, LeakSensor.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof LeakSensor) {
+        if (!zones.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(LeakSensor.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
+  discoverZoneOccupancySensors(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverZoneOccupancySensors');
+
+    const zones = new Map<number, string>();
+
+    if (this.platform.settings.includeZones) {
+      for(const [index, zone] of this.platform.omniService.zones) {
+        const sensorType = this.platform.settings.sensors.get(index);
+        if (sensorType === undefined) {
+          continue;
+        }
+        if (sensorType !== undefined && sensorType.toLowerCase() !== 'occupancy') {
+          continue;
+        }
+        if (this.platform.settings.garageDoorZones.includes(index)) {
+          continue;
+        }
+        zones.set(index, zone.name);
+      }
+    }
+
+    for(const [index, name] of zones) {
+      this.addAccessory(OccupancySensor, OccupancySensor.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof OccupancySensor) {
+        if (!zones.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(OccupancySensor.type, accessory.platformAccessory.context.index);
         }
       }
     }
@@ -273,6 +417,14 @@ export class AccessoryService {
         return new SmokeSensor(this.platform, platformAccessory);
       case 'contactsensor':
         return new ContactSensor(this.platform, platformAccessory);
+      case 'carbondioxidesensor':
+        return new CarbonDioxideSensor(this.platform, platformAccessory);
+      case 'carbonmonoxidesensor':
+        return new CarbonMonoxideSensor(this.platform, platformAccessory);
+      case 'leaksensor':
+        return new LeakSensor(this.platform, platformAccessory);
+      case 'occupancysensor':
+        return new OccupancySensor(this.platform, platformAccessory);
       case 'garagedooropener':
         return new GarageDoorOpener(this.platform, platformAccessory);
     }

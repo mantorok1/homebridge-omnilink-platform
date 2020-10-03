@@ -95,8 +95,17 @@
             "sensorType": {
               "title": "Sensor Type",
               "type": "string",
-              "enum": ["Motion", "Smoke", "Contact", "None"],
-              "required": true
+              "required": true,
+              "oneOf": [
+                { "title": "Motion Sensor", "enum": [ "motion" ] },
+                { "title": "Smoke Sensor", "enum": [ "smoke" ] },
+                { "title": "Contact Sensor", "enum": [ "contact" ] },
+                { "title": "Carbon Dioxide Sensor", "enum": [ "carbondioxide" ] },
+                { "title": "Carbon Monoxide Sensor", "enum": [ "carbonmonoxide" ] },
+                { "title": "Leak Sensor", "enum": [ "leak" ] },
+                { "title": "Occupancy Sensor", "enum": [ "occupancy" ] },
+                { "title": "None", "enum": [ "none" ] }
+              ]
             }
           }
         }
@@ -132,6 +141,82 @@
           }
         }
       },
+      "pushover": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "title": "Application Token",
+            "type": "string",
+            "required": false
+          },
+          "users": {
+            "title": "User Keys",
+            "type": "array",
+            "items": {
+              "title": "User Key",
+              "type": "string"
+            }
+          },
+          "burglary": {
+            "type": "boolean",
+            "default": false,
+            "required": false
+          },
+          "fire": {
+            "type": "boolean",
+            "default": false,
+            "required": false
+          },
+          "gas": {
+            "type": "boolean",
+            "default": false,
+            "required": false
+          },
+          "auxiliary": {
+            "type": "boolean",
+            "default": false,
+            "required": false
+          },
+          "freeze": {
+            "type": "boolean",
+            "default": false,
+            "required": false
+          },
+          "water": {
+            "type": "boolean",
+            "default": false,
+            "required": false
+          },
+          "duress": {
+            "type": "boolean",
+            "default": false,
+            "required": false
+          },
+          "temperature": {
+            "type": "boolean",
+            "default": false,
+            "required": false
+          }
+        }
+      },
+      "syncTime": {
+        "title": "Sync date and time of controller with host",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "showHomebridgeEvents": {
+        "title": "Show Homebridge events in the log",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "showOmniEvents": {
+        "title": "Show Omni notification events in the log",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },      
       "clearCache": {
         "title": "Clear plugin's accessory cache",
         "type": "boolean",
@@ -217,7 +302,45 @@
                 }
               ]
             }
-          ]        }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Pushover Notifications",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        "pushover.token",
+        {
+          "type": "array",
+          "orderable": false,
+          "buttonText": "Add User Key",
+          "items": [
+            {
+              "type": "flex",
+              "flex-row": "row wrap",
+              "items": [ "pushover.users[]" ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Send notification for the following alarms:",
+          "expandable": false,
+          "expanded": true,
+          "items": [
+            "pushover.burglary",
+            "pushover.fire",
+            "pushover.gas",
+            "pushover.auxiliary",
+            "pushover.freeze",
+            "pushover.water",
+            "pushover.duress",
+            "pushover.temperature"
+          ]
+        }
       ]
     },
     {
@@ -226,6 +349,9 @@
       "expandable": true,
       "expanded": false,
       "items": [
+        "syncTime",
+        "showHomebridgeEvents",
+        "showOmniEvents",
         "clearCache"
       ]
     }

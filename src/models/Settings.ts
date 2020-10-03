@@ -5,6 +5,19 @@ type GarageDoor = {
   openTime: number
 }
 
+type Pushover = {
+  token: string,
+  users: string[],
+  burglary: boolean,
+  fire: boolean,
+  gas: boolean,
+  auxiliary: boolean,
+  freeze: boolean,
+  water: boolean,
+  duress: boolean,
+  temperature: boolean
+}
+
 export class Settings {
   private readonly _privateKey: Buffer;
   private readonly _sensors: Map<number, string>;
@@ -85,8 +98,24 @@ export class Settings {
     return [...this._garageDoors.values()].map(g => g.zoneId);
   }
 
+  get syncTime(): boolean {
+    return <boolean>this.config.syncTime ?? false;
+  }
+
+  get showHomebridgeEvents(): boolean {
+    return <boolean>this.config.showHomebridgeEvents ?? false;
+  }
+
+  get showOmniEvents(): boolean {
+    return <boolean>this.config.showOmniEvents ?? false;
+  }
+
   get clearCache(): boolean {
     return <boolean>this.config.clearCache ?? false;
+  }
+
+  get pushover(): Pushover | undefined {
+    return <Pushover | undefined>this.config.pushover;
   }
 
   get isValid(): boolean {

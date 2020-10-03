@@ -3,6 +3,7 @@ import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { Settings } from './models/Settings';
 import { OmniService } from './omni/OmniService';
 import { AccessoryService } from './accessories/AccessoryService';
+import { PushoverService } from './services/PushoverService';
 
 export class OmniLinkPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
@@ -13,6 +14,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
   public readonly settings!: Settings;
   public readonly omniService!: OmniService;
   public readonly accessoryService!: AccessoryService;
+  public readonly pushoverService!: PushoverService;
 
   constructor(
     public readonly log: Logger,
@@ -25,6 +27,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       this.settings = new Settings(config);
       this.omniService = new OmniService(this);
       this.accessoryService = new AccessoryService(this);
+      this.pushoverService = new PushoverService(this);
 
       this.api.on('didFinishLaunching', () => {
         this.log.debug('Finished launching plugin');
@@ -91,6 +94,9 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
 
       // Add/Remove accessories
       this.accessoryService.discover();
+
+      // Initialise Pushover notifications
+      this.pushoverService.init();
 
     } catch (error) {
       this.log.error(error);

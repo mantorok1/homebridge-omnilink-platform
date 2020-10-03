@@ -1,15 +1,17 @@
 # Omni-Link Platform
 
-[![npm](https://badgen.net/npm/v/homebridge-omnilink-platform) ![npm](https://badgen.net/npm/dt/homebridge-omnilink-platform)](https://www.npmjs.com/package/homebridge-omnilink-platform)
+[![npm](https://badgen.net/npm/v/homebridge-omnilink-platform) ![npm](https://badgen.net/npm/dt/homebridge-omnilink-platform)](https://www.npmjs.com/package/homebridge-omnilink-platform) [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
 This Homebridge Plugin allows you to control a HAI/Leviton Omni Security & Home Automation System via the Omni-Link II protocol over a TCP/IP connection.
 
 Functions available:
-* Arm and disarm the security system
+* Arm/disarm the security system
 * Notify when alarm system is triggered
-* Notify when sensors are tripped
+* Notify when sensors are tripped (7 types of sensors supported)
 * Execute buttons
 * Open/close garage doors
+* Sync Omni controller's date & time with Homebridge host
+* Pushover notifications when alarms are triggered 
 
 ## Minimum Requirements
 This plugin supports Omni systems that meet the following requirements:
@@ -27,7 +29,7 @@ The plugin will discover what features your system has and create Homekit access
 |`Zone` (all other types)|`Motion Sensor`|
 |`Button`|`Switch`|
 
-The zones can be overriden to another type of sensor. Currently the plugin supports `Smoke`, `Motion` and `Contact` sensors.
+The zones can be overriden to another type of sensor. Currently the plugin supports `Motion`, `Smoke`, `Contact`, `Carbon Dioxide`, `Carbon Monoxide`, `Leak` and `Occupancy` sensors.
 
 A combination of a button and zone can also be defined as a `Garage Door Opener`.
 
@@ -39,9 +41,9 @@ It is highly recommended that you use Homebridge Config UI X to install and conf
     npm install -g homebridge-omnilink-plugin
 
 ## Configuration
-This is a platform plugin that will register accessories and their services with the bridge provided by Homebridge. The plugin will attempt to discover your Omni system's objects (ie. zones, areas, buttons) automatically thus requiring minimal configuration to the config.json file.
+This is a platform plugin that will register accessories and their services with the bridge provided by Homebridge. The plugin will attempt to discover your Omni system's objects (ie. zones, areas, buttons) automatically thus requiring minimal configuration to the `config.json` file.
 
-If you find the default config is not correct for your system or some are not to your liking there are some overrides you can define in the config.json file.
+If you find the default config is not correct for your system or not to your liking there are some overrides you can define in the `config.json` file.
 
 |Option|Required|Type|Description|Default Value (if not supplied)|
 |-|-|-|-|-|
@@ -57,11 +59,31 @@ If you find the default config is not correct for your system or some are not to
 |`setHomeAsAway`|No|boolean|Changes the security mode to "Away" if "Home" is selected. This may be useful if you don't use the "Home" mode and want to ensure the alarm is set to "Away" if accidently set to "Home"|`false`|
 |`setNightAsAway`|No|boolean|Changes the security mode to "Away" if "Night" is selected. Likewise, useful if you don't use the "Night" mode|`false`|
 |`securityCode`|No|string|The 4 digit security code used to arm and disarm the security system. Without this the security system cannot be operated||
-|`sensors`|No|array|Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of Homekit sensor accessory to use (valid options: `Motion`, `Smoke`, `Contact`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "Contact" }`||
+|`sensors`|No|array|Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of Homekit sensor accessory to use (valid options: `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "contact" }`||
 |`garageDoors`|No|array|Defines 1 or more garage door accessories. Each definition requires the following properties:<br/><ul><li>`buttonId` - the button number correspnding to the button that opens/closes the door<li>`zoneId` - the zone number corresponding to the sensor that determines if the garage door is closed or not<li>`openTime` - the time taken (in seconds) for the garage door to fully open</ul>Example garage door definition: `{ "buttonId": 2, "zoneId": 3, "openTime": 10 }`||
+|`pushover`|No|object|See 'Pushover Notification Configuration' below||
+|`syncTime`|No|boolean|Sync the controller's date and time with the Homebridge host|`false`|
+|`showHomebridgeEvents`|No|boolean|Show Homebridge events in the Homebridge log|`false`|
+|`showOmniEvents`|No|boolean|Show Omni notification events in the Homebridge log|`false`|
 |`clearCache`|No|boolean|Clear all the plugin's cached accessories from Homebridge to force full discovery of accessories on restart|`false`|
 
 *TIP:* The area, zone and button numbers are displayed in the Homebridge logs when it starts up.
+
+### Pushover Notification Configuration
+This plugin can be configured to send Push notifications to your phone when alarms are trigggered. To do this you'll need a [Pushover](https://pushover.net) account. The following describes the configuration options available:
+
+|Option|Required|Type|Description|Default Value (if not supplied)|
+|-|-|-|-|-|
+|`token`|Yes|string|Application API Token supplied by Pushover||
+|`users`|Yes|array|One or more User Keys supplied by Pushover. Each user will receive a push notification||
+|`burglary`|No|boolean|If `true` push notification sent when burglary alarm is triggered|`false`|
+|`fire`|No|boolean|If `true` push notification sent when fire alarm is triggered|`false`|
+|`gas`|No|boolean|If `true` push notification sent when gas alarm is triggered|`false`|
+|`auxiliary`|No|boolean|If `true` push notification sent when auxiliary alarm is triggered|`false`|
+|`freeze`|No|boolean|If `true` push notification sent when freeze alarm is triggered|`false`|
+|`water`|No|boolean|If `true` push notification sent when water alarm is triggered|`false`|
+|`duress`|No|boolean|If `true` push notification sent when duress alarm is triggered|`false`|
+|`temperature`|No|boolean|If `true` push notification sent when temperature alarm is triggered|`false`|
 
 #### Example:
 
@@ -82,11 +104,11 @@ If you find the default config is not correct for your system or some are not to
         "sensors": [
           {
             "zoneId": 7,
-            "sensorType": "Contact"
+            "sensorType": "contact"
           },
           {
             "zoneId": 8,
-            "sensorType": "Contact"
+            "sensorType": "carbondioxide"
           }        
         ],
         "garageDoors": [
@@ -100,9 +122,29 @@ If you find the default config is not correct for your system or some are not to
             "zoneId": 12,
             "openTime": 10
           }
-        ]
+        ],
+        "pushover": {
+          "token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "users": [
+              "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "cccccccccccccccccccccccccccccc"
+          ],
+          "burglary": true,
+          "fire": true,
+          "gas": false,
+          "auxiliary": false,
+          "freeze": false,
+          "water": false,
+          "duress": false,
+          "temperature": false
+        },
+        "syncTime": true,
+        "showHomebridgeEvents": true,
+        "showOmniEvents": true,
+        "clearCache": false
       }
     ],
+    ...
 
 ## Version History
 See [Change Log](CHANGELOG.md).
