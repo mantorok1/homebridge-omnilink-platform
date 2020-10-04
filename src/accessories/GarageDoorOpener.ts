@@ -81,6 +81,12 @@ export class GarageDoorOpener extends AccessoryBase {
   async setTargetDoorState(value: number): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setTargetDoorState', value);
 
+    const targetDoorState = await this.getTargetDoorState();
+
+    if (targetDoorState === value) {
+      return;
+    }
+
     await this.platform.omniService.executeButton(this.platformAccessory.context.index);
   }
 
