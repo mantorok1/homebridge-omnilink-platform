@@ -1,7 +1,7 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
-import { AlarmModes, AreaStatus } from '../omni/OmniService';
+import { AreaStatus, Alarms, ArmedModes } from '../models/AreaStatus';
 
 export class SecuritySystem extends AccessoryBase {
   constructor(
@@ -49,16 +49,16 @@ export class SecuritySystem extends AccessoryBase {
   private getCurrentState(areaStatus: AreaStatus): number {
     this.platform.log.debug(this.constructor.name, 'getCurrentState', areaStatus);
 
-    if (areaStatus!.burglaryTriggered) {
+    if (areaStatus.alarmsTriggered.includes(Alarms.Burglary)) {
       return this.platform.Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
     }
 
-    switch (areaStatus!.alarmMode) {
-      case AlarmModes.ArmedDay:
+    switch (areaStatus!.armedMode) {
+      case ArmedModes.ArmedDay:
         return this.platform.Characteristic.SecuritySystemCurrentState.STAY_ARM;
-      case AlarmModes.ArmedNight:
+      case ArmedModes.ArmedNight:
         return this.platform.Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-      case AlarmModes.ArmedAway:
+      case ArmedModes.ArmedAway:
         return this.platform.Characteristic.SecuritySystemCurrentState.AWAY_ARM;
       default:
         return this.platform.Characteristic.SecuritySystemCurrentState.DISARMED;
@@ -70,12 +70,12 @@ export class SecuritySystem extends AccessoryBase {
 
     const areaStatus = await this.platform.omniService.getAreaStatus(this.platformAccessory.context.index);
 
-    switch (areaStatus!.alarmMode) {
-      case AlarmModes.Disarmed:
+    switch (areaStatus!.armedMode) {
+      case ArmedModes.Disarmed:
         return this.platform.Characteristic.SecuritySystemTargetState.DISARM;
-      case AlarmModes.ArmedDay:
+      case ArmedModes.ArmedDay:
         return this.platform.Characteristic.SecuritySystemTargetState.STAY_ARM;
-      case AlarmModes.ArmedNight:
+      case ArmedModes.ArmedNight:
         return this.platform.Characteristic.SecuritySystemTargetState.NIGHT_ARM;
       default:
         return this.platform.Characteristic.SecuritySystemTargetState.AWAY_ARM;
@@ -85,12 +85,12 @@ export class SecuritySystem extends AccessoryBase {
   private getTargetState(areaStatus: AreaStatus): number {
     this.platform.log.debug(this.constructor.name, 'getTargetState', areaStatus);
 
-    switch (areaStatus!.alarmMode) {
-      case AlarmModes.Disarmed:
+    switch (areaStatus!.armedMode) {
+      case ArmedModes.Disarmed:
         return this.platform.Characteristic.SecuritySystemTargetState.DISARM;
-      case AlarmModes.ArmedDay:
+      case ArmedModes.ArmedDay:
         return this.platform.Characteristic.SecuritySystemTargetState.STAY_ARM;
-      case AlarmModes.ArmedNight:
+      case ArmedModes.ArmedNight:
         return this.platform.Characteristic.SecuritySystemTargetState.NIGHT_ARM;
       default:
         return this.platform.Characteristic.SecuritySystemTargetState.AWAY_ARM;
@@ -100,16 +100,16 @@ export class SecuritySystem extends AccessoryBase {
   private async setSecuritySystemTargetState(mode: number): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setSecuritySystemTargetState', mode);
 
-    let alarmMode: AlarmModes = AlarmModes.Disarmed;
+    let alarmMode: ArmedModes = ArmedModes.Disarmed;
     switch (mode) {
       case this.platform.Characteristic.SecuritySystemTargetState.STAY_ARM:
-        alarmMode = AlarmModes.ArmedDay;
+        alarmMode = ArmedModes.ArmedDay;
         break;
       case this.platform.Characteristic.SecuritySystemTargetState.NIGHT_ARM:
-        alarmMode = AlarmModes.ArmedNight;
+        alarmMode = ArmedModes.ArmedNight;
         break;
       case this.platform.Characteristic.SecuritySystemTargetState.AWAY_ARM:
-        alarmMode = AlarmModes.ArmedAway;
+        alarmMode = ArmedModes.ArmedAway;
         break;
     }
 
@@ -119,12 +119,12 @@ export class SecuritySystem extends AccessoryBase {
   private async updateValues(areaStatus: AreaStatus): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'updateValues', areaStatus);
 
-    if (this.platform.settings.setHomeToAway && areaStatus.alarmMode === AlarmModes.ArmedDay) {
+    if (this.platform.settings.setHomeToAway && areaStatus.armedMode === ArmedModes.ArmedDay) {
       this.platform.log.warn(`${this.platformAccessory.displayName}: Changing alarm mode from "Home" to "Away"`);
       this.setSecuritySystemTargetState(this.platform.Characteristic.SecuritySystemTargetState.AWAY_ARM);
     }
 
-    if (this.platform.settings.setNightToAway && areaStatus.alarmMode === AlarmModes.ArmedNight) {
+    if (this.platform.settings.setNightToAway && areaStatus.armedMode === ArmedModes.ArmedNight) {
       this.platform.log.warn(`${this.platformAccessory.displayName}: Changing alarm mode from "Night" to "Away"`);
       this.setSecuritySystemTargetState(this.platform.Characteristic.SecuritySystemTargetState.AWAY_ARM);
     }

@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## NEXT
 
 * Improve Event logging
+* Handle cancellation of Pushover Emergency Priorty Retries on disarm
 
 ## 1.1.1 (2020-10-04)
 

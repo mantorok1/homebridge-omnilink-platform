@@ -1,12 +1,14 @@
 import Pushover = require('pushover-notifications');
+import fetch = require('node-fetch');
 
 import { OmniLinkPlatform } from '../platform';
-import { AreaStatus } from '../omni/OmniService';
+import { AreaStatus, Alarms } from '../models/AreaStatus';
 
 export class PushoverService {
   private pushover;
   private readonly token?: string;
   private readonly users: string[] = [];
+  private readonly receipts: Map<string, string[]> = new Map();
 
   constructor(private readonly platform: OmniLinkPlatform) {
     if (this.platform.settings.pushover === undefined) {
@@ -45,12 +47,19 @@ export class PushoverService {
     }
   }
 
-  sendMessage(areaName: string, status: AreaStatus): void {
-    this.platform.log.debug(this.constructor.name, 'sendMessage', areaName, status);
+  sendMessage(areaName: string, areaStatus: AreaStatus): void {
+    this.platform.log.debug(this.constructor.name, 'sendMessage', areaName, areaStatus);
 
     try {
+
+      this.cancelMessage(areaName);
+
+      if (areaStatus.alarmsTriggered.length === 0) {
+        return;
+      }
+
       const pushoverMessage = {
-        title: this.platform.settings.name,
+        title: `${this.platform.settings.name} - ${areaName}`,
         message: '',
         sound: 'siren',
         priority: 2,  // Emergency Priorty
@@ -59,53 +68,52 @@ export class PushoverService {
         user: '',
       };
 
-      for (const message of this.getMessages(areaName, status)) {
-        for (const user of this.users) {
-          pushoverMessage.message = message;
-          pushoverMessage.user = user;
-  
-          this.pushover.send(pushoverMessage, (error) => {
-            if (error) {
-              throw error;
-            }
-          });
-        }
+      const alarms = areaStatus.alarmsTriggered.map((alarm) => Alarms[alarm].toUpperCase());
+      const message = `${alarms.join()} Alarm${alarms.length > 1 ? 's' : ''} Triggered`;
+
+      for (const user of this.users) {
+        pushoverMessage.message = message;
+        pushoverMessage.user = user;
+
+        this.pushover.send(pushoverMessage, (error, result) => {
+          if (error) {
+            throw error;
+          }
+          const receipt = JSON.parse(result).receipt;
+          if (this.receipts.has(areaName)) {
+            this.receipts.get(areaName)?.push(receipt);
+          } else {
+            this.receipts.set(areaName, [receipt]);
+          }
+        });
       }
     } catch(error) {
       this.platform.log.warn('Pushover notification(s) failed:', error.message);
     }
   }
 
-  private getMessages(areaName: string, status: AreaStatus): string[] {
-    this.platform.log.debug(this.constructor.name, 'getMessages', areaName, status);
+  async cancelMessage(areaName: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'cancelMessage', areaName);
 
-    const messages: string[] = [];
+    try {
+      if (!this.receipts.has(areaName) || this.receipts.get(areaName)!.length === 0) {
+        return;
+      }
 
-    if (status.burglaryTriggered && (this.platform.settings.pushover!.burglary ?? false)) {
-      messages.push(`BURGLARY ALARM triggered in ${areaName}`);
-    }
-    if (status.fireTriggered && (this.platform.settings.pushover!.fire ?? false)) {
-      messages.push(`FIRE ALARM triggered in ${areaName}`);
-    }
-    if (status.gasTriggered && (this.platform.settings.pushover!.gas ?? false)) {
-      messages.push(`GAS ALARM triggered in ${areaName}`);
-    }
-    if (status.auxiliaryTriggered && (this.platform.settings.pushover!.auxiliary ?? false)) {
-      messages.push(`AUXILIARY ALARM triggered in ${areaName}`);
-    }
-    if (status.freezeTriggered && (this.platform.settings.pushover!.freeze ?? false)) {
-      messages.push(`FREEZE ALARM triggered in ${areaName}`);
-    }
-    if (status.waterTriggered && (this.platform.settings.pushover!.water ?? false)) {
-      messages.push(`WATER ALARM triggered in ${areaName}`);
-    }
-    if (status.duressTriggered && (this.platform.settings.pushover!.duress ?? false)) {
-      messages.push(`DURESS ALARM triggered in ${areaName}`);
-    }
-    if (status.temperatureTriggered && (this.platform.settings.pushover!.temperature ?? false)) {
-      messages.push(`TEMPERATURE ALARM triggered in ${areaName}`);
-    }
+      const receipts = this.receipts.get(areaName)!;
+      const body = {token: this.token};
 
-    return messages;
+      for(const receipt of receipts) {
+        await fetch.default(`https://api.pushover.net/1/receipts/${receipt}/cancel.json`, {
+          method: 'post',
+          body: JSON.stringify(body),
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      this.receipts.delete(areaName);
+    } catch(error) {
+      this.platform.log.warn('Cancel Pushover notification failed:', error.message);
+    }
   }
 }
