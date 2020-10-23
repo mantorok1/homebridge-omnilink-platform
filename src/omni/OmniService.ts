@@ -18,18 +18,14 @@ import { SystemInformationRequest } from './messages/SystemInformationRequest';
 import { SystemInformationResponse } from './messages/SystemInformationResponse';
 import { ExtendedObjectStatusRequest } from './messages/ExtendedObjectStatusRequest';
 import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse';
-import { ExtendedZoneStatusResponse, ExtendedZoneStatus, ZoneCurrentStates } from './messages/ExtendedZoneStatusResponse';
+import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse';
 import { SecurityCodeValidationRequest } from './messages/SecurityCodeValidationRequest';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
 
 import { AreaStatus, ArmedModes } from '../models/AreaStatus';
+import { ZoneStatus, ZoneStates } from '../models/ZoneStatus';
 
 export { ZoneTypes } from './messages/ZonePropertiesResponse';
-
-export type ZoneStatus = {
-  ready: boolean,
-  trouble: boolean,
-}
 
 export class OmniService extends events.EventEmitter {
   private readonly session: OmniSession;
@@ -472,24 +468,12 @@ export class OmniService extends events.EventEmitter {
       const response = await this.session.sendApplicationDataMessage(message);
   
       if (response instanceof ExtendedZoneStatusResponse) {
-        return this.createZoneStatus(response.zones.get(zoneId)!);
+        return response.zones.get(zoneId);
       }
     } catch(error) {
       this.platform.log.error(error);
       throw error;  
     }
-  }
-
-  private createZoneStatus(zone: ExtendedZoneStatus): ZoneStatus {
-    this.platform.log.debug(this.constructor.name, 'createZoneStatus', zone);
-
-    const ready = (zone.currentState & ZoneCurrentStates.NotReady) === 0;
-    const trouble = (zone.currentState & ZoneCurrentStates.Trouble) > 0;
-
-    return {
-      ready: ready,
-      trouble: trouble,
-    };
   }
 
   async setAreaAlarmMode(area: number, mode: ArmedModes): Promise<void> {
@@ -588,15 +572,14 @@ export class OmniService extends events.EventEmitter {
     return `${areaName}: ${mode}${triggered}`;
   }
 
-  zoneStatusHandler(zones: Map<number, ExtendedZoneStatus>): void {
+  zoneStatusHandler(zones: Map<number, ZoneStatus>): void {
     this.platform.log.debug(this.constructor.name, 'zoneStatusHandler', zones);
 
     try {
-      for(const [zoneId, status] of zones.entries()) {
-        const zoneStatus = this.createZoneStatus(status);
+      for(const [zoneId, zoneStatus] of zones.entries()) {
         if (this.platform.settings.showOmniEvents) {
           const name = this.zones.get(zoneId)!.name;
-          this.platform.log.info(`${name}: ${zoneStatus.ready ? 'Ready' : 'Not Ready'}${zoneStatus.trouble ? ', Trouble' : ''}`);
+          this.platform.log.info(`${name}: ${ZoneStates[zoneStatus.currentState]}`);
         }
         this.emit(`zone-${zoneId}`, zoneStatus);
       }

@@ -1,5 +1,5 @@
 import { AccessoryBase } from './AccessoryBase';
-import { ZoneStatus } from '../omni/OmniService';
+import { ZoneStatus } from '../models/ZoneStatus';
 
 export abstract class SensorBase extends AccessoryBase {
 

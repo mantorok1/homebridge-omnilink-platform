@@ -1,7 +1,7 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
-import { ZoneStatus } from '../omni/OmniService';
+import { ZoneStatus } from '../models/ZoneStatus';
 
 export class GarageDoorOpener extends AccessoryBase { 
   private zoneId?: number;

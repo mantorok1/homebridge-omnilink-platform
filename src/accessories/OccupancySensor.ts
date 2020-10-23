@@ -1,7 +1,7 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
-import { ZoneStatus } from '../omni/OmniService';
+import { ZoneStatus } from '../models/ZoneStatus';
 
 export class OccupancySensor extends SensorBase {
   constructor(

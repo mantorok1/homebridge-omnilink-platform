@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 * Improve Event logging
 * Handle cancellation of Pushover Emergency Priorty Retries on disarm
+* SecuritySystemTargetState only set if different & ZoneStatus code refactor
 
 ## 1.1.1 (2020-10-04)
 

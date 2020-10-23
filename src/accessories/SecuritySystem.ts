@@ -70,22 +70,13 @@ export class SecuritySystem extends AccessoryBase {
 
     const areaStatus = await this.platform.omniService.getAreaStatus(this.platformAccessory.context.index);
 
-    switch (areaStatus!.armedMode) {
-      case ArmedModes.Disarmed:
-        return this.platform.Characteristic.SecuritySystemTargetState.DISARM;
-      case ArmedModes.ArmedDay:
-        return this.platform.Characteristic.SecuritySystemTargetState.STAY_ARM;
-      case ArmedModes.ArmedNight:
-        return this.platform.Characteristic.SecuritySystemTargetState.NIGHT_ARM;
-      default:
-        return this.platform.Characteristic.SecuritySystemTargetState.AWAY_ARM;
-    }
+    return this.getTargetState(areaStatus!);
   }
 
   private getTargetState(areaStatus: AreaStatus): number {
     this.platform.log.debug(this.constructor.name, 'getTargetState', areaStatus);
 
-    switch (areaStatus!.armedMode) {
+    switch (areaStatus.armedMode) {
       case ArmedModes.Disarmed:
         return this.platform.Characteristic.SecuritySystemTargetState.DISARM;
       case ArmedModes.ArmedDay:
@@ -97,11 +88,17 @@ export class SecuritySystem extends AccessoryBase {
     }
   }
 
-  private async setSecuritySystemTargetState(mode: number): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'setSecuritySystemTargetState', mode);
+  private async setSecuritySystemTargetState(value: number): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setSecuritySystemTargetState', value);
+
+    const securitySystemTargetState = await this.getSecuritySystemTargetState();
+
+    if (securitySystemTargetState === value) {
+      return;
+    }
 
     let alarmMode: ArmedModes = ArmedModes.Disarmed;
-    switch (mode) {
+    switch (value) {
       case this.platform.Characteristic.SecuritySystemTargetState.STAY_ARM:
         alarmMode = ArmedModes.ArmedDay;
         break;
