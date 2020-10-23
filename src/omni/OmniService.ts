@@ -66,9 +66,6 @@ export class OmniService extends events.EventEmitter {
     this._areas = new Map<number, AreaPropertiesResponse>();
     this._buttons = new Map<number, ButtonPropertiesResponse>();
     this._codes = new Map<number, CodePropertiesResponse>();
-
-    this.session.on('areas', this.areaStatusHandler.bind(this));
-    this.session.on('zones', this.zoneStatusHandler.bind(this));
   }
 
   get model(): string {
@@ -130,6 +127,10 @@ export class OmniService extends events.EventEmitter {
           await this.setTime();
         }, 86400000); // every 24 hours
       }
+
+      // Event Handlers
+      this.session.on('areas', this.areaStatusHandler.bind(this));
+      this.session.on('zones', this.zoneStatusHandler.bind(this));
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
@@ -405,6 +406,10 @@ export class OmniService extends events.EventEmitter {
         parameter1: 0,
         parameter2: buttonId,
       });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.buttons.get(buttonId)!.name}: Button Pushed`);
+      }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
@@ -553,8 +558,6 @@ export class OmniService extends events.EventEmitter {
         return;
       }
 
-      this.platform.log.info('Using security code for', this.codes.get(codeId)?.name);
-
       let command: Commands = Commands.Disarm;
 
       switch(mode) {
@@ -568,6 +571,8 @@ export class OmniService extends events.EventEmitter {
           command = Commands.ArmAway;
           break;
       }
+
+      this.platform.log.info(`${this.areas.get(area)!.name}: Set ${Commands[command]} [${this.codes.get(codeId)?.name}]`);
 
       const message = new ControllerCommandRequest({
         command: command,
@@ -617,10 +622,10 @@ export class OmniService extends events.EventEmitter {
 
     try {
       for(const [areaId, status] of areas.entries()) {
-        const areaStatus = this.createAreaStatus(status);
         if (this.platform.settings.showOmniEvents) {
-          this.platform.log.info(this.areaStatusMessage(areaId, areaStatus));
+          this.platform.log.info(this.areaStatusMessage(areaId, status));
         }
+        const areaStatus = this.createAreaStatus(status);
         this.emit(`area-${areaId}`, areaStatus);
       }
     } catch(error) {
@@ -628,27 +633,27 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  private areaStatusMessage(areaId: number, areaStatus: AreaStatus): string {
+  private areaStatusMessage(areaId: number, status: ExtendedAreaStatus): string {
     const areaName = this.areas.get(areaId)!.name;
+    const mode = SecurityModes[status.mode];
+    let triggered = '';
 
-    let mode = 'Disarmed';
-    switch(areaStatus.alarmMode) {
-      case AlarmModes.ArmedAway:
-        mode = 'Armed Away';
-        break;
-      case AlarmModes.ArmedDay:
-        mode = 'Armed Day';
-        break;
-      case AlarmModes.ArmedNight:
-        mode = 'Armed Night';
-        break;
+    if (status.alarms > 0) {
+      const alarms: string[] = [];
+      for(const alarm in Alarms) {
+        const alarmMode = Number(alarm);
+        if (isNaN(alarmMode)) {
+          continue;
+        }
+        
+        if ((status.alarms & alarmMode) === alarmMode) {
+          alarms.push(Alarms[alarmMode]);
+        }
+      }
+      triggered = `; Alarm(s) triggered: ${alarms.join()}`;
     }
 
-    const triggered = areaStatus.burglaryTriggered || areaStatus.fireTriggered || areaStatus.gasTriggered
-      || areaStatus.auxiliaryTriggered || areaStatus.freezeTriggered || areaStatus.waterTriggered
-      || areaStatus.duressTriggered || areaStatus.temperatureTriggered;
-
-    return `${areaName}: ${mode}${triggered ? ', Alarm triggered' : ''}`;
+    return `${areaName}: ${mode}${triggered}`;
   }
 
   zoneStatusHandler(zones: Map<number, ExtendedZoneStatus>): void {

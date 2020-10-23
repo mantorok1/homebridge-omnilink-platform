@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## NEXT
+
+* Improve Event logging
+
 ## 1.1.1 (2020-10-04)
 
 * [FIX] Garage Door opens when requested to close (and vice versa)

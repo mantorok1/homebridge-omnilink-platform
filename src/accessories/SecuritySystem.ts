@@ -120,12 +120,12 @@ export class SecuritySystem extends AccessoryBase {
     this.platform.log.debug(this.constructor.name, 'updateValues', areaStatus);
 
     if (this.platform.settings.setHomeToAway && areaStatus.alarmMode === AlarmModes.ArmedDay) {
-      this.platform.log.warn('Changing alarm mode from "Home" to "Away"');
+      this.platform.log.warn(`${this.platformAccessory.displayName}: Changing alarm mode from "Home" to "Away"`);
       this.setSecuritySystemTargetState(this.platform.Characteristic.SecuritySystemTargetState.AWAY_ARM);
     }
 
     if (this.platform.settings.setNightToAway && areaStatus.alarmMode === AlarmModes.ArmedNight) {
-      this.platform.log.warn('Changing alarm mode from "Night" to "Away"');
+      this.platform.log.warn(`${this.platformAccessory.displayName}: Changing alarm mode from "Night" to "Away"`);
       this.setSecuritySystemTargetState(this.platform.Characteristic.SecuritySystemTargetState.AWAY_ARM);
     }
 
