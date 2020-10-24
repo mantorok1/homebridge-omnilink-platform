@@ -8,14 +8,24 @@ type GarageDoor = {
 type Pushover = {
   token: string,
   users: string[],
-  burglary: boolean,
-  fire: boolean,
-  gas: boolean,
-  auxiliary: boolean,
-  freeze: boolean,
-  water: boolean,
-  duress: boolean,
-  temperature: boolean
+  alarms: {
+    burglary: boolean,
+    fire: boolean,
+    gas: boolean,
+    auxiliary: boolean,
+    freeze: boolean,
+    water: boolean,
+    duress: boolean,
+    temperature: boolean
+  },
+  troubles: {
+    freeze: boolean,
+    batterylow: boolean,
+    acpower: boolean,
+    phoneline: boolean,
+    digitalcommunicator: boolean,
+    fuse: boolean
+  }
 }
 
 export class Settings {

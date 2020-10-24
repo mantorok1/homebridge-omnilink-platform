@@ -3,7 +3,7 @@ import events = require('events');
 import { OmniLinkPlatform } from '../platform';
 import { OmniSession } from './OmniSession';
 
-import { MessageTypes, ObjectTypes, Commands, SecurityModes, Alarms, AuthorityLevels } from './messages/enums';
+import { MessageTypes, ObjectTypes, Commands, SecurityModes, Alarms, AuthorityLevels, SystemTroubles } from './messages/enums';
 import { ObjectTypeCapacitiesRequest } from './messages/ObjectTypeCapacitiesRequest';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
 import { ObjectPropertiesRequest } from './messages/ObjectPropertiesRequest';
@@ -18,6 +18,8 @@ import { SystemInformationRequest } from './messages/SystemInformationRequest';
 import { SystemInformationResponse } from './messages/SystemInformationResponse';
 import { SystemStatusRequest } from './messages/SystemStatusRequest';
 import { SystemStatusResponse } from './messages/SystemStatusResponse';
+import { SystemTroublesRequest } from './messages/SystemTroublesRequest';
+import { SystemTroublesResponse } from './messages/SystemTroublesResponse';
 import { ExtendedObjectStatusRequest } from './messages/ExtendedObjectStatusRequest';
 import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse';
 import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse';
@@ -39,6 +41,7 @@ export class OmniService extends events.EventEmitter {
   private _areas: Map<number, AreaPropertiesResponse>;
   private _buttons: Map<number, ButtonPropertiesResponse>;
   private _codes: Map<number, CodePropertiesResponse>;
+  private _troubles: SystemTroubles[];
 
   constructor(private readonly platform: OmniLinkPlatform) {
     super();
@@ -47,6 +50,7 @@ export class OmniService extends events.EventEmitter {
     this._areas = new Map<number, AreaPropertiesResponse>();
     this._buttons = new Map<number, ButtonPropertiesResponse>();
     this._codes = new Map<number, CodePropertiesResponse>();
+    this._troubles = [];
   }
 
   get model(): string {
@@ -96,9 +100,9 @@ export class OmniService extends events.EventEmitter {
 
       await this.notify();
 
-      // Ping controller so it doesn't close connection
+      // Check for system troubles (also ping controller so it doesn't close connection)
       this.pingIntervalId = setInterval(() => {
-        this.getSystemInformation();
+        this.reportSystemTroubles();
       }, 60000); // every minute
 
       // Sync time
@@ -460,6 +464,22 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  async getSystemTroubles(): Promise<SystemTroublesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getSystemTroubles');
+
+    try {
+      const message = new SystemTroublesRequest();
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type === MessageTypes.SystemTroublesResponse) {
+        return <SystemTroublesResponse>response;
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;      
+    }
+  }
+
   async getAreaStatus(areaId: number): Promise<AreaStatus | undefined> {
     this.platform.log.debug(this.constructor.name, 'getAreaStatus', areaId);
 
@@ -566,6 +586,29 @@ export class OmniService extends events.EventEmitter {
 
     } catch(error) {
       this.platform.log.warn(`Get Code Id failed: ${error.message}`);
+    }
+  }
+
+  private async reportSystemTroubles() {
+    this.platform.log.debug(this.constructor.name, 'reportSystemTroubles');
+
+    try {
+      const response = await this.getSystemTroubles();
+
+      if (!(response instanceof SystemTroublesResponse)) {
+        throw new Error('SystemTroublesResponse not received');
+      }
+
+      for(const trouble of response.troubles) {
+        if (!this._troubles.includes(trouble)) {
+          this.platform.log.warn(`Trouble: ${SystemTroubles[trouble]}`);
+          this.emit('system-trouble', trouble);
+        }
+      }
+
+      this._troubles = [...response.troubles];
+    } catch(error) {
+      this.platform.log.warn(`Report System Troubles failed: ${error.message}`);
     }
   }
 

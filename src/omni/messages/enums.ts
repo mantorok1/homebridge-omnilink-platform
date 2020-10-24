@@ -11,6 +11,8 @@ export enum MessageTypes {
   SystemInformationResponse = 0x17,
   SystemStatusRequest = 0x18,
   SystemStatusResponse = 0x19,
+  SystemTroublesRequest = 0x1A,
+  SystemTroublesResponse = 0x1B,
 
   ObjectTypeCapacitiesRequest = 0x1E,
   ObjectTypeCapacitiesResponse = 0x1F,
@@ -72,4 +74,13 @@ export enum AuthorityLevels {
   Master = 1,
   Manager = 2,
   User = 3
+}
+
+export enum SystemTroubles {
+  Freeze = 1,
+  BatteryLow = 2,
+  ACPower = 3,
+  PhoneLine = 4,
+  DigitalCommunicator = 5,
+  Fuse = 6
 }

@@ -3,6 +3,7 @@ import fetch = require('node-fetch');
 
 import { OmniLinkPlatform } from '../platform';
 import { AreaStatus, Alarms } from '../models/AreaStatus';
+import { SystemTroubles } from '../omni/messages/enums';
 
 export class PushoverService {
   private pushover;
@@ -43,18 +44,20 @@ export class PushoverService {
     });
 
     for(const [areaId, area] of this.platform.omniService.areas.entries()) {
-      this.platform.omniService.on(`area-${areaId}`, this.sendMessage.bind(this, area.name));
+      this.platform.omniService.on(`area-${areaId}`, this.sendAlarmMessage.bind(this, area.name));
     }
+
+    this.platform.omniService.on('system-trouble', this.sendSystemTroubleMessage.bind(this));
   }
 
-  sendMessage(areaName: string, areaStatus: AreaStatus): void {
-    this.platform.log.debug(this.constructor.name, 'sendMessage', areaName, areaStatus);
+  private sendAlarmMessage(areaName: string, areaStatus: AreaStatus): void {
+    this.platform.log.debug(this.constructor.name, 'sendAlarmMessage', areaName, areaStatus);
 
     try {
+      this.cancelAlarmMessage(areaName);
 
-      this.cancelMessage(areaName);
-
-      if (areaStatus.alarmsTriggered.length === 0) {
+      const alarms = this.formatAlarms(areaStatus.alarmsTriggered);
+      if (alarms.length === 0) {
         return;
       }
 
@@ -68,7 +71,6 @@ export class PushoverService {
         user: '',
       };
 
-      const alarms = areaStatus.alarmsTriggered.map((alarm) => Alarms[alarm].toUpperCase());
       const message = `${alarms.join()} Alarm${alarms.length > 1 ? 's' : ''} Triggered`;
 
       for (const user of this.users) {
@@ -92,8 +94,20 @@ export class PushoverService {
     }
   }
 
-  async cancelMessage(areaName: string): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'cancelMessage', areaName);
+  private formatAlarms(alarms: Alarms[]): string[] {
+    const formatedAlarms: string[] = [];
+
+    for(const alarm of alarms) {
+      if (this.platform.settings.pushover?.alarms?.[Alarms[alarm].toLowerCase()] ?? false) {
+        formatedAlarms.push(Alarms[alarm].toUpperCase());
+      }
+    }
+
+    return formatedAlarms;
+  }
+
+  private async cancelAlarmMessage(areaName: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'cancelAlarmMessage', areaName);
 
     try {
       if (!this.receipts.has(areaName) || this.receipts.get(areaName)!.length === 0) {
@@ -114,6 +128,53 @@ export class PushoverService {
       this.receipts.delete(areaName);
     } catch(error) {
       this.platform.log.warn('Cancel Pushover notification failed:', error.message);
+    }
+  }
+
+  private sendSystemTroubleMessage(trouble: SystemTroubles): void {
+    this.platform.log.debug(this.constructor.name, 'sendSystemTroubleMessage', trouble);
+
+    try {
+      if (!(this.platform.settings.pushover?.troubles?.[SystemTroubles[trouble].toLowerCase()] ?? false)) {
+        return;
+      }
+
+      const pushoverMessage = {
+        title: `${this.platform.settings.name} - System Trouble`,
+        message: this.getTroubleMessage(trouble),
+        sound: 'pushover',
+        priority: 0,
+        user: '',
+      };
+
+      for (const user of this.users) {
+        pushoverMessage.user = user;
+
+        this.pushover.send(pushoverMessage, (error) => {
+          if (error) {
+            throw error;
+          }
+        });
+      }
+    } catch(error) {
+      this.platform.log.warn('Pushover notification(s) failed:', error.message);
+    }
+  }
+
+  private getTroubleMessage(trouble: SystemTroubles): string {
+    switch(trouble) {
+      case SystemTroubles.Freeze:
+        return 'Freeze';
+      case SystemTroubles.BatteryLow:
+        return 'Battery Low';
+      case SystemTroubles.ACPower:
+        return 'AC Power';
+      case SystemTroubles.PhoneLine:
+        return 'Phone Line';
+      case SystemTroubles.DigitalCommunicator:
+        return 'Digital Communicator';
+      case SystemTroubles.Fuse :
+        return 'Fuse';
     }
   }
 }

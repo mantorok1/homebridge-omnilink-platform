@@ -14,6 +14,7 @@ import { ApplicationDataRequest } from './messages/ApplicationDataRequest';
 import { ApplicationDataResponse } from './messages/ApplicationDataResponse';
 import { SystemInformationResponse } from './messages/SystemInformationResponse';
 import { SystemStatusResponse } from './messages/SystemStatusResponse';
+import { SystemTroublesResponse } from './messages/SystemTroublesResponse';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
 import { ZonePropertiesResponse } from './messages/ZonePropertiesResponse';
 import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse';
@@ -249,20 +250,6 @@ export class OmniSession extends events.EventEmitter {
     });
   }
   
-  /*
-  private sendPacket(packet: OmniPacket): Promise<OmniPacket>{
-    this.platform.log.debug(this.constructor.name, 'sendPacket', packet.serialise());
-
-    return new Promise((resolve) => {
-      this.once(packet.sequence.toString(), (response: OmniPacket) => {
-        resolve(response);
-      });
-
-      this.socket.write(packet.serialise());
-    });
-  }
-  */
-
   private receivePacket(response: Buffer) {
     this.platform.log.debug(this.constructor.name, 'receivePacket', response);
 
@@ -311,6 +298,8 @@ export class OmniSession extends events.EventEmitter {
         return new SystemInformationResponse(message);
       case MessageTypes.SystemStatusResponse:
         return new SystemStatusResponse(message);
+      case MessageTypes.SystemTroublesResponse:
+        return new SystemTroublesResponse(message);
       case MessageTypes.ObjectTypeCapacitiesResponse:
         return new ObjectTypeCapacitiesResponse(message);
       case MessageTypes.SecurityCodeValidationResponse:

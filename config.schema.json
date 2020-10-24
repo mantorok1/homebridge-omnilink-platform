@@ -157,45 +157,89 @@
               "type": "string"
             }
           },
-          "burglary": {
-            "type": "boolean",
-            "default": false,
-            "required": false
+          "alarms": {
+            "type": "object",
+            "properties": {
+              "burglary": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "fire": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "gas": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "auxiliary": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "freeze": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "water": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "duress": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "temperature": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              }
+            }
           },
-          "fire": {
-            "type": "boolean",
-            "default": false,
-            "required": false
-          },
-          "gas": {
-            "type": "boolean",
-            "default": false,
-            "required": false
-          },
-          "auxiliary": {
-            "type": "boolean",
-            "default": false,
-            "required": false
-          },
-          "freeze": {
-            "type": "boolean",
-            "default": false,
-            "required": false
-          },
-          "water": {
-            "type": "boolean",
-            "default": false,
-            "required": false
-          },
-          "duress": {
-            "type": "boolean",
-            "default": false,
-            "required": false
-          },
-          "temperature": {
-            "type": "boolean",
-            "default": false,
-            "required": false
+          "troubles": {
+            "type": "object",
+            "properties": {
+              "freeze": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "batterylow": {
+                "title": "Battery Low",
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "acpower": {
+                "title": "AC Power",
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "phoneline": {
+                "title": "Phone Line",
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "digitalcommunicator": {
+                "title": "Digital Communicator",
+                "type": "boolean",
+                "default": false,
+                "required": false
+              },
+              "fuse": {
+                "type": "boolean",
+                "default": false,
+                "required": false
+              }
+            }
           }
         }
       },
@@ -331,14 +375,28 @@
           "expandable": false,
           "expanded": true,
           "items": [
-            "pushover.burglary",
-            "pushover.fire",
-            "pushover.gas",
-            "pushover.auxiliary",
-            "pushover.freeze",
-            "pushover.water",
-            "pushover.duress",
-            "pushover.temperature"
+            "pushover.alarms.burglary",
+            "pushover.alarms.fire",
+            "pushover.alarms.gas",
+            "pushover.alarms.auxiliary",
+            "pushover.alarms.freeze",
+            "pushover.alarms.water",
+            "pushover.alarms.duress",
+            "pushover.alarms.temperature"
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Send notification for the following troubles:",
+          "expandable": false,
+          "expanded": true,
+          "items": [
+            "pushover.troubles.freeze",
+            "pushover.troubles.batterylow",
+            "pushover.troubles.acpower",
+            "pushover.troubles.phoneline",
+            "pushover.troubles.digitalcommunicator",
+            "pushover.troubles.fuse"
           ]
         }
       ]

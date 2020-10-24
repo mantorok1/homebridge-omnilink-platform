@@ -11,7 +11,7 @@ Functions available:
 * Execute buttons
 * Open/close garage doors
 * Sync Omni controller's date & time with Homebridge host
-* Pushover notifications when alarms are triggered 
+* Pushover notifications when alarms are triggered or system has troubles
 
 ## Minimum Requirements
 This plugin supports Omni systems that meet the following requirements:
@@ -76,14 +76,8 @@ This plugin can be configured to send Push notifications to your phone when alar
 |-|-|-|-|-|
 |`token`|Yes|string|Application API Token supplied by Pushover||
 |`users`|Yes|array|One or more User Keys supplied by Pushover. Each user will receive a push notification||
-|`burglary`|No|boolean|If `true` push notification sent when burglary alarm is triggered|`false`|
-|`fire`|No|boolean|If `true` push notification sent when fire alarm is triggered|`false`|
-|`gas`|No|boolean|If `true` push notification sent when gas alarm is triggered|`false`|
-|`auxiliary`|No|boolean|If `true` push notification sent when auxiliary alarm is triggered|`false`|
-|`freeze`|No|boolean|If `true` push notification sent when freeze alarm is triggered|`false`|
-|`water`|No|boolean|If `true` push notification sent when water alarm is triggered|`false`|
-|`duress`|No|boolean|If `true` push notification sent when duress alarm is triggered|`false`|
-|`temperature`|No|boolean|If `true` push notification sent when temperature alarm is triggered|`false`|
+|`alarms`|No|object|Specifies which triggered alarms will send a push notification. The following alarm types can be specified: `burglary`, `fire`, `gas`, `auxiliary`, `freeze`, `water`, `duress` and `temperature`.<br/>Each alarm type has a value of either `true` or `false`||
+|`troubles`|No|object|Specifies which system troubles will send a push notification. The following troubles can be specified: `freeze`, `batterylow`, `acpower`, `phoneline`, `digitalcommunicator` and `fuse`.<br/>Each trouble has a value of either `true` or `false`||
 
 #### Example:
 
@@ -129,14 +123,24 @@ This plugin can be configured to send Push notifications to your phone when alar
               "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
               "cccccccccccccccccccccccccccccc"
           ],
-          "burglary": true,
-          "fire": true,
-          "gas": false,
-          "auxiliary": false,
-          "freeze": false,
-          "water": false,
-          "duress": false,
-          "temperature": false
+          "alarms": {
+            "burglary": true,
+            "fire": true,
+            "gas": false,
+            "auxiliary": false,
+            "freeze": false,
+            "water": false,
+            "duress": false,
+            "temperature": false
+          },
+          "troubles": {
+            "freeze": false,
+            "batterylow": false,
+            "acpower": false,
+            "phoneline": true,
+            "digitalcommunicator": false,
+            "fuse": false
+          }
         },
         "syncTime": true,
         "showHomebridgeEvents": true,
