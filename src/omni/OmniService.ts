@@ -16,6 +16,8 @@ import { ControllerCommandRequest } from './messages/ControllerCommandRequest';
 import { EnableNotificationsRequest } from './messages/EnableNotificationsRequest';
 import { SystemInformationRequest } from './messages/SystemInformationRequest';
 import { SystemInformationResponse } from './messages/SystemInformationResponse';
+import { SystemStatusRequest } from './messages/SystemStatusRequest';
+import { SystemStatusResponse } from './messages/SystemStatusResponse';
 import { ExtendedObjectStatusRequest } from './messages/ExtendedObjectStatusRequest';
 import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse';
 import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse';
@@ -104,7 +106,7 @@ export class OmniService extends events.EventEmitter {
         await this.setTime();
         this.syncTimeIntervalId = setInterval(async () => {
           await this.setTime();
-        }, 86400000); // every 24 hours
+        }, 3600000); // every hour
       }
     } catch(error) {
       this.platform.log.error(error);
@@ -345,10 +347,18 @@ export class OmniService extends events.EventEmitter {
   async setTime(): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setTime');
 
-    const now = new Date();
-
     try {
-      this.platform.log.info('Sync controller\'s date and time with host:', now.toLocaleString());
+      const status = await this.getSystemStatus();
+      let now = new Date();
+
+      if (Math.abs(status!.dateTime.getTime() - now.getTime()) <= 60000 && status!.isDaylightSavings === this.isDaylightSavings(now) ) {
+        return;
+      }
+
+      this.platform.log.info(`Sync Time: Omni Controller ${status!.dateTime.toLocaleString()}, Host ${now.toLocaleString()}`);
+
+      // Round to nearest minute
+      now = new Date(Math.round((new Date()).getTime() / 60000) * 60000);
 
       const message = new SetTimeCommandRequest({
         year: now.getFullYear() - 2000,
@@ -427,6 +437,22 @@ export class OmniService extends events.EventEmitter {
 
       if (response.type === MessageTypes.SystemInformationResponse) {
         return <SystemInformationResponse>response;
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;      
+    }
+  }
+
+  async getSystemStatus(): Promise<SystemStatusResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getSystemStatus');
+
+    try {
+      const message = new SystemStatusRequest();
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type === MessageTypes.SystemStatusResponse) {
+        return <SystemStatusResponse>response;
       }
     } catch(error) {
       this.platform.log.error(error);

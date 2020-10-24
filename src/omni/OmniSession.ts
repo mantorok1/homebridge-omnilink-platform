@@ -13,6 +13,7 @@ import { SecureConnectionResponse } from './messages/SecureConnectionResponse';
 import { ApplicationDataRequest } from './messages/ApplicationDataRequest';
 import { ApplicationDataResponse } from './messages/ApplicationDataResponse';
 import { SystemInformationResponse } from './messages/SystemInformationResponse';
+import { SystemStatusResponse } from './messages/SystemStatusResponse';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
 import { ZonePropertiesResponse } from './messages/ZonePropertiesResponse';
 import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse';
@@ -308,6 +309,8 @@ export class OmniSession extends events.EventEmitter {
         return new AcknowledgeResponse(message);
       case MessageTypes.SystemInformationResponse:
         return new SystemInformationResponse(message);
+      case MessageTypes.SystemStatusResponse:
+        return new SystemStatusResponse(message);
       case MessageTypes.ObjectTypeCapacitiesResponse:
         return new ObjectTypeCapacitiesResponse(message);
       case MessageTypes.SecurityCodeValidationResponse:

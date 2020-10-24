@@ -9,6 +9,8 @@ export enum MessageTypes {
   EnableNotificationsRequest = 0x15,
   SystemInformationRequest = 0x16,
   SystemInformationResponse = 0x17,
+  SystemStatusRequest = 0x18,
+  SystemStatusResponse = 0x19,
 
   ObjectTypeCapacitiesRequest = 0x1E,
   ObjectTypeCapacitiesResponse = 0x1F,
