@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 * SecuritySystemTargetState only set if different & ZoneStatus code refactor
 * Sync time only if times differ by more than 60 secs & check hourly
 * Support pushover notifications for system troubles
+* Support for MQTT
 
 ## 1.1.1 (2020-10-04)
 

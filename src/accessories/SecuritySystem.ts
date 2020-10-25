@@ -4,11 +4,15 @@ import { AccessoryBase } from './AccessoryBase';
 import { AreaStatus, Alarms, ArmedModes } from '../models/AreaStatus';
 
 export class SecuritySystem extends AccessoryBase {
+  private faultDetected: boolean;
+  
   constructor(
     platform: OmniLinkPlatform,
     platformAccessory: PlatformAccessory,   
   ) {
     super(platform, platformAccessory);
+
+    this.faultDetected = false;
 
     this.service = this.platformAccessory.getService(this.platform.Service.SecuritySystem) ??
       this.platformAccessory.addService(this.platform.Service.SecuritySystem, this.serviceName);
@@ -34,8 +38,14 @@ export class SecuritySystem extends AccessoryBase {
       .getCharacteristic(this.platform.Characteristic.SecuritySystemTargetState)
       .on('get', this.getCharacteristicValue.bind(this, this.getSecuritySystemTargetState.bind(this), 'SecuritySystemTargetState'))
       .on('set', this.setCharacteristicValue.bind(this, this.setSecuritySystemTargetState.bind(this), 'SecuritySystemTargetState'));
+
+    this.service
+      .getCharacteristic(this.platform.Characteristic.StatusFault)
+      .on('get', this.getCharacteristicValue.bind(this, this.getStatusFault.bind(this), 'StatusFault'));
     
     this.platform.omniService.on(`area-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+
+    this.platform.omniService.on('system-troubles', this.updateStatusFault.bind(this));
   }
 
   private async getSecuritySystemCurrentState(): Promise<number> {
@@ -113,6 +123,14 @@ export class SecuritySystem extends AccessoryBase {
     await this.platform.omniService.setAreaAlarmMode(this.platformAccessory.context.index, alarmMode);
   }
 
+  private async getStatusFault(): Promise<number> {
+    this.platform.log.debug(this.constructor.name, 'getStatusFault');
+
+    return this.faultDetected
+      ? this.platform.Characteristic.StatusFault.GENERAL_FAULT
+      : this.platform.Characteristic.StatusFault.NO_FAULT;
+  }
+
   private async updateValues(areaStatus: AreaStatus): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'updateValues', areaStatus);
 
@@ -133,5 +151,19 @@ export class SecuritySystem extends AccessoryBase {
     this.service
       .getCharacteristic(this.platform.Characteristic.SecuritySystemTargetState)
       .updateValue(this.getTargetState(areaStatus));
+  }
+
+  private async updateStatusFault(troubles: number[]): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'updateStatusFault', troubles);
+
+    this.faultDetected = troubles.length > 0;
+
+    const statusFault = this.faultDetected
+      ? this.platform.Characteristic.StatusFault.GENERAL_FAULT
+      : this.platform.Characteristic.StatusFault.NO_FAULT;
+
+    this.service
+      .getCharacteristic(this.platform.Characteristic.StatusFault)
+      .updateValue(statusFault);
   }
 }

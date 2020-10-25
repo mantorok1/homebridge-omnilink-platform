@@ -4,6 +4,7 @@ import { Settings } from './models/Settings';
 import { OmniService } from './omni/OmniService';
 import { AccessoryService } from './accessories/AccessoryService';
 import { PushoverService } from './services/PushoverService';
+import { MqttService } from './services/MqttService';
 
 export class OmniLinkPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
@@ -15,6 +16,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
   public readonly omniService!: OmniService;
   public readonly accessoryService!: AccessoryService;
   public readonly pushoverService!: PushoverService;
+  public readonly mqttService!: MqttService;
 
   constructor(
     public readonly log: Logger,
@@ -28,6 +30,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       this.omniService = new OmniService(this);
       this.accessoryService = new AccessoryService(this);
       this.pushoverService = new PushoverService(this);
+      this.mqttService = new MqttService(this);
 
       this.api.on('didFinishLaunching', () => {
         this.log.debug('Finished launching plugin');
@@ -97,6 +100,9 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
 
       // Initialise Pushover notifications
       this.pushoverService.init();
+
+      // Initialise MQTT
+      this.mqttService.init();
 
     } catch (error) {
       this.log.error(error);

@@ -401,7 +401,7 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.buttons.get(buttonId)!.name}: Button Pushed`);
+        this.platform.log.info(`${this.buttons.get(buttonId)!.name}: Button executed`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -599,6 +599,7 @@ export class OmniService extends events.EventEmitter {
         throw new Error('SystemTroublesResponse not received');
       }
 
+      this.emit('system-troubles', response.troubles);
       for(const trouble of response.troubles) {
         if (!this._troubles.includes(trouble)) {
           this.platform.log.warn(`Trouble: ${SystemTroubles[trouble]}`);

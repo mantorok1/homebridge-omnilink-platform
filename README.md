@@ -8,10 +8,12 @@ Functions available:
 * Arm/disarm the security system
 * Notify when alarm system is triggered
 * Notify when sensors are tripped (7 types of sensors supported)
+* Notify when system has troubles (eg. AC Power)
 * Execute buttons
 * Open/close garage doors
 * Sync Omni controller's date & time with Homebridge host
 * Pushover notifications when alarms are triggered or system has troubles
+* MQTT client (see section "MQTT Client" for further details)
 
 ## Minimum Requirements
 This plugin supports Omni systems that meet the following requirements:
@@ -34,21 +36,21 @@ The zones can be overriden to another type of sensor. Currently the plugin suppo
 A combination of a button and zone can also be defined as a `Garage Door Opener`.
 
 ## Installation
-Note: This plugin requires Homebridge (version 1.0.0 or above) to be installed first.
+Note: This plugin requires [Homebridge](https://homebridge.io) (version 1.0.0 or above) to be installed first.
 
-It is highly recommended that you use Homebridge Config UI X to install and configure the plugin. Alternatively you can install from the command line as follows:
+It is highly recommended that you use [Homebridge Config UI X](https://www.npmjs.com/package/homebridge-config-ui-x) to install and configure the plugin. Alternatively you can install from the command line as follows:
 
-    npm install -g homebridge-omnilink-plugin
+    npm install -g homebridge-omnilink-platform
 
 ## Configuration
-This is a platform plugin that will register accessories and their services with the bridge provided by Homebridge. The plugin will attempt to discover your Omni system's objects (ie. zones, areas, buttons) automatically thus requiring minimal configuration to the `config.json` file.
+This is a platform plugin that will register accessories and their services with the bridge provided by Homebridge. The plugin will attempt to discover your Omni controller's objects (ie. zones, areas, buttons) automatically thus requiring minimal configuration to the `config.json` file.
 
 If you find the default config is not correct for your system or not to your liking there are some overrides you can define in the `config.json` file.
 
 |Option|Required|Type|Description|Default Value (if not supplied)|
 |-|-|-|-|-|
 |`platform`|Yes|string|Must be `"OmniLinkPlatform"`||
-|`name`|No|string|The name of the platform|`"Omni"`|
+|`name`|Yes|string|The name of the platform|`"Omni"`|
 |`address`|Yes|string|IP Address of the controller||
 |`port`|Yes|number|Port of the controller|`4369`|
 |`key1`|Yes|string|First part of the hexadecimal private key<br/>Format: 00-00-00-00-00-00-00-00||
@@ -62,6 +64,7 @@ If you find the default config is not correct for your system or not to your lik
 |`sensors`|No|array|Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of Homekit sensor accessory to use (valid options: `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "contact" }`||
 |`garageDoors`|No|array|Defines 1 or more garage door accessories. Each definition requires the following properties:<br/><ul><li>`buttonId` - the button number correspnding to the button that opens/closes the door<li>`zoneId` - the zone number corresponding to the sensor that determines if the garage door is closed or not<li>`openTime` - the time taken (in seconds) for the garage door to fully open</ul>Example garage door definition: `{ "buttonId": 2, "zoneId": 3, "openTime": 10 }`||
 |`pushover`|No|object|See 'Pushover Notification Configuration' below||
+|`mqtt`|No|object|See 'MQTT Configuration' below||
 |`syncTime`|No|boolean|Sync the controller's date and time with the Homebridge host|`false`|
 |`showHomebridgeEvents`|No|boolean|Show Homebridge events in the Homebridge log|`false`|
 |`showOmniEvents`|No|boolean|Show Omni notification events in the Homebridge log|`false`|
@@ -70,7 +73,7 @@ If you find the default config is not correct for your system or not to your lik
 *TIP:* The area, zone and button numbers are displayed in the Homebridge logs when it starts up.
 
 ### Pushover Notification Configuration
-This plugin can be configured to send Push notifications to your phone when alarms are trigggered. To do this you'll need a [Pushover](https://pushover.net) account. The following describes the configuration options available:
+This plugin can be configured to send Push notifications to your phone when alarms are trigggered or the system encounters troubles. To do this you'll need a [Pushover](https://pushover.net) account. The following describes the configuration options available:
 
 |Option|Required|Type|Description|Default Value (if not supplied)|
 |-|-|-|-|-|
@@ -78,6 +81,17 @@ This plugin can be configured to send Push notifications to your phone when alar
 |`users`|Yes|array|One or more User Keys supplied by Pushover. Each user will receive a push notification||
 |`alarms`|No|object|Specifies which triggered alarms will send a push notification. The following alarm types can be specified: `burglary`, `fire`, `gas`, `auxiliary`, `freeze`, `water`, `duress` and `temperature`.<br/>Each alarm type has a value of either `true` or `false`||
 |`troubles`|No|object|Specifies which system troubles will send a push notification. The following troubles can be specified: `freeze`, `batterylow`, `acpower`, `phoneline`, `digitalcommunicator` and `fuse`.<br/>Each trouble has a value of either `true` or `false`||
+
+### MQTT Configuration
+
+Option|Required|Type|Description|Default Value (if not supplied)|
+|-|-|-|-|-|
+|`host`|Yes|string|MQTT Broker host name||
+|`port`|Yes|number|MQTT Broker port|`1883`|
+|`username`|No|string|Credentials for MQTT Broker||
+|`password`|No|string|||
+|`topicPrefix`|No|string|Optional text to prefix to each topic name||
+|`showMqttEvents`|No|boolean|Include MQTT events in the logs|`false`|
 
 #### Example:
 
@@ -142,6 +156,14 @@ This plugin can be configured to send Push notifications to your phone when alar
             "fuse": false
           }
         },
+        "mqtt": {
+          "host": "mqtt://192.168.1.111",
+          "port": 1883,
+          "username": "mantorok",
+          "password": "password",
+          "topicPrefix": "omni",
+          "showMqttEvents": true
+        },
         "syncTime": true,
         "showHomebridgeEvents": true,
         "showOmniEvents": true,
@@ -149,6 +171,37 @@ This plugin can be configured to send Push notifications to your phone when alar
       }
     ],
     ...
+
+## MQTT Client
+The plugin is able to operate as an MQTT client. It publishes various topics containing information about the Omni controller which other clients can subscribe to. It also subscribes to topics allowing other clients to send commands to the controller. This can be useful for interacting with external applications such as [Home Assistant](https://www.home-assistant.io) and [Node-RED](https://nodered.org).
+
+### Published Topics
+|Topic|Description|Payload|
+|-|-|-|
+|`area/{number}/arm/get`|Gets the armed state of area `{number}`|"off", "away", "night", "day"|
+|`area/{number}/burglary/get`|Gets the triggered state of the burglary alarm of area `{number}`|"true", "false"|
+|`area/{number}/fire/get`|Gets the triggered state of the fire alarm of area `{number}`|"true", "false"|
+|`area/{number}/gas/get`|Gets the triggered state of the gas alarm of area `{number}`|"true", "false"|
+|`area/{number}/auxiliary/get`|Gets the triggered state of the auxiliary alarm of area `{number}`|"true", "false"|
+|`area/{number}/freeze/get`|Gets the triggered state of the freeze alarm of area `{number}`|"true", "false"|
+|`area/{number}/water/get`|Gets the triggered state of the water alarm of area `{number}`|"true", "false"|
+|`area/{number}/duress/get`|Gets the triggered state of the duress alarm of area `{number}`|"true", "false"|
+|`area/{number}/temperature/get`|Gets the triggered state of the temperature alarm of area `{number}`|"true", "false"|
+|`zone/{number}/ready/get`|Gets the ready state of zone `{number}`|"true", "false"|
+|`zone/{number}/trouble/get`|Gets the trouble state of zone `{number}`|"true", "false"|
+|`system/troubles/freeze/get`|Gets the freeze state of the system|"true", "false"|
+|`system/troubles/batterylow/get`|Gets the battery low state of the system|"true", "false"|
+|`system/troubles/acpower/get`|Gets the AC power state of the system.|"true", "false"|
+|`system/troubles/phoneline/get`|Gets the phone line state of the system|"true", "false"|
+|`system/troubles/digitalcommunicator/get`|Gets the digital communicator state of the system|"true", "false"|
+|`system/troubles/fuse/get`|Gets the fuse state of the system|"true", "false"|
+
+### Subscribed Topics
+
+|Topic|Description|Payload|
+|-|-|-|
+|`area/{number}/arm/set`|Sets the armed state of area `{number}`|"off", "away", "night", "day"|
+|`button{number}/execute/set`|Executes button `{number}`.|"true"|
 
 ## Version History
 See [Change Log](CHANGELOG.md).

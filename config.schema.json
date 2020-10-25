@@ -243,6 +243,41 @@
           }
         }
       },
+      "mqtt": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "title": "Broker Host Name",
+            "type": "string",
+            "placeholder": "mqtt://localhost"
+          },
+          "port": {
+            "title": "Port",
+            "type": "number",
+            "placeholder": 1883,
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "topicPrefix": {
+            "title": "Topic Prefix",
+            "type": "string"
+          },
+          "showMqttEvents": {
+            "title": "Show MQTT events in the log",
+            "type": "boolean",
+            "default": false,
+            "required": false
+          }
+        }
+      },
       "syncTime": {
         "title": "Sync date and time of controller with host",
         "type": "boolean",
@@ -398,6 +433,34 @@
             "pushover.troubles.digitalcommunicator",
             "pushover.troubles.fuse"
           ]
+        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "MQTT Settings",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        {
+          "type": "flex",
+          "flex-flow": "row wrap",
+          "items": [ "mqtt.host", "mqtt.port" ] 
+        },
+        {
+          "type": "flex",
+          "flex-flow": "row wrap",
+          "items": [ "mqtt.username", "mqtt.password" ] 
+        },
+        {
+          "type": "flex",
+          "flex-flow": "row wrap",
+          "items": [ "mqtt.topicPrefix" ] 
+        },
+        {
+          "type": "flex",
+          "flex-flow": "row wrap",
+          "items": [ "mqtt.showMqttEvents" ] 
         }
       ]
     },

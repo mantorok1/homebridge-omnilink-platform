@@ -28,10 +28,20 @@ type Pushover = {
   }
 }
 
+export type MqttSettings = {
+  host: string | undefined,
+  port: number | undefined,
+  username: string | undefined,
+  password: string | undefined,
+  topicPrefix: string | undefined,
+  showMqttEvents: boolean, 
+}
+
 export class Settings {
   private readonly _privateKey: Buffer;
   private readonly _sensors: Map<number, string>;
   private readonly _garageDoors: Map<number, GarageDoor>;
+  private readonly _mqtt?: MqttSettings;
 
   constructor(private readonly config: PlatformConfig) {
     this._privateKey = this.getPrivateKey([<string>config.key1, <string>config.key2]);
@@ -52,6 +62,19 @@ export class Settings {
           this._garageDoors.set(garageDoor.buttonId, { zoneId: garageDoor.zoneId, openTime: garageDoor.openTime });
         }
       }
+    }
+
+    if (config.mqtt) {
+      const mqtt = <Record<string, string | number | boolean | undefined>>config.mqtt;
+
+      this._mqtt = {
+        host: <string>mqtt.host,
+        port: <number | undefined>mqtt.port ?? 1883,
+        username: <string | undefined>mqtt.username,
+        password: <string | undefined>mqtt.password,
+        topicPrefix: <string | undefined>mqtt.topicPrefix,
+        showMqttEvents: <boolean | undefined>mqtt.showMqttEvents ?? false,
+      };
     }
   }
 
@@ -126,6 +149,10 @@ export class Settings {
 
   get pushover(): Pushover | undefined {
     return <Pushover | undefined>this.config.pushover;
+  }
+
+  get mqtt(): MqttSettings | undefined {
+    return <MqttSettings | undefined>this._mqtt;
   }
 
   get isValid(): boolean {
