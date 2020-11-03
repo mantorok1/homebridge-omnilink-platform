@@ -90,6 +90,11 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
         this.log.info(`  ${index}: ${zone.name}`);
       }
 
+      this.log.info('Units found:', this.omniService.units.size);
+      for (const [index, unit] of this.omniService.units) {
+        this.log.info(`  ${index}: ${unit.name} [${unit.unitState}, ${unit.unitTime}, ${unit.unitType}]`);
+      }
+
       this.log.info('Buttons found:', this.omniService.buttons.size);
       for (const [index, button] of this.omniService.buttons) {
         this.log.info(`  ${index}: ${button.name}`);

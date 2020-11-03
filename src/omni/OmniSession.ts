@@ -17,11 +17,13 @@ import { SystemStatusResponse } from './messages/SystemStatusResponse';
 import { SystemTroublesResponse } from './messages/SystemTroublesResponse';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
 import { ZonePropertiesResponse } from './messages/ZonePropertiesResponse';
+import { UnitPropertiesResponse } from './messages/UnitPropertiesResponse';
 import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse';
 import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse';
 import { CodePropertiesResponse } from './messages/CodePropertiesResponse';
 import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse';
 import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse';
+import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusResponse';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
 
 export class OmniSession extends events.EventEmitter {
@@ -308,6 +310,8 @@ export class OmniSession extends events.EventEmitter {
         switch (<ObjectTypes>message[3]) {
           case ObjectTypes.Zone:
             return new ZonePropertiesResponse(message);
+          case ObjectTypes.Unit:
+            return new UnitPropertiesResponse(message);
           case ObjectTypes.Button:
             return new ButtonPropertiesResponse(message);
           case ObjectTypes.Code:
@@ -322,6 +326,8 @@ export class OmniSession extends events.EventEmitter {
         switch (<ObjectTypes>message[3]) {
           case ObjectTypes.Zone:
             return new ExtendedZoneStatusResponse(message);
+          case ObjectTypes.Unit:
+            return new ExtendedUnitStatusResponse(message);
           case ObjectTypes.Area:
             return new ExtendedAreaStatusResponse(message);
           default:
@@ -346,6 +352,8 @@ export class OmniSession extends events.EventEmitter {
       this.emit('areas', response.areas);
     } else if (response instanceof ExtendedZoneStatusResponse) {
       this.emit('zones', response.zones);
+    } else if (response instanceof ExtendedUnitStatusResponse) {
+      this.emit('units', response.units);
     }
   }
 }

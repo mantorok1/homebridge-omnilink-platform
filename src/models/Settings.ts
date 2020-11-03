@@ -41,17 +41,19 @@ export class Settings {
   private readonly _privateKey: Buffer;
   private readonly _sensors: Map<number, string>;
   private readonly _garageDoors: Map<number, GarageDoor>;
+  private readonly _units: Map<number, string>;
   private readonly _mqtt?: MqttSettings;
 
   constructor(private readonly config: PlatformConfig) {
     this._privateKey = this.getPrivateKey([<string>config.key1, <string>config.key2]);
     this._sensors = new Map<number, string>();
     this._garageDoors = new Map<number, GarageDoor>();
+    this._units = new Map<number, string>();
 
     if (config.sensors !== undefined && Array.isArray(config.sensors)) {
       for(const sensor of config.sensors) {
         if (sensor.zoneId !== undefined && sensor.sensorType !== undefined) {
-          this.sensors.set(sensor.zoneId, sensor.sensorType);
+          this._sensors.set(sensor.zoneId, sensor.sensorType);
         }
       }
     }
@@ -60,6 +62,14 @@ export class Settings {
       for(const garageDoor of config.garageDoors) {
         if (garageDoor.buttonId !== undefined && garageDoor.zoneId !== undefined && garageDoor.openTime !== undefined) {
           this._garageDoors.set(garageDoor.buttonId, { zoneId: garageDoor.zoneId, openTime: garageDoor.openTime });
+        }
+      }
+    }
+
+    if (config.units !== undefined && Array.isArray(config.units)) {
+      for(const unit of config.units) {
+        if (unit.unitId !== undefined && unit.type !== undefined) {
+          this._units.set(unit.unitId, unit.type);
         }
       }
     }
@@ -107,6 +117,10 @@ export class Settings {
     return <boolean>this.config.includeButtons ?? true;
   }
 
+  get includeUnits(): boolean {
+    return <boolean>this.config.includeUnits ?? true;
+  }
+
   get setHomeToAway(): boolean {
     return <boolean>this.config.setHomeToAway ?? false;
   }
@@ -125,6 +139,10 @@ export class Settings {
 
   get garageDoors(): Map<number, GarageDoor> {
     return this._garageDoors;
+  }
+
+  get units(): Map<number, string> {
+    return this._units;
   }
 
   get garageDoorZones(): number[] {

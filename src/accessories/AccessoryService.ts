@@ -13,6 +13,8 @@ import { CarbonMonoxideSensor } from './CarbonMonoxideSensor';
 import { LeakSensor } from './LeakSensor';
 import { OccupancySensor } from './OccupancySensor';
 import { GarageDoorOpener } from './GarageDoorOpener';
+import { UnitSwitch } from './UnitSwitch';
+import { UnitLightbulb } from './UnitLightbulb';
 
 export class AccessoryService {
   private accessories: Map<string, AccessoryBase> = new Map();
@@ -35,6 +37,8 @@ export class AccessoryService {
       this.discoverZoneOccupancySensors();
       this.discoverButtonSwitches();
       this.discoverGarageDoors();
+      this.discoverUnitSwitches();
+      this.discoverUnitLightbulbs();
     } catch (error) {
       this.platform.log.error(error);
     }
@@ -346,6 +350,62 @@ export class AccessoryService {
     }
   }
 
+  discoverUnitSwitches(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverUnitSwitches');
+
+    const units = new Map<number, string>();
+
+    if (this.platform.settings.includeUnits) {
+      for(const [index, unit] of this.platform.omniService.units) {
+        const accessoryType = this.platform.settings.units.get(index);
+        if (accessoryType !== undefined && accessoryType.toLowerCase() !== 'switch') {
+          continue;
+        }
+        units.set(index, unit.name);
+      }
+    }
+
+    for(const [index, name] of units) {
+      this.addAccessory(UnitSwitch, UnitSwitch.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof UnitSwitch) {
+        if (!units.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(UnitSwitch.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
+  discoverUnitLightbulbs(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverUnitLightbulbs');
+
+    const units = new Map<number, string>();
+
+    if (this.platform.settings.includeUnits) {
+      for(const [index, unit] of this.platform.omniService.units) {
+        const accessoryType = this.platform.settings.units.get(index);
+        if (accessoryType === undefined || accessoryType.toLowerCase() !== 'lightbulb') {
+          continue;
+        }
+        units.set(index, unit.name);
+      }
+    }
+
+    for(const [index, name] of units) {
+      this.addAccessory(UnitLightbulb, UnitLightbulb.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof UnitLightbulb) {
+        if (!units.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(UnitLightbulb.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
   addAccessory<TAccessory extends AccessoryBase>(
     Accessory: new (platform: OmniLinkPlatform, accessory: PlatformAccessory) => TAccessory,
     type: string, name: string, index?: number,
@@ -427,6 +487,10 @@ export class AccessoryService {
         return new OccupancySensor(this.platform, platformAccessory);
       case 'garagedooropener':
         return new GarageDoorOpener(this.platform, platformAccessory);
+      case 'unitswitch':
+        return new UnitSwitch(this.platform, platformAccessory);
+      case 'unitlightbulb':
+        return new UnitLightbulb(this.platform, platformAccessory);
     }
   }
 

@@ -57,6 +57,12 @@
         "default": true,
         "required": false
       },
+      "includeUnits": {
+        "title": "Include Units (shown as Switch or Lightbulb accessories)",
+        "type": "boolean",
+        "default": true,
+        "required": false
+      },
       "setHomeToAway": {
         "title": "Set Home mode to Away mode",
         "type": "boolean",
@@ -137,6 +143,32 @@
               "minimum": 1,
               "maximum": 60,
               "required": true
+            }
+          }
+        }
+      },
+      "units": {
+        "title": "Unit Accessory Overrides",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "unitId": {
+              "title": "Unit Number",
+              "type": "number",
+              "minimum": 1,
+              "maximum": 512,
+              "required": true
+            },
+            "type": {
+              "title": "Accessory Type",
+              "type": "string",
+              "required": true,
+              "oneOf": [
+                { "title": "Switch", "enum": [ "switch" ] },
+                { "title": "Lightbulb", "enum": [ "lightbulb" ] },
+                { "title": "None", "enum": [ "none" ] }
+              ]
             }
           }
         }
@@ -325,6 +357,7 @@
         "includeAreas",
         "includeZones",
         "includeButtons",
+        "includeUnits",
         {
           "type": "section",
           "title": "Security Settings",
@@ -338,7 +371,7 @@
         },
         {
           "type": "section",
-          "title": "Sensor Settings",
+          "title": "Zone Sensor Settings",
           "expandable": true,
           "expanded": false,
           "items": [
@@ -377,6 +410,29 @@
                     "garageDoors[].buttonId",
                     "garageDoors[].zoneId",
                     "garageDoors[].openTime"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Unit Accessory Settings",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            {
+              "type": "array",
+              "orderable": false,
+              "buttonText": "Add Unit Accessory Override",
+              "items": [
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "units[].unitId",
+                    "units[].type"
                   ]
                 }
               ]

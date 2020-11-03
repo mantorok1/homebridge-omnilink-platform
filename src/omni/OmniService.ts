@@ -8,6 +8,7 @@ import { ObjectTypeCapacitiesRequest } from './messages/ObjectTypeCapacitiesRequ
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
 import { ObjectPropertiesRequest } from './messages/ObjectPropertiesRequest';
 import { ZonePropertiesResponse } from './messages/ZonePropertiesResponse';
+import { UnitPropertiesResponse } from './messages/UnitPropertiesResponse';
 import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse';
 import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse';
 import { CodePropertiesResponse } from './messages/CodePropertiesResponse';
@@ -23,11 +24,13 @@ import { SystemTroublesResponse } from './messages/SystemTroublesResponse';
 import { ExtendedObjectStatusRequest } from './messages/ExtendedObjectStatusRequest';
 import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse';
 import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse';
+import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusResponse';
 import { SecurityCodeValidationRequest } from './messages/SecurityCodeValidationRequest';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
 
 import { AreaStatus, ArmedModes } from '../models/AreaStatus';
 import { ZoneStatus, ZoneStates } from '../models/ZoneStatus';
+import { UnitStatus, UnitStates } from '../models/UnitStatus';
 
 export { ZoneTypes } from './messages/ZonePropertiesResponse';
 
@@ -38,6 +41,7 @@ export class OmniService extends events.EventEmitter {
   private _model?: string;
   private _version?: string;
   private _zones: Map<number, ZonePropertiesResponse>;
+  private _units: Map<number, UnitPropertiesResponse>;
   private _areas: Map<number, AreaPropertiesResponse>;
   private _buttons: Map<number, ButtonPropertiesResponse>;
   private _codes: Map<number, CodePropertiesResponse>;
@@ -47,6 +51,7 @@ export class OmniService extends events.EventEmitter {
     super();
     this.session = new OmniSession(platform);
     this._zones = new Map<number, ZonePropertiesResponse>();
+    this._units = new Map<number, UnitPropertiesResponse>();
     this._areas = new Map<number, AreaPropertiesResponse>();
     this._buttons = new Map<number, ButtonPropertiesResponse>();
     this._codes = new Map<number, CodePropertiesResponse>();
@@ -63,6 +68,10 @@ export class OmniService extends events.EventEmitter {
 
   get zones(): Map<number, ZonePropertiesResponse> {
     return this._zones;
+  }
+
+  get units(): Map<number, UnitPropertiesResponse> {
+    return this._units;
   }
 
   get areas(): Map<number, AreaPropertiesResponse> {
@@ -151,6 +160,7 @@ export class OmniService extends events.EventEmitter {
     }
 
     this._zones = await this.getZones();
+    this._units = await this.getUnits();
     this._areas = await this.getAreas();
     this._buttons = await this.getButtons();
     this._codes = await this.getCodes();
@@ -158,6 +168,7 @@ export class OmniService extends events.EventEmitter {
     // Event Handlers
     this.session.on('areas', this.areaStatusHandler.bind(this));
     this.session.on('zones', this.zoneStatusHandler.bind(this));
+    this.session.on('units', this.unitStatusHandler.bind(this));
   }
 
   async getAreas(): Promise<Map<number, AreaPropertiesResponse>> {
@@ -251,6 +262,53 @@ export class OmniService extends events.EventEmitter {
 
     if (response.type === MessageTypes.ObjectPropertiesResponse) {
       return <ZonePropertiesResponse>response;
+    }
+  }
+
+  async getUnits(): Promise<Map<number, UnitPropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getUnits');
+
+    const units = new Map<number, UnitPropertiesResponse>();
+    try {
+      // Get Unit capacity
+      const message = new ObjectTypeCapacitiesRequest({
+        objectType: ObjectTypes.Unit,
+      });
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      const unitLimit = (<ObjectTypeCapacitiesResponse>response).capcity;
+
+      // Get Unit names
+      for(let i = 1; i <= unitLimit; i++) {
+        const properties = await this.getUnitProperties(i);
+        if (properties !== undefined) {
+          units.set(i, properties);
+        }
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;      
+    }
+
+    return units;
+  }
+
+  async getUnitProperties(index: number): Promise<UnitPropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getUnitProperties', index);
+
+    const message = new ObjectPropertiesRequest({
+      objectType: ObjectTypes.Unit,
+      index: index,
+      relativeDirection: 0,
+      filter1: 1, // Named units only
+      filter2: 0,
+      filter3: 0,
+    });
+
+    const response = await this.session.sendApplicationDataMessage(message);
+
+    if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      return <UnitPropertiesResponse>response;
     }
   }
 
@@ -416,6 +474,32 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  async setUnitState(unitId: number, state: boolean): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setUnitState', unitId);
+
+    try {
+      const message = new ControllerCommandRequest({
+        command: state ? Commands.UnitOn : Commands.UnitOff,
+        parameter1: 0,
+        parameter2: unitId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.units.get(unitId)!.name}: Set ${state ? 'On' : 'Off'}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      this.emit(`unit-${unitId}`, state);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`Set Unit ${unitId} failed: ${error.message}`);
+    }
+  }
+
   async notify(): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'notify');
 
@@ -515,6 +599,27 @@ export class OmniService extends events.EventEmitter {
   
       if (response instanceof ExtendedZoneStatusResponse) {
         return response.zones.get(zoneId);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;  
+    }
+  }
+
+  async getUnitStatus(unitId: number): Promise<UnitStatus | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getUnitStatus', unitId);
+
+    try {
+      const message = new ExtendedObjectStatusRequest({
+        objectType: ObjectTypes.Unit,
+        startId: unitId,
+        endId: unitId,
+      });
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+  
+      if (response instanceof ExtendedUnitStatusResponse) {
+        return response.units.get(unitId);
       }
     } catch(error) {
       this.platform.log.error(error);
@@ -652,6 +757,22 @@ export class OmniService extends events.EventEmitter {
           this.platform.log.info(`${name}: ${ZoneStates[zoneStatus.currentState]}`);
         }
         this.emit(`zone-${zoneId}`, zoneStatus);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+    }
+  }
+
+  unitStatusHandler(units: Map<number, UnitStatus>): void {
+    this.platform.log.debug(this.constructor.name, 'unitStatusHandler', units);
+
+    try {
+      for(const [unitId, unitStatus] of units.entries()) {
+        if (this.platform.settings.showOmniEvents) {
+          const name = this.units.get(unitId)!.name;
+          this.platform.log.info(`${name}: ${UnitStates[unitStatus.state]}`);
+        }
+        this.emit(`unit-${unitId}`, unitStatus);
       }
     } catch(error) {
       this.platform.log.error(error);

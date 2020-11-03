@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## NEXT
+
+* Switch or Lightbulb accessories for Omni units
+
 ## 1.2.0 (2020-10-25)
 
 * Improve Event logging

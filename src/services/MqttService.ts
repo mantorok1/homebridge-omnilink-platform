@@ -4,6 +4,7 @@ import { OmniLinkPlatform } from '../platform';
 import { MqttSettings } from '../models/Settings';
 import { AreaStatus, ArmedModes, Alarms } from '../models/AreaStatus';
 import { ZoneStatus } from '../models/ZoneStatus';
+import { UnitStatus, UnitStates } from '../models/UnitStatus';
 import { SystemTroubles } from '../omni/messages/enums';
 
 export class MqttService {
@@ -13,6 +14,7 @@ export class MqttService {
   private readonly pubTopics: Map<string, string> = new Map();
   private readonly prefix: string;
   private readonly armModes: string[] = ['off', 'away', 'night', 'day'];
+  private readonly unitStates: string[] = ['off', 'on'];
 
   constructor(
     private readonly platform: OmniLinkPlatform,
@@ -57,6 +59,18 @@ export class MqttService {
         const zoneStatus = await this.platform.omniService.getZoneStatus(zoneId);
         if (zoneStatus !== undefined) {
           this.publishZone(zoneId, zoneStatus);
+        }
+      }
+
+      // Units
+      for(const unitId of this.platform.omniService.units.keys()) {
+        this.subTopics.set(`${this.prefix}unit/${unitId}/state/set`, this.setUnitState.bind(this));
+
+        this.platform.omniService.on(`unit-${unitId}`, this.publishUnitState.bind(this, unitId));
+
+        const unitStatus = await this.platform.omniService.getUnitStatus(unitId);
+        if (unitStatus !== undefined) {
+          this.publishUnitState(unitId, unitStatus);
         }
       }
 
@@ -162,6 +176,19 @@ export class MqttService {
     await this.platform.omniService.executeButton(buttonId);
   }
 
+  async setUnitState(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setUnitState', topic, payload);
+
+    if (!this.unitStates.includes(payload)) {
+      return;
+    }
+
+    topic = topic.replace(this.prefix, '');
+    const unitId = Number(topic.split('/')[1]);
+
+    await this.platform.omniService.setUnitState(unitId, payload === 'on');
+  }
+
   // Publications
   private async publish(topic: string, payload: string): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'publish', topic, payload);
@@ -217,6 +244,14 @@ export class MqttService {
 
     this.publish(`zone/${zoneId}/ready/get`, String(zoneStatus.ready));
     this.publish(`zone/${zoneId}/trouble/get`, String(zoneStatus.trouble));
+  }
+
+  publishUnitState(unitId: number, unitStatus: UnitStatus) {
+    this.platform.log.debug(this.constructor.name, 'publishZone', unitId, unitStatus);
+
+    const payload = unitStatus.state === UnitStates.On ? 'on' : 'off';
+
+    this.publish(`unit/${unitId}/state/get`, payload);
   }
 
   publishSystemTroubles(troubles: SystemTroubles[]) {

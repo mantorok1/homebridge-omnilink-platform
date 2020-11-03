@@ -29,12 +29,15 @@ export enum MessageTypes {
 
 export enum ObjectTypes {
   Zone = 1,
+  Unit = 2,
   Button = 3,
   Code = 4,
   Area = 5,
 }
 
 export enum Commands {
+  UnitOff = 0,
+  UnitOn = 1,
   ExecuteButton = 7,
   Disarm = 48,
   ArmDay = 49,
