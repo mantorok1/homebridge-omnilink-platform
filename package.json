@@ -36,7 +36,8 @@
     "home automation",
     "omni",
     "omnipro",
-    "lumina"
+    "lumina",
+    "mqtt"
   ],
   "dependencies": {
     "@types/node-fetch": "^2.5.7",

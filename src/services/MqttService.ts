@@ -5,6 +5,8 @@ import { MqttSettings } from '../models/Settings';
 import { AreaStatus, ArmedModes, Alarms } from '../models/AreaStatus';
 import { ZoneStatus } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
+import { ThermostatStatus, ThermostatModes, ThermostatStates } from '../models/ThermostatStatus';
+import { TemperatureFormats } from '../omni/messages/SystemFormatsResponse';
 import { SystemTroubles } from '../omni/messages/enums';
 
 export class MqttService {
@@ -15,6 +17,8 @@ export class MqttService {
   private readonly prefix: string;
   private readonly armModes: string[] = ['off', 'away', 'night', 'day'];
   private readonly unitStates: string[] = ['off', 'on'];
+  private readonly thermostatModes: string[] = ['off', 'cool', 'heat', 'auto'];
+  private readonly thermostatStates: string[] = ['idle', 'cooling', 'heating'];
 
   constructor(
     private readonly platform: OmniLinkPlatform,
@@ -66,17 +70,31 @@ export class MqttService {
       for(const unitId of this.platform.omniService.units.keys()) {
         this.subTopics.set(`${this.prefix}unit/${unitId}/state/set`, this.setUnitState.bind(this));
 
-        this.platform.omniService.on(`unit-${unitId}`, this.publishUnitState.bind(this, unitId));
+        this.platform.omniService.on(`unit-${unitId}`, this.publishUnit.bind(this, unitId));
 
         const unitStatus = await this.platform.omniService.getUnitStatus(unitId);
         if (unitStatus !== undefined) {
-          this.publishUnitState(unitId, unitStatus);
+          this.publishUnit(unitId, unitStatus);
         }
       }
 
       // Buttons
       for(const buttonId of this.platform.omniService.buttons.keys()) {
         this.subTopics.set(`${this.prefix}button/${buttonId}/execute/set`, this.setButtonExecute.bind(this));
+      }
+
+      // Thermostats
+      for(const thermostatId of this.platform.omniService.thermostats.keys()) {
+        this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/mode/set`, this.setThermostatMode.bind(this));
+        this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/coolsetpoint/set`, this.setThermostatCoolSetPoint.bind(this));
+        this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/heatsetpoint/set`, this.setThermostatHeatSetPoint.bind(this));
+
+        this.platform.omniService.on(`thermostat-${thermostatId}`, this.publishThermostat.bind(this, thermostatId));
+
+        const thermostatStatus = await this.platform.omniService.getThermostatStatus(thermostatId);
+        if (thermostatStatus !== undefined) {
+          this.publishThermostat(thermostatId, thermostatStatus);
+        }
       }
 
       // System Troubles
@@ -143,9 +161,6 @@ export class MqttService {
       return;
     }
 
-    topic = topic.replace(this.prefix, '');
-    const areaId = Number(topic.split('/')[1]);
-
     let armedMode = ArmedModes.Disarmed;
 
     switch(payload) {
@@ -160,7 +175,7 @@ export class MqttService {
         break;
     }
 
-    await this.platform.omniService.setAreaAlarmMode(areaId, armedMode);
+    await this.platform.omniService.setAreaAlarmMode(this.getObjectId(topic), armedMode);
   }
 
   async setButtonExecute(topic: string, payload: string): Promise<void> {
@@ -170,10 +185,7 @@ export class MqttService {
       return;
     }
 
-    topic = topic.replace(this.prefix, '');
-    const buttonId = Number(topic.split('/')[1]);
-
-    await this.platform.omniService.executeButton(buttonId);
+    await this.platform.omniService.executeButton(this.getObjectId(topic));
   }
 
   async setUnitState(topic: string, payload: string): Promise<void> {
@@ -183,10 +195,55 @@ export class MqttService {
       return;
     }
 
-    topic = topic.replace(this.prefix, '');
-    const unitId = Number(topic.split('/')[1]);
+    await this.platform.omniService.setUnitState(this.getObjectId(topic), payload === 'on');
+  }
 
-    await this.platform.omniService.setUnitState(unitId, payload === 'on');
+  async setThermostatMode(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatMode', topic, payload);
+
+    if (!this.thermostatModes.includes(payload)) {
+      return;
+    }
+
+    let thermostatMode = ThermostatModes.Off;
+    switch(payload) {
+      case 'cool':
+        thermostatMode = ThermostatModes.Cool;
+        break;
+      case 'heat':
+        thermostatMode = ThermostatModes.Heat;
+        break;
+      case 'auto':
+        thermostatMode = ThermostatModes.Auto;
+        break;
+      case 'emergencyheat':
+        thermostatMode = ThermostatModes.EmergencyHeat;
+        break;
+    }
+
+    await this.platform.omniService.setThermostatMode(this.getObjectId(topic), thermostatMode);
+  }
+
+  async setThermostatCoolSetPoint(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatCoolSetPoint', topic, payload);
+
+    const temperature = this.parseTemperature(payload);
+    if (temperature === undefined) {
+      return;
+    }
+
+    await this.platform.omniService.setThermostatCoolSetPoint(this.getObjectId(topic), temperature);
+  }
+
+  async setThermostatHeatSetPoint(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatHeatSetPoint', topic, payload);
+
+    const temperature = this.parseTemperature(payload);
+    if (temperature === undefined) {
+      return;
+    }
+
+    await this.platform.omniService.setThermostatHeatSetPoint(this.getObjectId(topic), temperature);
   }
 
   // Publications
@@ -246,12 +303,31 @@ export class MqttService {
     this.publish(`zone/${zoneId}/trouble/get`, String(zoneStatus.trouble));
   }
 
-  publishUnitState(unitId: number, unitStatus: UnitStatus) {
-    this.platform.log.debug(this.constructor.name, 'publishZone', unitId, unitStatus);
+  publishUnit(unitId: number, unitStatus: UnitStatus) {
+    this.platform.log.debug(this.constructor.name, 'publishUnit', unitId, unitStatus);
 
     const payload = unitStatus.state === UnitStates.On ? 'on' : 'off';
 
     this.publish(`unit/${unitId}/state/get`, payload);
+  }
+
+  publishThermostat(thermostatId: number, thermostatStatus: ThermostatStatus) {
+    this.platform.log.debug(this.constructor.name, 'publishThermostat', thermostatId, thermostatStatus);
+  
+    this.publish(`thermostat/${thermostatId}/mode/get`,
+      ThermostatModes[thermostatStatus.mode].toLowerCase());
+
+    this.publish(`thermostat/${thermostatId}/temperature/get`,
+      this.formatTemperature(thermostatStatus.currentTemperature));
+
+    this.publish(`thermostat/${thermostatId}/coolsetpoint/get`,
+      this.formatTemperature(thermostatStatus.coolSetPoint));
+
+    this.publish(`thermostat/${thermostatId}/heatsetpoint/get`,
+      this.formatTemperature(thermostatStatus.heatSetPoint));
+
+    this.publish(`thermostat/${thermostatId}/state/get`,
+      ThermostatStates[thermostatStatus.state].toLowerCase());
   }
 
   publishSystemTroubles(troubles: SystemTroubles[]) {
@@ -272,4 +348,27 @@ export class MqttService {
       setTimeout(resolve, ms);
     });
   }
+
+  private getObjectId(topic: string): number {
+    topic = topic.replace(this.prefix, '');
+    return Number(topic.split('/')[1]);
+  }
+
+  private formatTemperature(temperature: number): string {
+    if (this.platform.omniService.temperatureFormat === TemperatureFormats.Celsius) {
+      return String(temperature);
+    }
+    return String(Math.round(((temperature * 9.0 / 5.0) + 32.0) * 10.0) / 10.0);
+  }
+
+  private parseTemperature(value: string): number | undefined {
+    const temperature = Number(value);
+    if (isNaN(temperature)) {
+      return;
+    }
+    if (this.platform.omniService.temperatureFormat === TemperatureFormats.Celsius) {
+      return temperature;
+    }
+    return Math.round(((temperature - 32.0) * 5.0 / 9.0) * 2.0) / 2.0;
+  } 
 }

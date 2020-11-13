@@ -121,6 +121,10 @@ export class Settings {
     return <boolean>this.config.includeUnits ?? true;
   }
 
+  get includeThermostats(): boolean {
+    return <boolean>this.config.includeThermostats ?? true;
+  }
+
   get setHomeToAway(): boolean {
     return <boolean>this.config.setHomeToAway ?? false;
   }

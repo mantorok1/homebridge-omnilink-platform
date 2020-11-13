@@ -23,6 +23,9 @@ export enum MessageTypes {
   SecurityCodeValidationRequest = 0x26,
   SecurityCodeValidationResponse = 0x27,
 
+  SystemFormatsRequest = 0x28,
+  SystemFormatsResponse = 0x29,
+
   ExtendedObjectStatusRequest = 0x3A,
   ExtendedObjectStatusResponse = 0x3B
 }
@@ -33,6 +36,7 @@ export enum ObjectTypes {
   Button = 3,
   Code = 4,
   Area = 5,
+  Thermostat = 6,
 }
 
 export enum Commands {
@@ -42,7 +46,12 @@ export enum Commands {
   Disarm = 48,
   ArmDay = 49,
   ArmNight = 50,
-  ArmAway = 51
+  ArmAway = 51,
+  SetHeatSetPoint = 66,
+  SetCoolSetPoint = 67,
+  SetThermostatMode = 68,
+  SetHumififySetPoint = 73,
+  SetDehumidifySetPoint = 74,
 }
 
 export enum SecurityModes {

@@ -15,15 +15,18 @@ import { ApplicationDataResponse } from './messages/ApplicationDataResponse';
 import { SystemInformationResponse } from './messages/SystemInformationResponse';
 import { SystemStatusResponse } from './messages/SystemStatusResponse';
 import { SystemTroublesResponse } from './messages/SystemTroublesResponse';
+import { SystemFormatsResponse } from './messages/SystemFormatsResponse';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
 import { ZonePropertiesResponse } from './messages/ZonePropertiesResponse';
 import { UnitPropertiesResponse } from './messages/UnitPropertiesResponse';
 import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse';
 import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse';
+import { ThermostatPropertiesResponse } from './messages/ThermostatPropertiesResponse';
 import { CodePropertiesResponse } from './messages/CodePropertiesResponse';
 import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse';
 import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse';
 import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusResponse';
+import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatStatusResponse';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
 
 export class OmniSession extends events.EventEmitter {
@@ -302,6 +305,8 @@ export class OmniSession extends events.EventEmitter {
         return new SystemStatusResponse(message);
       case MessageTypes.SystemTroublesResponse:
         return new SystemTroublesResponse(message);
+      case MessageTypes.SystemFormatsResponse:
+        return new SystemFormatsResponse(message);
       case MessageTypes.ObjectTypeCapacitiesResponse:
         return new ObjectTypeCapacitiesResponse(message);
       case MessageTypes.SecurityCodeValidationResponse:
@@ -318,6 +323,8 @@ export class OmniSession extends events.EventEmitter {
             return new CodePropertiesResponse(message);
           case ObjectTypes.Area:
             return new AreaPropertiesResponse(message);
+          case ObjectTypes.Thermostat:
+            return new ThermostatPropertiesResponse(message);
           default:
             this.platform.log.debug(`Object type ${message[3]} not supported for ObjectPropertiesResponse`);
             return;
@@ -330,6 +337,8 @@ export class OmniSession extends events.EventEmitter {
             return new ExtendedUnitStatusResponse(message);
           case ObjectTypes.Area:
             return new ExtendedAreaStatusResponse(message);
+          case ObjectTypes.Thermostat:
+            return new ExtendedThermostatStatusResponse(message);
           default:
             this.platform.log.debug(`Object type ${message[3]} not supported for ExtendedObjectStatusResponse`);
             return;
@@ -354,6 +363,8 @@ export class OmniSession extends events.EventEmitter {
       this.emit('zones', response.zones);
     } else if (response instanceof ExtendedUnitStatusResponse) {
       this.emit('units', response.units);
+    } else if (response instanceof ExtendedThermostatStatusResponse) {
+      this.emit('thermostats', response.thermostats);
     }
   }
 }

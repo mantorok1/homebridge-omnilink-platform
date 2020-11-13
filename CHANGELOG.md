@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## NEXT
 
 * Switch or Lightbulb accessories for Omni units
+* Thermostat accessories for Omni thermostats
 
 ## 1.2.0 (2020-10-25)
 

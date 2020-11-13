@@ -92,12 +92,17 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
 
       this.log.info('Units found:', this.omniService.units.size);
       for (const [index, unit] of this.omniService.units) {
-        this.log.info(`  ${index}: ${unit.name} [${unit.unitState}, ${unit.unitTime}, ${unit.unitType}]`);
+        this.log.info(`  ${index}: ${unit.name}`);
       }
 
       this.log.info('Buttons found:', this.omniService.buttons.size);
       for (const [index, button] of this.omniService.buttons) {
         this.log.info(`  ${index}: ${button.name}`);
+      }
+
+      this.log.info('Thermostats found:', this.omniService.thermostats.size);
+      for (const [index, thermostat] of this.omniService.thermostats) {
+        this.log.info(`  ${index}: ${thermostat.name}`);
       }
 
       // Add/Remove accessories

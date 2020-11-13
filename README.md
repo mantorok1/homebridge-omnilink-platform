@@ -11,6 +11,7 @@ Functions available:
 * Notify when system has troubles (eg. AC Power)
 * Execute buttons
 * Turn units (such as switches and lights) on/off
+* Control thermostats
 * Open/close garage doors
 * Sync Omni controller's date & time with Homebridge host
 * Pushover notifications when alarms are triggered or system has troubles
@@ -32,6 +33,7 @@ The plugin will discover what features your system has and create Homekit access
 |`Zone` (all other types)|`Motion Sensor`|
 |`Button`|`Switch`|
 |`Unit`|`Switch`|
+|`Thermostat`|`Thermostat`|
 
 The zones can be overriden to another type of sensor. Currently the plugin supports `Motion`, `Smoke`, `Contact`, `Carbon Dioxide`, `Carbon Monoxide`, `Leak` and `Occupancy` sensors.
 
@@ -62,7 +64,8 @@ If you find the default config is not correct for your system or not to your lik
 |`includeAreas`|No|boolean|Include all enabled areas from the Omni controller. Each area will be added as a "Security System" accessory|`true`|
 |`includeZones`|No|boolean|Include all named zones from the Omni controller. Each zone will be added as a "Sensor" accessory. By default a zone with a type of `Fire Emergency` will shown as a "Smoke Sensor" and all other types will be shown as a "Motion Sensor"|`true`|
 |`includeButtons`|No|boolean|Include all named buttons from the Omni controller. Each button will be added as a "Switch" accessory|`true`|
-|`includeUnits`|No|boolean|Include all named units from the Omni controller. Each button will be added as a "Switch" accessory|`true`|
+|`includeUnits`|No|boolean|Include all named units from the Omni controller. Each unit will be added as a "Switch" accessory by default|`true`|
+|`includeThermostats`|No|boolean|Include all named thermostats from the Omni controller. Each thermostat will be added as a "Thermostat" accessory|`true`|
 |`setHomeAsAway`|No|boolean|Changes the security mode to "Away" if "Home" is selected. This may be useful if you don't use the "Home" mode and want to ensure the alarm is set to "Away" if accidently set to "Home"|`false`|
 |`setNightAsAway`|No|boolean|Changes the security mode to "Away" if "Night" is selected. Likewise, useful if you don't use the "Night" mode|`false`|
 |`securityCode`|No|string|The 4 digit security code used to arm and disarm the security system. Without this the security system cannot be operated||
@@ -76,7 +79,7 @@ If you find the default config is not correct for your system or not to your lik
 |`showOmniEvents`|No|boolean|Show Omni notification events in the Homebridge log|`false`|
 |`clearCache`|No|boolean|Clear all the plugin's cached accessories from Homebridge to force full discovery of accessories on restart|`false`|
 
-*TIP:* The area, zone, button and unit numbers are displayed in the Homebridge logs when it starts up.
+*TIP:* The area, zone, button, unit and themostat numbers are displayed in the Homebridge logs when it starts up.
 
 ### Pushover Notification Configuration
 This plugin can be configured to send Push notifications to your phone when alarms are trigggered or the system encounters troubles. To do this you'll need a [Pushover](https://pushover.net) account. The following describes the configuration options available:
@@ -113,6 +116,7 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "includeZones": true,
         "includeButtons": true,
         "includeUnits": true,
+        "includeThermostats": true,
         "setHomeToAway": true,
         "setNightToAway": true,
         "securityCode": "0000",
@@ -203,6 +207,11 @@ The plugin is able to operate as an MQTT client. It publishes various topics con
 |`zone/{number}/ready/get`|Gets the ready state of zone `{number}`|"true", "false"|
 |`zone/{number}/trouble/get`|Gets the trouble state of zone `{number}`|"true", "false"|
 |`unit/{number}/state/get`|Gets the state of the unit `{number}`|"on", "off"|
+|`thermostat/{number}/mode/get`|Gets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
+|`thermostat/{number}/temperature/get`|Gets the current temperature of thermostat `{number}`|number<br/>(see note 1)|
+|`thermostat/{number}/coolsetpoint/get`|Gets the Cooling SetPoint of thermostat `{number}`|number<br/>(see note 1)|
+|`thermostat/{number}/heatsetpoint/get`|Gets the Heating SetPoint of thermostat `{number}`|number<br/>(see note 1)|
+|`thermostat/{number}/state/get`|Gets the state of thermostat `{number}`|"idle", "heating", "cooling"|
 |`system/troubles/freeze/get`|Gets the freeze state of the system|"true", "false"|
 |`system/troubles/batterylow/get`|Gets the battery low state of the system|"true", "false"|
 |`system/troubles/acpower/get`|Gets the AC power state of the system.|"true", "false"|
@@ -217,10 +226,16 @@ The plugin is able to operate as an MQTT client. It publishes various topics con
 |`area/{number}/arm/set`|Sets the armed state of area `{number}`|"off", "away", "night", "day"|
 |`button/{number}/execute/set`|Executes button `{number}`|"true"|
 |`unit/{number}/state/set`|Sets the state of the unit `{number}`|"on", "off"|
+|`thermostat/{number}/mode/set`|Sets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
+|`thermostat/{number}/coolsetpoint/set`|Sets Cooling Set Point of thermostat `{number}`|number<br/>(see note 1)|
+|`thermostat/{number}/heatsetpoint/set`|Sets Heating Set Point of thermostat `{number}`|number<br/>(see note 1)|
+
+(1) Represents the temperature in either Celsius or Fahrenheit depending on how your Omni controller is configured.
 
 ## Version History
 See [Change Log](CHANGELOG.md).
 
 ## Known Limitations
 * I've only been able to test this plugin using my own system. I can't guarantee it will work on others.
-* This plugin only supports a subset of the functionality provided by the Omni-Link II protocol. If there's specific functionality you'd like to see included with this plugin please raise a GitHub issue and I'll see what I can do. I may need you to assist with beta testing though.
+* Thermostats were not able to be tested as my system doesn't have any. If you encounter any bugs please raise an issue on GitHub and I'll attempt to fix it ASAP.
+* This plugin only supports a subset of the functionality provided by the Omni-Link II protocol. If there's specific functionality you'd like to see included with this plugin please raise an issue on GitHub and I'll see what I can do. I may need you to assist with beta testing though.

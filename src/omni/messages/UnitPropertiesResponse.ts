@@ -1,9 +1,5 @@
 import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
 
-//export enum ZoneTypes {
-//  FireEmergency = 33,
-//}
-
 export class UnitPropertiesResponse extends ObjectPropertiesResponse {
 
   private _unitState?: number;

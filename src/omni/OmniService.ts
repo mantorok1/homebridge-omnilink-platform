@@ -11,6 +11,7 @@ import { ZonePropertiesResponse } from './messages/ZonePropertiesResponse';
 import { UnitPropertiesResponse } from './messages/UnitPropertiesResponse';
 import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse';
 import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse';
+import { ThermostatPropertiesResponse } from './messages/ThermostatPropertiesResponse';
 import { CodePropertiesResponse } from './messages/CodePropertiesResponse';
 import { SetTimeCommandRequest } from './messages/SetTimeCommandRequest';
 import { ControllerCommandRequest } from './messages/ControllerCommandRequest';
@@ -21,16 +22,20 @@ import { SystemStatusRequest } from './messages/SystemStatusRequest';
 import { SystemStatusResponse } from './messages/SystemStatusResponse';
 import { SystemTroublesRequest } from './messages/SystemTroublesRequest';
 import { SystemTroublesResponse } from './messages/SystemTroublesResponse';
+import { SystemFormatsRequest } from './messages/SystemFormatsRequest';
+import { SystemFormatsResponse, TemperatureFormats } from './messages/SystemFormatsResponse';
 import { ExtendedObjectStatusRequest } from './messages/ExtendedObjectStatusRequest';
 import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse';
 import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse';
 import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusResponse';
+import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatStatusResponse';
 import { SecurityCodeValidationRequest } from './messages/SecurityCodeValidationRequest';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
 
 import { AreaStatus, ArmedModes } from '../models/AreaStatus';
 import { ZoneStatus, ZoneStates } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
+import { ThermostatStatus, ThermostatModes } from '../models/ThermostatStatus';
 
 export { ZoneTypes } from './messages/ZonePropertiesResponse';
 
@@ -40,11 +45,13 @@ export class OmniService extends events.EventEmitter {
   private syncTimeIntervalId?: NodeJS.Timeout;
   private _model?: string;
   private _version?: string;
+  private _temperatureFormat?: TemperatureFormats;
   private _zones: Map<number, ZonePropertiesResponse>;
   private _units: Map<number, UnitPropertiesResponse>;
   private _areas: Map<number, AreaPropertiesResponse>;
   private _buttons: Map<number, ButtonPropertiesResponse>;
   private _codes: Map<number, CodePropertiesResponse>;
+  private _thermostats: Map<number, ThermostatPropertiesResponse>;
   private _troubles: SystemTroubles[];
 
   constructor(private readonly platform: OmniLinkPlatform) {
@@ -55,6 +62,7 @@ export class OmniService extends events.EventEmitter {
     this._areas = new Map<number, AreaPropertiesResponse>();
     this._buttons = new Map<number, ButtonPropertiesResponse>();
     this._codes = new Map<number, CodePropertiesResponse>();
+    this._thermostats = new Map<number, ThermostatPropertiesResponse>();
     this._troubles = [];
   }
 
@@ -64,6 +72,10 @@ export class OmniService extends events.EventEmitter {
 
   get version(): string {
     return this._version ?? '';
+  }
+
+  get temperatureFormat(): TemperatureFormats {
+    return this._temperatureFormat ?? TemperatureFormats.Celsius;
   }
 
   get zones(): Map<number, ZonePropertiesResponse> {
@@ -84,6 +96,10 @@ export class OmniService extends events.EventEmitter {
 
   get codes(): Map<number, CodePropertiesResponse> {
     return this._codes;
+  }
+
+  get thermostats(): Map<number, ThermostatPropertiesResponse> {
+    return this._thermostats;
   }
 
   async init(): Promise<void> {
@@ -159,16 +175,23 @@ export class OmniService extends events.EventEmitter {
       this._version = systemInformation.version;
     }
 
+    const systemFormats = await this.getSystemFormats();
+    if (systemFormats) {
+      this._temperatureFormat = systemFormats.temperatureFormat;
+    }
+
     this._zones = await this.getZones();
     this._units = await this.getUnits();
     this._areas = await this.getAreas();
     this._buttons = await this.getButtons();
     this._codes = await this.getCodes();
+    this._thermostats = await this.getThermostats();
 
     // Event Handlers
     this.session.on('areas', this.areaStatusHandler.bind(this));
     this.session.on('zones', this.zoneStatusHandler.bind(this));
     this.session.on('units', this.unitStatusHandler.bind(this));
+    this.session.on('thermostats', this.thermostatStatusHandler.bind(this));
   }
 
   async getAreas(): Promise<Map<number, AreaPropertiesResponse>> {
@@ -406,6 +429,53 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  async getThermostats(): Promise<Map<number, ThermostatPropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getThermostats');
+
+    const thermostats = new Map<number, ThermostatPropertiesResponse>();
+    try {
+      // Get Thermostat capacity
+      const message = new ObjectTypeCapacitiesRequest({
+        objectType: ObjectTypes.Thermostat,
+      });
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      const thermostatLimit = (<ObjectTypeCapacitiesResponse>response).capcity;
+
+      // Get Thermostat names
+      for(let i = 1; i <= thermostatLimit; i++) {
+        const properties = await this.getThermostatProperties(i);
+        if (properties !== undefined) {
+          thermostats.set(i, properties);
+        }
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;      
+    }
+
+    return thermostats;
+  }
+
+  async getThermostatProperties(index: number): Promise<ThermostatPropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getThermostatProperties', index);
+
+    const message = new ObjectPropertiesRequest({
+      objectType: ObjectTypes.Thermostat,
+      index: index,
+      relativeDirection: 0,
+      filter1: 1, // Named thermostats only
+      filter2: 0,
+      filter3: 0,
+    });
+
+    const response = await this.session.sendApplicationDataMessage(message);
+
+    if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      return <ThermostatPropertiesResponse>response;
+    }
+  }
+
   async setTime(): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setTime');
 
@@ -459,7 +529,7 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.buttons.get(buttonId)!.name}: Button executed`);
+        this.platform.log.info(`${this.buttons.get(buttonId)!.name}: Execute Button`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -470,12 +540,12 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`Execute Button ${buttonId} failed: ${error.message}`);
+      this.platform.log.warn(`${this.buttons.get(buttonId)!.name}: Execute Button failed: ${error.message}`);
     }
   }
 
   async setUnitState(unitId: number, state: boolean): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'setUnitState', unitId);
+    this.platform.log.debug(this.constructor.name, 'setUnitState', unitId, state);
 
     try {
       const message = new ControllerCommandRequest({
@@ -485,7 +555,7 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.units.get(unitId)!.name}: Set ${state ? 'On' : 'Off'}`);
+        this.platform.log.info(`${this.units.get(unitId)!.name}: Set State ${state ? 'On' : 'Off'}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -496,7 +566,90 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`Set Unit ${unitId} failed: ${error.message}`);
+      this.platform.log.warn(`${this.units.get(unitId)!.name}: Set State failed: ${error.message}`);
+    }
+  }
+
+  
+  async setThermostatHeatSetPoint(thermostatId: number, temperature: number): Promise<void> { // temperature is in Celcius
+    this.platform.log.debug(this.constructor.name, 'setThermostatHeatSetPoint', thermostatId, temperature);
+
+    try {
+      const message = new ControllerCommandRequest({
+        command: Commands.SetHeatSetPoint,
+        parameter1: this.convertToOmniTemperature(temperature),
+        parameter2: thermostatId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Heat SetPoint ${temperature}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Heat SetPoint failed: ${error.message}`);
+    }
+  }
+
+  async setThermostatCoolSetPoint(thermostatId: number, temperature: number): Promise<void> { // temperature is in Celcius
+    this.platform.log.debug(this.constructor.name, 'setThermostatCoolSetPoint', thermostatId, temperature);
+
+    try {
+      const message = new ControllerCommandRequest({
+        command: Commands.SetCoolSetPoint,
+        parameter1: this.convertToOmniTemperature(temperature),
+        parameter2: thermostatId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Cool SetPoint ${temperature}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Cool SetPoint failed: ${error.message}`);
+    }
+  }
+
+  private convertToOmniTemperature(temperature: number): number {
+    let omniTemperature = (40 + temperature) * 2;
+    if (omniTemperature < 44) {
+      omniTemperature = 44;
+    } else if (omniTemperature > 180) {
+      omniTemperature = 180;
+    }
+    return omniTemperature;
+  }
+
+  async setThermostatMode(thermostatId: number, mode: ThermostatModes): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatMode', thermostatId, mode);
+
+    try {
+      const message = new ControllerCommandRequest({
+        command: Commands.SetThermostatMode,
+        parameter1: mode,
+        parameter2: thermostatId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Mode ${ThermostatModes[mode]}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Mode failed: ${error.message}`);
     }
   }
 
@@ -557,6 +710,22 @@ export class OmniService extends events.EventEmitter {
 
       if (response.type === MessageTypes.SystemTroublesResponse) {
         return <SystemTroublesResponse>response;
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;      
+    }
+  }
+
+  async getSystemFormats(): Promise<SystemFormatsResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getSystemFormats');
+
+    try {
+      const message = new SystemFormatsRequest();
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type === MessageTypes.SystemFormatsResponse) {
+        return <SystemFormatsResponse>response;
       }
     } catch(error) {
       this.platform.log.error(error);
@@ -627,6 +796,27 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  async getThermostatStatus(thermostatId: number): Promise<ThermostatStatus | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getThermostatStatus', thermostatId);
+
+    try {
+      const message = new ExtendedObjectStatusRequest({
+        objectType: ObjectTypes.Thermostat,
+        startId: thermostatId,
+        endId: thermostatId,
+      });
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+  
+      if (response instanceof ExtendedThermostatStatusResponse) {
+        return response.thermostats.get(thermostatId);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;  
+    }
+  }
+
   async setAreaAlarmMode(area: number, mode: ArmedModes): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setAlarmState', area, mode);
 
@@ -650,7 +840,7 @@ export class OmniService extends events.EventEmitter {
           break;
       }
 
-      this.platform.log.info(`${this.areas.get(area)!.name}: Set ${Commands[command]} [${this.codes.get(codeId)?.name}]`);
+      this.platform.log.info(`${this.areas.get(area)!.name}: Set Mode ${Commands[command]} [${this.codes.get(codeId)?.name}]`);
 
       const message = new ControllerCommandRequest({
         command: command,
@@ -664,7 +854,7 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`Set Alarm Mode failed: ${error.message}`);
+      this.platform.log.warn(`${this.areas.get(area)!.name}: Set Mode failed: ${error.message}`);
     }
   }
 
@@ -773,6 +963,23 @@ export class OmniService extends events.EventEmitter {
           this.platform.log.info(`${name}: ${UnitStates[unitStatus.state]}`);
         }
         this.emit(`unit-${unitId}`, unitStatus);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+    }
+  }
+
+
+  thermostatStatusHandler(thermostats: Map<number, ThermostatStatus>): void {
+    this.platform.log.debug(this.constructor.name, 'thermostatStatusHandler', thermostats);
+
+    try {
+      for(const [thermostatId, thermostatStatus] of thermostats.entries()) {
+        if (this.platform.settings.showOmniEvents) {
+          const name = this.thermostats.get(thermostatId)!.name;
+          this.platform.log.info(`${name}: ${thermostatStatus.currentTemperature}; ${ThermostatModes[thermostatStatus.mode]}`);
+        }
+        this.emit(`thermostat-${thermostatId}`, thermostatStatus);
       }
     } catch(error) {
       this.platform.log.error(error);
