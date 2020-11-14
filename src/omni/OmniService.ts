@@ -844,7 +844,7 @@ export class OmniService extends events.EventEmitter {
 
       const message = new ControllerCommandRequest({
         command: command,
-        parameter1: this.codes.keys[0],
+        parameter1: codeId,
         parameter2: area,
       });
   
