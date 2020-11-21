@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## NEXT
+
+* Prevent garage door open/close command if currently in opening/closing state
+
 ## 1.3.0 (2020-11-14)
 
 * Switch or Lightbulb accessories for Omni units

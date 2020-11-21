@@ -6,6 +6,7 @@ import { ZoneStatus } from '../models/ZoneStatus';
 export class GarageDoorOpener extends AccessoryBase { 
   private zoneId?: number;
   private openTime: number;
+  private moving = false;
 
   constructor(
     platform: OmniLinkPlatform,
@@ -83,11 +84,17 @@ export class GarageDoorOpener extends AccessoryBase {
 
     const targetDoorState = await this.getTargetDoorState();
 
-    if (targetDoorState === value) {
+    if (targetDoorState === value || this.moving) {
       return;
     }
 
+    this.moving = true;
+
     await this.platform.omniService.executeButton(this.platformAccessory.context.index);
+
+    setTimeout(() => {
+      this.moving = false;
+    }, this.openTime);
   }
 
   async getObstructionDetected(): Promise<boolean> {
@@ -115,6 +122,7 @@ export class GarageDoorOpener extends AccessoryBase {
           this.service
             .getCharacteristic(this.platform.Characteristic.CurrentDoorState)
             .updateValue(this.platform.Characteristic.CurrentDoorState.OPEN);
+          this.moving = false;
         }, this.openTime);
       }
     }
