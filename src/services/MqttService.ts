@@ -69,6 +69,7 @@ export class MqttService {
       // Units
       for(const unitId of this.platform.omniService.units.keys()) {
         this.subTopics.set(`${this.prefix}unit/${unitId}/state/set`, this.setUnitState.bind(this));
+        this.subTopics.set(`${this.prefix}unit/${unitId}/brightness/set`, this.setUnitBrightness.bind(this));
 
         this.platform.omniService.on(`unit-${unitId}`, this.publishUnit.bind(this, unitId));
 
@@ -198,6 +199,17 @@ export class MqttService {
     await this.platform.omniService.setUnitState(this.getObjectId(topic), payload === 'on');
   }
 
+  async setUnitBrightness(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setUnitBrightness', topic, payload);
+    
+    const brightness = Number(payload);
+    if (isNaN(brightness)) {
+      return;
+    }
+
+    await this.platform.omniService.setUnitBrightness(this.getObjectId(topic), brightness);
+  }
+
   async setThermostatMode(topic: string, payload: string): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setThermostatMode', topic, payload);
 
@@ -309,6 +321,10 @@ export class MqttService {
     const payload = unitStatus.state === UnitStates.On ? 'on' : 'off';
 
     this.publish(`unit/${unitId}/state/get`, payload);
+
+    if (unitStatus.brightness !== undefined) {
+      this.publish(`unit/${unitId}/brightness/get`, String(unitStatus.brightness));
+    }
   }
 
   publishThermostat(thermostatId: number, thermostatStatus: ThermostatStatus) {
@@ -370,5 +386,5 @@ export class MqttService {
       return temperature;
     }
     return Math.round(((temperature - 32.0) * 5.0 / 9.0) * 2.0) / 2.0;
-  } 
+  }
 }

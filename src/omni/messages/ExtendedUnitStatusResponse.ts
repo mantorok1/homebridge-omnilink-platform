@@ -1,5 +1,5 @@
 import { ApplicationDataResponse } from './ApplicationDataResponse';
-import { UnitStatus } from '../../models/UnitStatus';
+import { UnitStatus, UnitStates } from '../../models/UnitStatus';
 
 export class ExtendedUnitStatusResponse extends ApplicationDataResponse {
 
@@ -18,7 +18,13 @@ export class ExtendedUnitStatusResponse extends ApplicationDataResponse {
     for(let i = 1; i <= unitCount; i++) {
       const startPos = (i - 1) * 5 + 5;
       const unitId = message[startPos] * 256 + message[startPos + 1];
-      const status = new UnitStatus(message[startPos + 2]);
+      const state = message[startPos + 2] === 0 || message[startPos + 2] === 2
+        ? UnitStates.Off
+        : UnitStates.On;
+      const brightness = message[startPos + 2] >= 100 && message[startPos + 2] <= 200
+        ? message[startPos + 2] - 100
+        : undefined;
+      const status = new UnitStatus(state, brightness);
       this._units.set(unitId, status);
     }
   }

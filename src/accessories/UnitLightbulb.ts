@@ -31,6 +31,11 @@ export class UnitLightbulb extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getUnitLightbulbOn.bind(this), 'On'))
       .on('set', this.setCharacteristicValue.bind(this, this.setUnitLightbulbOn.bind(this), 'On'));
 
+    this.service
+      .getCharacteristic(this.platform.Characteristic.Brightness)
+      .on('get', this.getCharacteristicValue.bind(this, this.getUnitLightbulbBrightness.bind(this), 'Brightness'))
+      .on('set', this.setCharacteristicValue.bind(this, this.setUnitLightbulbBrightness.bind(this), 'Brightness'));
+
     this.platform.omniService.on(`unit-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
   }
 
@@ -52,13 +57,35 @@ export class UnitLightbulb extends AccessoryBase {
     await this.platform.omniService.setUnitState(this.platformAccessory.context.index, value);
   }
 
+  async getUnitLightbulbBrightness(): Promise<number> {
+    this.platform.log.debug(this.constructor.name, 'getUnitLightbulbBrightness');
+
+    const unitStatus = await this.platform.omniService.getUnitStatus(this.platformAccessory.context.index);
+
+    return unitStatus!.brightness;
+  }
+
+  async setUnitLightbulbBrightness(value: number): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setUnitLightbulbBrightness', value);
+
+    if (await this.getUnitLightbulbBrightness() === value) {
+      return;
+    }
+
+    await this.platform.omniService.setUnitBrightness(this.platformAccessory.context.index, value);
+  }
+
   updateValues(unitStatus: UnitStatus): void {
     this.platform.log.debug(this.constructor.name, 'updateValues', unitStatus);
 
-    if (unitStatus.state === 0 || unitStatus.state === 1) {
+    this.service
+      .getCharacteristic(this.platform.Characteristic.On)
+      .updateValue(unitStatus.state === UnitStates.On);
+
+    if (unitStatus.brightness !== undefined) {
       this.service
-        .getCharacteristic(this.platform.Characteristic.On)
-        .updateValue(unitStatus.state === UnitStates.On);
+        .getCharacteristic(this.platform.Characteristic.Brightness)
+        .updateValue(unitStatus.brightness);
     }
   }
 }

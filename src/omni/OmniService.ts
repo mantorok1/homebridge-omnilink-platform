@@ -560,8 +560,6 @@ export class OmniService extends events.EventEmitter {
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      this.emit(`unit-${unitId}`, state);
-
       if (response.type !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
@@ -570,6 +568,37 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  async setUnitBrightness(unitId: number, brightness: number): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setUnitBrightness', unitId, brightness);
+
+    try {
+      if (brightness < 0) {
+        brightness = 0;
+      } else if (brightness > 100) {
+        brightness = 100;
+      } else {
+        brightness = Math.round(brightness);
+      }
+
+      const message = new ControllerCommandRequest({
+        command: Commands.UnitLightingLevel,
+        parameter1: brightness,
+        parameter2: unitId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.units.get(unitId)!.name}: Set Lighting Level ${brightness}%`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`${this.units.get(unitId)!.name}: Set Lighting Level failed: ${error.message}`);
+    }
+  }
   
   async setThermostatHeatSetPoint(thermostatId: number, temperature: number): Promise<void> { // temperature is in Celcius
     this.platform.log.debug(this.constructor.name, 'setThermostatHeatSetPoint', thermostatId, temperature);

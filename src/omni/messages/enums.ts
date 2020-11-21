@@ -43,6 +43,7 @@ export enum Commands {
   UnitOff = 0,
   UnitOn = 1,
   ExecuteButton = 7,
+  UnitLightingLevel = 9,
   Disarm = 48,
   ArmDay = 49,
   ArmNight = 50,

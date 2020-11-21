@@ -206,7 +206,8 @@ The plugin is able to operate as an MQTT client. It publishes various topics con
 |`area/{number}/temperature/get`|Gets the triggered state of the temperature alarm of area `{number}`|"true", "false"|
 |`zone/{number}/ready/get`|Gets the ready state of zone `{number}`|"true", "false"|
 |`zone/{number}/trouble/get`|Gets the trouble state of zone `{number}`|"true", "false"|
-|`unit/{number}/state/get`|Gets the state of the unit `{number}`|"on", "off"|
+|`unit/{number}/state/get`|Gets the state of unit `{number}`|"on", "off"|
+|`unit/{number}/brightness/get`|Gets the brightness level of unit `{number}`|0..100|
 |`thermostat/{number}/mode/get`|Gets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
 |`thermostat/{number}/temperature/get`|Gets the current temperature of thermostat `{number}`|number<br/>(see note 1)|
 |`thermostat/{number}/coolsetpoint/get`|Gets the Cooling SetPoint of thermostat `{number}`|number<br/>(see note 1)|
@@ -225,7 +226,8 @@ The plugin is able to operate as an MQTT client. It publishes various topics con
 |-|-|-|
 |`area/{number}/arm/set`|Sets the armed state of area `{number}`|"off", "away", "night", "day"|
 |`button/{number}/execute/set`|Executes button `{number}`|"true"|
-|`unit/{number}/state/set`|Sets the state of the unit `{number}`|"on", "off"|
+|`unit/{number}/state/set`|Sets the state of unit `{number}`|"on", "off"|
+|`unit/{number}/brightness/set`|Sets the brightness level of unit `{number}`|0..100|
 |`thermostat/{number}/mode/set`|Sets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
 |`thermostat/{number}/coolsetpoint/set`|Sets Cooling Set Point of thermostat `{number}`|number<br/>(see note 1)|
 |`thermostat/{number}/heatsetpoint/set`|Sets Heating Set Point of thermostat `{number}`|number<br/>(see note 1)|
