@@ -2,7 +2,7 @@ import mqtt = require('async-mqtt');
 
 import { OmniLinkPlatform } from '../platform';
 import { MqttSettings } from '../models/Settings';
-import { AreaStatus, ArmedModes, Alarms } from '../models/AreaStatus';
+import { AreaStatus, ExtendedArmedModes, Alarms } from '../models/AreaStatus';
 import { ZoneStatus } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
 import { ThermostatStatus, ThermostatModes, ThermostatStates } from '../models/ThermostatStatus';
@@ -15,10 +15,9 @@ export class MqttService {
   private readonly subTopics: Map<string, (topic: string, payload: string) => Promise<void>> = new Map();
   private readonly pubTopics: Map<string, string> = new Map();
   private readonly prefix: string;
-  private readonly armModes: string[] = ['off', 'away', 'night', 'day'];
+  private readonly armModes: string[] = ['off', 'away', 'night', 'day', 'vacation', 'day_instant', 'night_delayed'];
   private readonly unitStates: string[] = ['off', 'on'];
   private readonly thermostatModes: string[] = ['off', 'cool', 'heat', 'auto'];
-  private readonly thermostatStates: string[] = ['idle', 'cooling', 'heating'];
 
   constructor(
     private readonly platform: OmniLinkPlatform,
@@ -82,6 +81,8 @@ export class MqttService {
       // Buttons
       for(const buttonId of this.platform.omniService.buttons.keys()) {
         this.subTopics.set(`${this.prefix}button/${buttonId}/execute/set`, this.setButtonExecute.bind(this));
+
+        this.publishButton(buttonId);
       }
 
       // Thermostats
@@ -162,17 +163,26 @@ export class MqttService {
       return;
     }
 
-    let armedMode = ArmedModes.Disarmed;
+    let armedMode = ExtendedArmedModes.Disarmed;
 
     switch(payload) {
       case 'away':
-        armedMode = ArmedModes.ArmedAway;
+        armedMode = ExtendedArmedModes.ArmedAway;
         break;
       case 'night':
-        armedMode = ArmedModes.ArmedNight;
+        armedMode = ExtendedArmedModes.ArmedNight;
         break;
       case 'day':
-        armedMode = ArmedModes.ArmedDay;
+        armedMode = ExtendedArmedModes.ArmedDay;
+        break;
+      case 'vacation':
+        armedMode = ExtendedArmedModes.ArmedVacation;
+        break;
+      case 'night_delayed':
+        armedMode = ExtendedArmedModes.ArmedNightDelayed;
+        break;
+      case 'day_instant':
+        armedMode = ExtendedArmedModes.ArmedDayInstant;
         break;
     }
 
@@ -283,19 +293,31 @@ export class MqttService {
   publishArea(areaId: number, areaStatus: AreaStatus) {
     this.platform.log.debug(this.constructor.name, 'publishArea', areaId, areaStatus);
 
+    this.publish(`area/${areaId}/name/get`, this.platform.omniService.areas.get(areaId)!.name);
+
     // Arm State
     let armedMode = 'off';
-    switch(areaStatus.armedMode) {
-      case ArmedModes.ArmedAway:
+    switch(areaStatus.extendedArmedMode) {
+      case ExtendedArmedModes.ArmedAway:
         armedMode = 'away';
         break;
-      case ArmedModes.ArmedNight:
+      case ExtendedArmedModes.ArmedNight:
         armedMode = 'night';
         break;
-      case ArmedModes.ArmedDay:
+      case ExtendedArmedModes.ArmedDay:
         armedMode = 'day';
         break;
+      case ExtendedArmedModes.ArmedVacation:
+        armedMode = 'vacation';
+        break;
+      case ExtendedArmedModes.ArmedDayInstant:
+        armedMode = 'day_instant';
+        break;
+      case ExtendedArmedModes.ArmedNightDelayed:
+        armedMode = 'night_delayed';
+        break;
     }
+
     this.publish(`area/${areaId}/arm/get`, armedMode);
 
     // Triggered Alarms
@@ -311,15 +333,23 @@ export class MqttService {
   publishZone(zoneId: number, zoneStatus: ZoneStatus) {
     this.platform.log.debug(this.constructor.name, 'publishZone', zoneId, zoneStatus);
 
+    this.publish(`zone/${zoneId}/name/get`, this.platform.omniService.zones.get(zoneId)!.name);
     this.publish(`zone/${zoneId}/ready/get`, String(zoneStatus.ready));
     this.publish(`zone/${zoneId}/trouble/get`, String(zoneStatus.trouble));
+  }
+
+  publishButton(buttonId: number) {
+    this.platform.log.debug(this.constructor.name, 'publishButton', buttonId);
+
+    this.publish(`button/${buttonId}/name/get`, this.platform.omniService.buttons.get(buttonId)!.name);
   }
 
   publishUnit(unitId: number, unitStatus: UnitStatus) {
     this.platform.log.debug(this.constructor.name, 'publishUnit', unitId, unitStatus);
 
-    const payload = unitStatus.state === UnitStates.On ? 'on' : 'off';
+    this.publish(`unit/${unitId}/name/get`, this.platform.omniService.units.get(unitId)!.name);
 
+    const payload = unitStatus.state === UnitStates.On ? 'on' : 'off';
     this.publish(`unit/${unitId}/state/get`, payload);
 
     if (unitStatus.brightness !== undefined) {
@@ -329,6 +359,8 @@ export class MqttService {
 
   publishThermostat(thermostatId: number, thermostatStatus: ThermostatStatus) {
     this.platform.log.debug(this.constructor.name, 'publishThermostat', thermostatId, thermostatStatus);
+
+    this.publish(`thermostat/${thermostatId}/name/get`, this.platform.omniService.thermostats.get(thermostatId)!.name);
   
     this.publish(`thermostat/${thermostatId}/mode/get`,
       ThermostatModes[thermostatStatus.mode].toLowerCase());

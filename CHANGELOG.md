@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 * Prevent garage door open/close command if currently in opening/closing state
 * Support brightness level for Omni units
+* Minor improvements to MQTT
 
 ## 1.3.0 (2020-11-14)
 

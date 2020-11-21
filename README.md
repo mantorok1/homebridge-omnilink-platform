@@ -192,10 +192,14 @@ Option|Required|Type|Description|Default Value (if not supplied)|
 ## MQTT Client
 The plugin is able to operate as an MQTT client. It publishes various topics containing information about the Omni controller which other clients can subscribe to. It also subscribes to topics allowing other clients to send commands to the controller. This can be useful for interacting with external applications such as [Home Assistant](https://www.home-assistant.io) and [Node-RED](https://nodered.org).
 
-### Published Topics
+Published topics end with `/get` and subscribed topics end with `/set`
+
+### Area Topics
 |Topic|Description|Payload|
 |-|-|-|
-|`area/{number}/arm/get`|Gets the armed state of area `{number}`|"off", "away", "night", "day"|
+|`area/{number}/name/get`|Gets the name of area `{number}`|string| 
+|`area/{number}/arm/get`|Gets the armed state of area `{number}`|"off", "away", "night", "day" "vacation", "day_instant", "night_delayed"|
+|`area/{number}/arm/set`|Sets the armed state of area `{number}`<br/>(0 = all areas)|"off", "away", "night", "day", "vacation", "day_instant", "night_delayed"|
 |`area/{number}/burglary/get`|Gets the triggered state of the burglary alarm of area `{number}`|"true", "false"|
 |`area/{number}/fire/get`|Gets the triggered state of the fire alarm of area `{number}`|"true", "false"|
 |`area/{number}/gas/get`|Gets the triggered state of the gas alarm of area `{number}`|"true", "false"|
@@ -204,35 +208,55 @@ The plugin is able to operate as an MQTT client. It publishes various topics con
 |`area/{number}/water/get`|Gets the triggered state of the water alarm of area `{number}`|"true", "false"|
 |`area/{number}/duress/get`|Gets the triggered state of the duress alarm of area `{number}`|"true", "false"|
 |`area/{number}/temperature/get`|Gets the triggered state of the temperature alarm of area `{number}`|"true", "false"|
+
+### Zone Topics
+|Topic|Description|Payload|
+|-|-|-|
+|`zone/{number}/name/get`|Gets the name of zone `{number}`|string| 
 |`zone/{number}/ready/get`|Gets the ready state of zone `{number}`|"true", "false"|
 |`zone/{number}/trouble/get`|Gets the trouble state of zone `{number}`|"true", "false"|
+
+### Button Topics
+|Topic|Description|Payload|
+|-|-|-|
+|`button/{number}/name/get`|Gets the name of button `{number}`|string| 
+|`button/{number}/execute/set`|Executes button `{number}`|"true"|
+
+### Unit Topics
+|Topic|Description|Payload|
+|-|-|-|
+|`unit/{number}/name/get`|Gets the name of unit `{number}`|string| 
 |`unit/{number}/state/get`|Gets the state of unit `{number}`|"on", "off"|
-|`unit/{number}/brightness/get`|Gets the brightness level of unit `{number}`|0..100|
+|`unit/{number}/state/set`|Sets the state of unit `{number}`|"on", "off"|
+|`unit/{number}/brightness/get`|Gets the brightness level of unit `{number}`|number<br/>(see note)|
+|`unit/{number}/brightness/set`|Sets the brightness level of unit `{number}`|number<br/>(see note)|
+
+Note: Brightness level is specified as an integer between 0 and 100 inclusive
+
+### Thermostat Topics
+|Topic|Description|Payload|
+|-|-|-|
+|`thermostat/{number}/name/get`|Gets the name of thermostat `{number}`|string| 
 |`thermostat/{number}/mode/get`|Gets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
-|`thermostat/{number}/temperature/get`|Gets the current temperature of thermostat `{number}`|number<br/>(see note 1)|
-|`thermostat/{number}/coolsetpoint/get`|Gets the Cooling SetPoint of thermostat `{number}`|number<br/>(see note 1)|
-|`thermostat/{number}/heatsetpoint/get`|Gets the Heating SetPoint of thermostat `{number}`|number<br/>(see note 1)|
+|`thermostat/{number}/mode/set`|Sets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
 |`thermostat/{number}/state/get`|Gets the state of thermostat `{number}`|"idle", "heating", "cooling"|
+|`thermostat/{number}/temperature/get`|Gets the current temperature of thermostat `{number}`|number<br/>(see note 1)|
+|`thermostat/{number}/coolsetpoint/get`|Gets the Cooling SetPoint of thermostat `{number}`|number<br/>(see note)|
+|`thermostat/{number}/coolsetpoint/set`|Sets Cooling Set Point of thermostat `{number}`|number<br/>(see note)|
+|`thermostat/{number}/heatsetpoint/get`|Gets the Heating SetPoint of thermostat `{number}`|number<br/>(see note)|
+|`thermostat/{number}/heatsetpoint/set`|Sets Heating Set Point of thermostat `{number}`|number<br/>(see note)|
+
+Note: Temperatures are specified in either Celsius or Fahrenheit depending on how your Omni controller is configured.
+
+### System Topics
+|Topic|Description|Payload|
+|-|-|-|
 |`system/troubles/freeze/get`|Gets the freeze state of the system|"true", "false"|
 |`system/troubles/batterylow/get`|Gets the battery low state of the system|"true", "false"|
 |`system/troubles/acpower/get`|Gets the AC power state of the system.|"true", "false"|
 |`system/troubles/phoneline/get`|Gets the phone line state of the system|"true", "false"|
 |`system/troubles/digitalcommunicator/get`|Gets the digital communicator state of the system|"true", "false"|
 |`system/troubles/fuse/get`|Gets the fuse state of the system|"true", "false"|
-
-### Subscribed Topics
-
-|Topic|Description|Payload|
-|-|-|-|
-|`area/{number}/arm/set`|Sets the armed state of area `{number}`|"off", "away", "night", "day"|
-|`button/{number}/execute/set`|Executes button `{number}`|"true"|
-|`unit/{number}/state/set`|Sets the state of unit `{number}`|"on", "off"|
-|`unit/{number}/brightness/set`|Sets the brightness level of unit `{number}`|0..100|
-|`thermostat/{number}/mode/set`|Sets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
-|`thermostat/{number}/coolsetpoint/set`|Sets Cooling Set Point of thermostat `{number}`|number<br/>(see note 1)|
-|`thermostat/{number}/heatsetpoint/set`|Sets Heating Set Point of thermostat `{number}`|number<br/>(see note 1)|
-
-(1) Represents the temperature in either Celsius or Fahrenheit depending on how your Omni controller is configured.
 
 ## Version History
 See [Change Log](CHANGELOG.md).

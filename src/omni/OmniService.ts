@@ -32,7 +32,7 @@ import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatS
 import { SecurityCodeValidationRequest } from './messages/SecurityCodeValidationRequest';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
 
-import { AreaStatus, ArmedModes } from '../models/AreaStatus';
+import { AreaStatus, ArmedModes, ExtendedArmedModes } from '../models/AreaStatus';
 import { ZoneStatus, ZoneStates } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
 import { ThermostatStatus, ThermostatModes } from '../models/ThermostatStatus';
@@ -846,7 +846,7 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  async setAreaAlarmMode(area: number, mode: ArmedModes): Promise<void> {
+  async setAreaAlarmMode(area: number, mode: ArmedModes | ExtendedArmedModes): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setAlarmState', area, mode);
 
     try {
@@ -855,19 +855,7 @@ export class OmniService extends events.EventEmitter {
         return;
       }
 
-      let command: Commands = Commands.Disarm;
-
-      switch(mode) {
-        case ArmedModes.ArmedDay:
-          command = Commands.ArmDay;
-          break;
-        case ArmedModes.ArmedNight:
-          command = Commands.ArmNight;
-          break;
-        case ArmedModes.ArmedAway:
-          command = Commands.ArmAway;
-          break;
-      }
+      const command: Commands = this.getAreaArmCommand(mode);
 
       this.platform.log.info(`${this.areas.get(area)!.name}: Set Mode ${Commands[command]} [${this.codes.get(codeId)?.name}]`);
 
@@ -884,6 +872,26 @@ export class OmniService extends events.EventEmitter {
       }
     } catch(error) {
       this.platform.log.warn(`${this.areas.get(area)!.name}: Set Mode failed: ${error.message}`);
+    }
+  }
+
+  private getAreaArmCommand(mode: number): Commands {
+    switch(mode) {
+
+      case ExtendedArmedModes.ArmedDay:
+        return Commands.ArmDay;
+      case ExtendedArmedModes.ArmedNight:
+        return Commands.ArmNight;
+      case ExtendedArmedModes.ArmedAway:
+        return Commands.ArmAway;
+      case ExtendedArmedModes.ArmedVacation:
+        return Commands.ArmVacation;
+      case ExtendedArmedModes.ArmedDayInstant:
+        return Commands.ArmDayInstant;
+      case ExtendedArmedModes.ArmedNightDelayed:
+        return Commands.ArmNightDelayed;
+      default:
+        return Commands.Disarm;
     }
   }
 

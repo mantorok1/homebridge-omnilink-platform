@@ -116,6 +116,7 @@ export class GarageDoorOpener extends AccessoryBase {
     } else {
       if (currentDoorState === this.platform.Characteristic.CurrentDoorState.CLOSED) {
         currentDoorState = this.platform.Characteristic.CurrentDoorState.OPENING;
+        this.moving = true;
 
         // Set current state to open after period of time
         setTimeout(() => {

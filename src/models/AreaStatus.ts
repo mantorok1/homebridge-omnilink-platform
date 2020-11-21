@@ -9,6 +9,16 @@ export enum ArmedModes {
   ArmedAway = 3
 }
 
+export enum ExtendedArmedModes {
+  Disarmed = 0,
+  ArmedDay = 1,
+  ArmedNight = 2,
+  ArmedAway = 3,
+  ArmedVacation = 4,
+  ArmedDayInstant = 5,
+  ArmedNightDelayed = 6
+}
+
 export class AreaStatus {
   private readonly _alarmsTriggered: Alarms[] = [];
 
@@ -47,6 +57,30 @@ export class AreaStatus {
         return ArmedModes.ArmedNight;
       default:
         return ArmedModes.ArmedAway;
+    }
+  }
+
+  get extendedArmedMode(): ExtendedArmedModes {
+    switch (this.mode) {
+      case SecurityModes.Off:
+        return ExtendedArmedModes.Disarmed;
+      case SecurityModes.Day:
+      case SecurityModes.ArmingDay:
+        return ExtendedArmedModes.ArmedDay;
+      case SecurityModes.Night:
+      case SecurityModes.ArmingNight:
+        return ExtendedArmedModes.ArmedNight;
+      case SecurityModes.DayInstant:
+      case SecurityModes.ArmingDayInstant:
+        return ExtendedArmedModes.ArmedDayInstant;
+      case SecurityModes.NightDelayed:
+      case SecurityModes.ArmingNightDelayed:
+        return ExtendedArmedModes.ArmedNightDelayed;
+      case SecurityModes.Vacation:
+      case SecurityModes.ArmingVacation:
+        return ExtendedArmedModes.ArmedVacation;
+      default:
+        return ExtendedArmedModes.ArmedAway;
     }
   }
 
