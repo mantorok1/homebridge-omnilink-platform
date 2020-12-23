@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.2 (2020-12-24)
+
+* Update dependencies, one of which had a low severity vulnerability
+
 ## 1.3.1 (2020-11-22)
 
 * Prevent garage door open/close command if currently in opening/closing state
