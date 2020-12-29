@@ -7,7 +7,7 @@ import { ZoneStatus } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
 import { ThermostatStatus, ThermostatModes, ThermostatStates } from '../models/ThermostatStatus';
 import { TemperatureFormats } from '../omni/messages/SystemFormatsResponse';
-import { SystemTroubles } from '../omni/messages/enums';
+import { SystemTroubles, EmergencyTypes } from '../omni/messages/enums';
 
 export class MqttService {
   private settings: MqttSettings | undefined;
@@ -16,6 +16,7 @@ export class MqttService {
   private readonly pubTopics: Map<string, string> = new Map();
   private readonly prefix: string;
   private readonly armModes: string[] = ['off', 'away', 'night', 'day', 'vacation', 'day_instant', 'night_delayed'];
+  private readonly alarmModes: string[] = ['burglary', 'fire', 'auxiliary'];
   private readonly unitStates: string[] = ['off', 'on'];
   private readonly thermostatModes: string[] = ['off', 'cool', 'heat', 'auto'];
 
@@ -46,6 +47,8 @@ export class MqttService {
       // Areas
       for(const areaId of this.platform.omniService.areas.keys()) {
         this.subTopics.set(`${this.prefix}area/${areaId}/arm/set`, this.setAreaArm.bind(this));
+
+        this.subTopics.set(`${this.prefix}area/${areaId}/alarm/set`, this.setAreaAlarm.bind(this));
 
         this.platform.omniService.on(`area-${areaId}`, this.publishArea.bind(this, areaId));
 
@@ -187,6 +190,27 @@ export class MqttService {
     }
 
     await this.platform.omniService.setAreaAlarmMode(this.getObjectId(topic), armedMode);
+  }
+
+  async setAreaAlarm(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAreaAlarm', topic, payload);
+
+    if (!this.alarmModes.includes(payload)) {
+      return;
+    }
+
+    let emergencyType = EmergencyTypes.Burglary;
+
+    switch(payload) {
+      case 'fire':
+        emergencyType = EmergencyTypes.Fire;
+        break;
+      case 'auxiliary':
+        emergencyType = EmergencyTypes.Auxiliary;
+        break;
+    }
+
+    await this.platform.omniService.setEmergencyAlarm(this.getObjectId(topic), emergencyType);
   }
 
   async setButtonExecute(topic: string, payload: string): Promise<void> {

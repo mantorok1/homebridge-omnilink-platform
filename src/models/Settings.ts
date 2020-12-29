@@ -125,6 +125,10 @@ export class Settings {
     return <boolean>this.config.includeThermostats ?? true;
   }
 
+  get includeEmergencyAlarms(): boolean {
+    return <boolean>this.config.includeEmergencyAlarms ?? true;
+  }
+
   get setHomeToAway(): boolean {
     return <boolean>this.config.setHomeToAway ?? false;
   }

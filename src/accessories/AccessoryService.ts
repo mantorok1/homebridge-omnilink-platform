@@ -16,6 +16,8 @@ import { GarageDoorOpener } from './GarageDoorOpener';
 import { UnitSwitch } from './UnitSwitch';
 import { UnitLightbulb } from './UnitLightbulb';
 import { Thermostat } from './Thermostat';
+import { EmergencyAlarmSwitch } from './EmergencyAlarmSwitch';
+import { EmergencyTypes } from '../omni/messages/enums';
 
 export class AccessoryService {
   private accessories: Map<string, AccessoryBase> = new Map();
@@ -41,6 +43,7 @@ export class AccessoryService {
       this.discoverUnitSwitches();
       this.discoverUnitLightbulbs();
       this.discoverThermostats();
+      this.discoverEmergencyAlarmSwitches();
     } catch (error) {
       this.platform.log.error(error);
     }
@@ -432,6 +435,35 @@ export class AccessoryService {
     }
   }
 
+  discoverEmergencyAlarmSwitches(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverEmergencyAlarmSwitches');
+
+    const areaEmergencies = new Map<number, string>();
+
+    if (this.platform.settings.includeEmergencyAlarms) {
+      for(const [areaId, area] of this.platform.omniService.areas) {
+        for (const emegencyType in EmergencyTypes) {
+          if (!isNaN(Number(emegencyType))) {
+            const index = areaId * 256 + Number(emegencyType);
+            areaEmergencies.set(index, `${area.name} ${EmergencyTypes[emegencyType]}`);
+          }
+        }
+      }
+    }
+
+    for(const [index, name] of areaEmergencies) {
+      this.addAccessory(EmergencyAlarmSwitch, EmergencyAlarmSwitch.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof EmergencyAlarmSwitch) {
+        if (!areaEmergencies.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(EmergencyAlarmSwitch.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
   addAccessory<TAccessory extends AccessoryBase>(
     Accessory: new (platform: OmniLinkPlatform, accessory: PlatformAccessory) => TAccessory,
     type: string, name: string, index?: number,
@@ -519,6 +551,8 @@ export class AccessoryService {
         return new UnitLightbulb(this.platform, platformAccessory);
       case 'thermostat':
         return new Thermostat(this.platform, platformAccessory);
+      case 'emergencyalarm':
+        return new EmergencyAlarmSwitch(this.platform, platformAccessory);
     }
   }
 

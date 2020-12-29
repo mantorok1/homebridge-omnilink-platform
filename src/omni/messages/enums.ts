@@ -26,6 +26,8 @@ export enum MessageTypes {
   SystemFormatsRequest = 0x28,
   SystemFormatsResponse = 0x29,
 
+  KeypadEmergencyRequest = 0x2C,
+
   ExtendedObjectStatusRequest = 0x3A,
   ExtendedObjectStatusResponse = 0x3B
 }
@@ -99,4 +101,10 @@ export enum SystemTroubles {
   PhoneLine = 4,
   DigitalCommunicator = 5,
   Fuse = 6
+}
+
+export enum EmergencyTypes {
+  Burglary = 1,
+  Fire = 2,
+  Auxiliary = 3
 }

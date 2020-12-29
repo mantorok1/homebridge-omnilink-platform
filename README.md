@@ -13,6 +13,7 @@ Functions available:
 * Turn units (such as switches and lights) on/off
 * Control thermostats
 * Open/close garage doors
+* Activate emergency alarms (burglary, fire & auxiliary)
 * Sync Omni controller's date & time with Homebridge host
 * Pushover notifications when alarms are triggered or system has troubles
 * MQTT client (see section "MQTT Client" for further details)
@@ -34,6 +35,7 @@ The plugin will discover what features your system has and create Homekit access
 |`Button`|`Switch`|
 |`Unit`|`Switch`|
 |`Thermostat`|`Thermostat`|
+|`Emergency Alarms`|`Switch` (1 per area and emergency type)|
 
 The zones can be overriden to another type of sensor. Currently the plugin supports `Motion`, `Smoke`, `Contact`, `Carbon Dioxide`, `Carbon Monoxide`, `Leak` and `Occupancy` sensors.
 
@@ -66,6 +68,7 @@ If you find the default config is not correct for your system or not to your lik
 |`includeButtons`|No|boolean|Include all named buttons from the Omni controller. Each button will be added as a "Switch" accessory|`true`|
 |`includeUnits`|No|boolean|Include all named units from the Omni controller. Each unit will be added as a "Switch" accessory by default|`true`|
 |`includeThermostats`|No|boolean|Include all named thermostats from the Omni controller. Each thermostat will be added as a "Thermostat" accessory|`true`|
+|`includeEmergencyAlarms`|No|boolean|Include emergency alarms (ie. burglary, fire and auxiliary). Each alarm for each area will be added as a "Switch" accessory|`true`|
 |`setHomeAsAway`|No|boolean|Changes the security mode to "Away" if "Home" is selected. This may be useful if you don't use the "Home" mode and want to ensure the alarm is set to "Away" if accidently set to "Home"|`false`|
 |`setNightAsAway`|No|boolean|Changes the security mode to "Away" if "Night" is selected. Likewise, useful if you don't use the "Night" mode|`false`|
 |`securityCode`|No|string|The 4 digit security code used to arm and disarm the security system. Without this the security system cannot be operated||
@@ -117,6 +120,7 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "includeButtons": true,
         "includeUnits": true,
         "includeThermostats": true,
+        "includeEmergencyAlarms": true,
         "setHomeToAway": true,
         "setNightToAway": true,
         "securityCode": "0000",
@@ -208,6 +212,7 @@ Published topics end with `/get` and subscribed topics end with `/set`
 |`area/{number}/water/get`|Gets the triggered state of the water alarm of area `{number}`|"true", "false"|
 |`area/{number}/duress/get`|Gets the triggered state of the duress alarm of area `{number}`|"true", "false"|
 |`area/{number}/temperature/get`|Gets the triggered state of the temperature alarm of area `{number}`|"true", "false"|
+|`area/{number}/alarm/set`|Activates emergency alarm of area `{number}`|"burglary", "fire", "auxiliary"| 
 
 ### Zone Topics
 |Topic|Description|Payload|

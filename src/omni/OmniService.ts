@@ -3,7 +3,8 @@ import events = require('events');
 import { OmniLinkPlatform } from '../platform';
 import { OmniSession } from './OmniSession';
 
-import { MessageTypes, ObjectTypes, Commands, SecurityModes, Alarms, AuthorityLevels, SystemTroubles } from './messages/enums';
+import { MessageTypes, ObjectTypes, Commands, SecurityModes, Alarms, AuthorityLevels, SystemTroubles, EmergencyTypes}
+  from './messages/enums';
 import { ObjectTypeCapacitiesRequest } from './messages/ObjectTypeCapacitiesRequest';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
 import { ObjectPropertiesRequest } from './messages/ObjectPropertiesRequest';
@@ -31,6 +32,7 @@ import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusRespons
 import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatStatusResponse';
 import { SecurityCodeValidationRequest } from './messages/SecurityCodeValidationRequest';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
+import { KeypadEmergencyRequest } from './messages/KeypadEmergencyRequest';
 
 import { AreaStatus, ArmedModes, ExtendedArmedModes } from '../models/AreaStatus';
 import { ZoneStatus, ZoneStates } from '../models/ZoneStatus';
@@ -942,6 +944,27 @@ export class OmniService extends events.EventEmitter {
       this._troubles = [...response.troubles];
     } catch(error) {
       this.platform.log.warn(`Report System Troubles failed: ${error.message}`);
+    }
+  }
+
+  async setEmergencyAlarm(area: number, emergencyType: EmergencyTypes): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setEmergencyAlarm', area, emergencyType);
+
+    try {
+      this.platform.log.info(`${this.areas.get(area)!.name}: Set Emergency Alarm [${EmergencyTypes[emergencyType]}]`);
+
+      const message = new KeypadEmergencyRequest({
+        areaId: area,
+        emergencyType: emergencyType,
+      });
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`${this.areas.get(area)!.name}: Set Emergency Alarm failed: ${error.message}`);
     }
   }
 
