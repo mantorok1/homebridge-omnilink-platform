@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## NEXT
+## 1.3.3 (2020-12-30)
 
 * Switch accessories for Omni Emergency Alarms
 
