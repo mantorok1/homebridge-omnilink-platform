@@ -173,6 +173,10 @@ export class Settings {
     return <boolean>this.config.clearCache ?? false;
   }
 
+  get forceAutoDiscovery(): boolean {
+    return <boolean | undefined>this.config.forceAutoDiscovery ?? false;
+  }
+
   get pushover(): Pushover | undefined {
     return <Pushover | undefined>this.config.pushover;
   }

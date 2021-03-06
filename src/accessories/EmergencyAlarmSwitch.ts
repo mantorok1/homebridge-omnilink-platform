@@ -18,17 +18,18 @@ export class EmergencyAlarmSwitch extends AccessoryBase {
     this.emergencyType = this.platformAccessory.context.index & 0xFF;
 
     this.service = this.platformAccessory.getService(this.platform.Service.Switch) ??
-      this.platformAccessory.addService(this.platform.Service.Switch, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.Switch, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
-  static type = 'EmergencyAlarm';
-
-  get serviceName(): string {
-    return `${this.platform.omniService.areas.get(this.areaId)!.name} ${EmergencyTypes[this.emergencyType]}`
-      ?? `${EmergencyAlarmSwitch.type} ${this.platformAccessory.context.index}`;
+  protected async identifyHandler(): Promise<void> {
+    const state = await this.getEmergencyAlarmSwitchOn();
+    await this.setEmergencyAlarmSwitchOn(!state);
+    super.identifyHandler();
   }
+
+  static type = 'EmergencyAlarm';
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

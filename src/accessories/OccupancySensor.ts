@@ -11,17 +11,12 @@ export class OccupancySensor extends SensorBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.OccupancySensor) ??
-      this.platformAccessory.addService(this.platform.Service.OccupancySensor, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.OccupancySensor, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
   static type = 'OccupancySensor';
-
-  get serviceName(): string {
-    return this.platform.omniService.zones.get(this.platformAccessory.context.index)!.name
-      ?? `${OccupancySensor.type} ${this.platformAccessory.context.index}`;
-  }
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

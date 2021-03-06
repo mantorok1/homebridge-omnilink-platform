@@ -11,17 +11,12 @@ export class ContactSensor extends SensorBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.ContactSensor) ??
-      this.platformAccessory.addService(this.platform.Service.ContactSensor, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.ContactSensor, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
   static type = 'ContactSensor';
-
-  get serviceName(): string {
-    return this.platform.omniService.zones.get(this.platformAccessory.context.index)!.name
-      ?? `${ContactSensor.type} ${this.platformAccessory.context.index}`;
-  }
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

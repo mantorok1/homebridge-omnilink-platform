@@ -345,6 +345,12 @@
         "type": "boolean",
         "default": false,
         "required": false
+      },
+      "forceAutoDiscovery": {
+        "title": "Force auto-discovery",
+        "type": "boolean",
+        "default": false,
+        "required": false
       }
     }
   },
@@ -543,7 +549,8 @@
         "syncTime",
         "showHomebridgeEvents",
         "showOmniEvents",
-        "clearCache"
+        "clearCache",
+        "forceAutoDiscovery"
       ]
     }
   ]

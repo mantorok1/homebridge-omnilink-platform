@@ -168,8 +168,8 @@ export class OmniService extends events.EventEmitter {
     this.session.closeConnection();
   }
 
-  async discover(): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'discover');
+  async discover(devices?: Record<string, number[]>): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'discover', devices);
 
     const systemInformation = await this.getSystemInformation();
     if (systemInformation) {
@@ -182,12 +182,12 @@ export class OmniService extends events.EventEmitter {
       this._temperatureFormat = systemFormats.temperatureFormat;
     }
 
-    this._zones = await this.getZones();
-    this._units = await this.getUnits();
-    this._areas = await this.getAreas();
-    this._buttons = await this.getButtons();
-    this._codes = await this.getCodes();
-    this._thermostats = await this.getThermostats();
+    this._areas = await this.getAreas(devices?.['areas']);
+    this._zones = await this.getZones(devices?.['zones']);
+    this._units = await this.getUnits(devices?.['units']);
+    this._buttons = await this.getButtons(devices?.['buttons']);
+    this._thermostats = await this.getThermostats(devices?.['thermostats']);
+    this._codes = await this.getCodes(devices?.['codes']);
 
     // Event Handlers
     this.session.on('areas', this.areaStatusHandler.bind(this));
@@ -196,24 +196,16 @@ export class OmniService extends events.EventEmitter {
     this.session.on('thermostats', this.thermostatStatusHandler.bind(this));
   }
 
-  async getAreas(): Promise<Map<number, AreaPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getAreas');
+  async getAreas(areaIds?: number[]): Promise<Map<number, AreaPropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getAreas', areaIds);
 
     const areas = new Map<number, AreaPropertiesResponse>();
     try {
-      // Get Area capacity
-      const message = new ObjectTypeCapacitiesRequest({
-        objectType: ObjectTypes.Area,
-      });
-      const response = await this.session.sendApplicationDataMessage(message);
-
-      const areaLimit = (<ObjectTypeCapacitiesResponse>response).capcity;
-
-      // Get Area names
-      for(let i = 1; i <= areaLimit; i++) {
-        const properties = await this.getAreaProperties(i);
+      areaIds = areaIds ?? await this.getObjectIds(ObjectTypes.Area);
+      for(const id of areaIds) {
+        const properties = await this.getAreaProperties(id);
         if (properties !== undefined && properties.enabled) {
-          areas.set(i, properties);
+          areas.set(id, properties);
         }
       }
     } catch(error) {
@@ -224,12 +216,12 @@ export class OmniService extends events.EventEmitter {
     return areas;
   }
 
-  async getAreaProperties(index: number): Promise<AreaPropertiesResponse | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getAreaProperties', index);
+  async getAreaProperties(id: number): Promise<AreaPropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getAreaProperties', id);
 
     const message = new ObjectPropertiesRequest({
       objectType: ObjectTypes.Area,
-      index: index,
+      index: id,
       relativeDirection: 0,
       filter1: 0,
       filter2: 0,
@@ -243,24 +235,16 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  async getZones(): Promise<Map<number, ZonePropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getZones');
+  async getZones(zoneIds?: number[]): Promise<Map<number, ZonePropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getZones', zoneIds);
 
     const zones = new Map<number, ZonePropertiesResponse>();
     try {
-      // Get Zone capacity
-      const message = new ObjectTypeCapacitiesRequest({
-        objectType: ObjectTypes.Zone,
-      });
-      const response = await this.session.sendApplicationDataMessage(message);
-
-      const zoneLimit = (<ObjectTypeCapacitiesResponse>response).capcity;
-
-      // Get Zone names
-      for(let i = 1; i <= zoneLimit; i++) {
-        const properties = await this.getZoneProperties(i);
+      zoneIds = zoneIds ?? await this.getObjectIds(ObjectTypes.Zone);
+      for(const id of zoneIds) {
+        const properties = await this.getZoneProperties(id);
         if (properties !== undefined) {
-          zones.set(i, properties);
+          zones.set(id, properties);
         }
       }
     } catch(error) {
@@ -271,12 +255,12 @@ export class OmniService extends events.EventEmitter {
     return zones;
   }
 
-  async getZoneProperties(index: number): Promise<ZonePropertiesResponse | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getZoneProperties', index);
+  async getZoneProperties(id: number): Promise<ZonePropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getZoneProperties', id);
 
     const message = new ObjectPropertiesRequest({
       objectType: ObjectTypes.Zone,
-      index: index,
+      index: id,
       relativeDirection: 0,
       filter1: 1, // Named zones only
       filter2: 0,
@@ -290,24 +274,16 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  async getUnits(): Promise<Map<number, UnitPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getUnits');
+  async getUnits(unitIds?: number[]): Promise<Map<number, UnitPropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getUnits', unitIds);
 
     const units = new Map<number, UnitPropertiesResponse>();
     try {
-      // Get Unit capacity
-      const message = new ObjectTypeCapacitiesRequest({
-        objectType: ObjectTypes.Unit,
-      });
-      const response = await this.session.sendApplicationDataMessage(message);
-
-      const unitLimit = (<ObjectTypeCapacitiesResponse>response).capcity;
-
-      // Get Unit names
-      for(let i = 1; i <= unitLimit; i++) {
-        const properties = await this.getUnitProperties(i);
+      unitIds = unitIds ?? await this.getObjectIds(ObjectTypes.Unit);
+      for(const id of unitIds) {
+        const properties = await this.getUnitProperties(id);
         if (properties !== undefined) {
-          units.set(i, properties);
+          units.set(id, properties);
         }
       }
     } catch(error) {
@@ -318,12 +294,12 @@ export class OmniService extends events.EventEmitter {
     return units;
   }
 
-  async getUnitProperties(index: number): Promise<UnitPropertiesResponse | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getUnitProperties', index);
+  async getUnitProperties(id: number): Promise<UnitPropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getUnitProperties', id);
 
     const message = new ObjectPropertiesRequest({
       objectType: ObjectTypes.Unit,
-      index: index,
+      index: id,
       relativeDirection: 0,
       filter1: 1, // Named units only
       filter2: 0,
@@ -337,24 +313,16 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  async getButtons(): Promise<Map<number, ButtonPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getButtons');
+  async getButtons(buttonIds?: number[]): Promise<Map<number, ButtonPropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getButtons', buttonIds);
 
     const buttons = new Map<number, ButtonPropertiesResponse>();
     try {
-      // Get Button capacity
-      const message = new ObjectTypeCapacitiesRequest({
-        objectType: ObjectTypes.Button,
-      });
-      const response = await this.session.sendApplicationDataMessage(message);
-
-      const buttonLimit = (<ObjectTypeCapacitiesResponse>response).capcity;
-
-      // Get Button names
-      for(let i = 1; i <= buttonLimit; i++) {
-        const properties = await this.getButtonProperties(i);
+      buttonIds = buttonIds ?? await this.getObjectIds(ObjectTypes.Button);
+      for(const id of buttonIds) {
+        const properties = await this.getButtonProperties(id);
         if (properties !== undefined) {
-          buttons.set(i, properties);
+          buttons.set(id, properties);
         }
       }
     } catch(error) {
@@ -365,12 +333,12 @@ export class OmniService extends events.EventEmitter {
     return buttons;
   }
 
-  async getButtonProperties(index: number): Promise<ButtonPropertiesResponse | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getButtonProperties', index);
+  async getButtonProperties(id: number): Promise<ButtonPropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getButtonProperties', id);
 
     const message = new ObjectPropertiesRequest({
       objectType: ObjectTypes.Button,
-      index: index,
+      index: id,
       relativeDirection: 0,
       filter1: 1, // Named buttons only
       filter2: 0,
@@ -384,24 +352,16 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  async getCodes(): Promise<Map<number, CodePropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getCodes');
+  async getCodes(codeIds?: number[]): Promise<Map<number, CodePropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getCodes', codeIds);
 
     const codes = new Map<number, CodePropertiesResponse>();
     try {
-      // Get Codes capacity
-      const message = new ObjectTypeCapacitiesRequest({
-        objectType: ObjectTypes.Code,
-      });
-      const response = await this.session.sendApplicationDataMessage(message);
-
-      const codeLimit = (<ObjectTypeCapacitiesResponse>response).capcity;
-
-      // Get Code names
-      for(let i = 1; i <= codeLimit; i++) {
-        const properties = await this.getCodeProperties(i);
+      codeIds = codeIds ?? await this.getObjectIds(ObjectTypes.Code);
+      for(const id of codeIds) {
+        const properties = await this.getCodeProperties(id);
         if (properties !== undefined) {
-          codes.set(i, properties);
+          codes.set(id, properties);
         }
       }
     } catch(error) {
@@ -412,12 +372,12 @@ export class OmniService extends events.EventEmitter {
     return codes;
   }
 
-  async getCodeProperties(index: number): Promise<CodePropertiesResponse | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getCodeProperties', index);
+  async getCodeProperties(id: number): Promise<CodePropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getCodeProperties', id);
 
     const message = new ObjectPropertiesRequest({
       objectType: ObjectTypes.Code,
-      index: index,
+      index: id,
       relativeDirection: 0,
       filter1: 1, // Named codes only
       filter2: 0,
@@ -431,24 +391,16 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  async getThermostats(): Promise<Map<number, ThermostatPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getThermostats');
+  async getThermostats(thermostatIds?: number[]): Promise<Map<number, ThermostatPropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getThermostats', thermostatIds);
 
     const thermostats = new Map<number, ThermostatPropertiesResponse>();
     try {
-      // Get Thermostat capacity
-      const message = new ObjectTypeCapacitiesRequest({
-        objectType: ObjectTypes.Thermostat,
-      });
-      const response = await this.session.sendApplicationDataMessage(message);
-
-      const thermostatLimit = (<ObjectTypeCapacitiesResponse>response).capcity;
-
-      // Get Thermostat names
-      for(let i = 1; i <= thermostatLimit; i++) {
-        const properties = await this.getThermostatProperties(i);
+      thermostatIds = thermostatIds ?? await this.getObjectIds(ObjectTypes.Thermostat);
+      for(const id of thermostatIds) {
+        const properties = await this.getThermostatProperties(id);
         if (properties !== undefined) {
-          thermostats.set(i, properties);
+          thermostats.set(id, properties);
         }
       }
     } catch(error) {
@@ -459,12 +411,12 @@ export class OmniService extends events.EventEmitter {
     return thermostats;
   }
 
-  async getThermostatProperties(index: number): Promise<ThermostatPropertiesResponse | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getThermostatProperties', index);
+  async getThermostatProperties(id: number): Promise<ThermostatPropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getThermostatProperties', id);
 
     const message = new ObjectPropertiesRequest({
       objectType: ObjectTypes.Thermostat,
-      index: index,
+      index: id,
       relativeDirection: 0,
       filter1: 1, // Named thermostats only
       filter2: 0,
@@ -1051,5 +1003,13 @@ export class OmniService extends events.EventEmitter {
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
+  }
+
+  private async getObjectIds(objectType: ObjectTypes): Promise<number[]> {
+    const message = new ObjectTypeCapacitiesRequest({
+      objectType: objectType,
+    });
+    const response = await this.session.sendApplicationDataMessage(message);
+    return [...Array((<ObjectTypeCapacitiesResponse>response).capcity).keys()].map(i => ++i);
   }
 }

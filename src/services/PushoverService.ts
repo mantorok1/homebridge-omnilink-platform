@@ -79,7 +79,7 @@ export class PushoverService {
 
         this.pushover.send(pushoverMessage, (error, result) => {
           if (error) {
-            throw error;
+            this.platform.log.warn('Pushover notification(s) failed:', error.message);
           }
           const receipt = JSON.parse(result).receipt;
           if (this.receipts.has(areaName)) {
@@ -152,7 +152,7 @@ export class PushoverService {
 
         this.pushover.send(pushoverMessage, (error) => {
           if (error) {
-            throw error;
+            this.platform.log.warn('Pushover notification(s) failed:', error.message);
           }
         });
       }

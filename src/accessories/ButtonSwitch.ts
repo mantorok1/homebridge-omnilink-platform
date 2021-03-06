@@ -10,17 +10,17 @@ export class ButtonSwitch extends AccessoryBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.Switch) ??
-      this.platformAccessory.addService(this.platform.Service.Switch, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.Switch, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
-  static type = 'Button';
-
-  get serviceName(): string {
-    return this.platform.omniService.buttons.get(this.platformAccessory.context.index)!.name
-      ?? `${ButtonSwitch.type} ${this.platformAccessory.context.index}`;
+  protected async identifyHandler(): Promise<void> {
+    await this.setButtonSwitchOn(true);
+    super.identifyHandler();
   }
+
+  static type = 'Button';
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

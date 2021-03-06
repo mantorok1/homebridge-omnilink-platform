@@ -15,7 +15,7 @@ export class GarageDoorOpener extends AccessoryBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.GarageDoorOpener) ??
-      this.platformAccessory.addService(this.platform.Service.GarageDoorOpener, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.GarageDoorOpener, platformAccessory.displayName);
 
     this.zoneId = this.platform.settings.garageDoors.get(this.platformAccessory.context.index)?.zoneId;
     this.openTime = (this.platform.settings.garageDoors.get(this.platformAccessory.context.index)?.openTime ?? 10) * 1000 ;
@@ -23,12 +23,17 @@ export class GarageDoorOpener extends AccessoryBase {
     this.setEventHandlers();
   }
 
-  static type = 'GarageDoorOpener';
-
-  get serviceName(): string {
-    return this.platform.omniService.buttons.get(this.platformAccessory.context.index)!.name
-      ?? `${GarageDoorOpener.type} ${this.platformAccessory.context.index}`;
+  protected async identifyHandler(): Promise<void> {
+    const state = await this.getTargetDoorState();
+    if (state === this.platform.Characteristic.TargetDoorState.CLOSED) {
+      await this.setTargetDoorState(this.platform.Characteristic.TargetDoorState.OPEN);
+    } else {
+      await this.setTargetDoorState(this.platform.Characteristic.TargetDoorState.CLOSED);
+    }
+    super.identifyHandler();
   }
+
+  static type = 'GarageDoorOpener';
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

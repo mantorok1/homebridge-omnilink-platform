@@ -19,7 +19,7 @@ export class Thermostat extends AccessoryBase {
     if (service) {
       this.service = service;
     } else {
-      this.service = this.platformAccessory.addService(this.platform.Service.Thermostat, this.serviceName);
+      this.service = this.platformAccessory.addService(this.platform.Service.Thermostat, platformAccessory.displayName);
       this.initialiseService();
     }
 
@@ -27,11 +27,6 @@ export class Thermostat extends AccessoryBase {
   }
 
   static type = 'Thermostat';
-
-  get serviceName(): string {
-    return this.platform.omniService.thermostats.get(this.platformAccessory.context.index)!.name
-      ?? `${Thermostat.type} ${this.platformAccessory.context.index}`;
-  }
 
   initialiseService() {
     this.platform.log.debug(this.constructor.name, 'initialiseService');

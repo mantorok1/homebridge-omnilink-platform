@@ -11,17 +11,12 @@ export class LeakSensor extends SensorBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.LeakSensor) ??
-      this.platformAccessory.addService(this.platform.Service.LeakSensor, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.LeakSensor, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
   static type = 'LeakSensor';
-
-  get serviceName(): string {
-    return this.platform.omniService.zones.get(this.platformAccessory.context.index)!.name
-      ?? `${LeakSensor.type} ${this.platformAccessory.context.index}`;
-  }
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

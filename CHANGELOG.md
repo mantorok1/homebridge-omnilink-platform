@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## NEXT
+
+* Use platformAccessory display name as service name
+* Support platformAccessory Identify event
+* Cache discovered area, zone, unit, button, thermostat & code IDs for faster startup
+* [FIX] Pushover notification may cause plugin to crash when internet connection is down
+
 ## 1.3.3 (2020-12-30)
 
 * Switch accessories for Omni Emergency Alarms

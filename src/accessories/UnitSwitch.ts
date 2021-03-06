@@ -11,17 +11,18 @@ export class UnitSwitch extends AccessoryBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.Switch) ??
-      this.platformAccessory.addService(this.platform.Service.Switch, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.Switch, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
-  static type = 'UnitSwitch';
-
-  get serviceName(): string {
-    return this.platform.omniService.units.get(this.platformAccessory.context.index)!.name
-      ?? `${UnitSwitch.type} ${this.platformAccessory.context.index}`;
+  protected async identifyHandler(): Promise<void> {
+    const state = await this.getUnitSwitchOn();
+    await this.setUnitSwitchOn(!state);
+    super.identifyHandler();
   }
+
+  static type = 'UnitSwitch';
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

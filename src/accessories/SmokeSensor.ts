@@ -11,17 +11,12 @@ export class SmokeSensor extends SensorBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.SmokeSensor) ??
-      this.platformAccessory.addService(this.platform.Service.SmokeSensor, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.SmokeSensor, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
   static type = 'SmokeSensor';
-
-  get serviceName(): string {
-    return this.platform.omniService.zones.get(this.platformAccessory.context.index)!.name
-      ?? `${SmokeSensor.type} ${this.platformAccessory.context.index}`;
-  }
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

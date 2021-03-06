@@ -11,9 +11,13 @@ export abstract class AccessoryBase {
     public readonly platformAccessory: PlatformAccessory,
   ) { 
     this.setAccessoryInformation();
+
+    this.platformAccessory.on('identify', this.identifyHandler.bind(this));
   }
 
-  abstract serviceName: string;
+  protected async identifyHandler(): Promise<void> {
+    this.platform.log.info(`Identified: ${this.platformAccessory.displayName}`);
+  }
 
   setAccessoryInformation(): void {
     this.platform.log.debug('AccessoryBase', 'setAccessoryInformation');

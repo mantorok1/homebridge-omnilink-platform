@@ -15,17 +15,12 @@ export class SecuritySystem extends AccessoryBase {
     this.faultDetected = false;
 
     this.service = this.platformAccessory.getService(this.platform.Service.SecuritySystem) ??
-      this.platformAccessory.addService(this.platform.Service.SecuritySystem, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.SecuritySystem, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
   static type = 'SecuritySystem';
-
-  get serviceName(): string {
-    return this.platform.omniService.areas.get(this.platformAccessory.context.index)!.name
-      ?? `${SecuritySystem.type} ${this.platformAccessory.context.index}`;
-  }
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

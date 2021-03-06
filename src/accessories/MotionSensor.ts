@@ -11,17 +11,12 @@ export class MotionSensor extends SensorBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.MotionSensor) ??
-      this.platformAccessory.addService(this.platform.Service.MotionSensor, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.MotionSensor, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
   static type = 'MotionSensor';
-
-  get serviceName(): string {
-    return this.platform.omniService.zones.get(this.platformAccessory.context.index)!.name
-      ?? `${MotionSensor.type} ${this.platformAccessory.context.index}`;
-  }
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

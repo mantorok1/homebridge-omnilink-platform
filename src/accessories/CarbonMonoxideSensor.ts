@@ -11,17 +11,12 @@ export class CarbonMonoxideSensor extends SensorBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.CarbonMonoxideSensor) ??
-      this.platformAccessory.addService(this.platform.Service.CarbonMonoxideSensor, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.CarbonMonoxideSensor, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
   static type = 'CarbonMonoxideSensor';
-
-  get serviceName(): string {
-    return this.platform.omniService.zones.get(this.platformAccessory.context.index)!.name
-      ?? `${CarbonMonoxideSensor.type} ${this.platformAccessory.context.index}`;
-  }
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');

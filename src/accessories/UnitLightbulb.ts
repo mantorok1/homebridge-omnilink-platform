@@ -11,17 +11,18 @@ export class UnitLightbulb extends AccessoryBase {
     super(platform, platformAccessory);
 
     this.service = this.platformAccessory.getService(this.platform.Service.Lightbulb) ??
-      this.platformAccessory.addService(this.platform.Service.Lightbulb, this.serviceName);
+      this.platformAccessory.addService(this.platform.Service.Lightbulb, platformAccessory.displayName);
 
     this.setEventHandlers();
   }
 
-  static type = 'UnitLightbulb';
-
-  get serviceName(): string {
-    return this.platform.omniService.units.get(this.platformAccessory.context.index)!.name
-      ?? `${UnitLightbulb.type} ${this.platformAccessory.context.index}`;
+  protected async identifyHandler(): Promise<void> {
+    const state = await this.getUnitLightbulbOn();
+    await this.setUnitLightbulbOn(!state);
+    super.identifyHandler();
   }
+
+  static type = 'UnitLightbulb';
 
   setEventHandlers(): void {
     this.platform.log.debug(this.constructor.name, 'setEventHandlers');
