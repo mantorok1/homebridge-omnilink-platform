@@ -12,6 +12,7 @@ import { CarbonDioxideSensor } from './CarbonDioxideSensor';
 import { CarbonMonoxideSensor } from './CarbonMonoxideSensor';
 import { LeakSensor } from './LeakSensor';
 import { OccupancySensor } from './OccupancySensor';
+import { BypassZoneSwitch } from './BypassZoneSwitch';
 import { GarageDoorOpener } from './GarageDoorOpener';
 import { UnitSwitch } from './UnitSwitch';
 import { UnitLightbulb } from './UnitLightbulb';
@@ -38,6 +39,7 @@ export class AccessoryService {
       this.discoverZoneCarbonMonoxideSensors();
       this.discoverZoneLeakSensors();
       this.discoverZoneOccupancySensors();
+      this.discoverBypassZoneSwitches();
       this.discoverButtonSwitches();
       this.discoverGarageDoors();
       this.discoverUnitSwitches();
@@ -311,6 +313,35 @@ export class AccessoryService {
     }
   }
 
+  discoverBypassZoneSwitches(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverBypassZoneSwitches');
+
+    const sensorTypes = ['motion', 'smoke', 'contact', 'carbondioxide', 'carbonmonoxide', 'leak', 'occupancy'];
+    const zones = new Map<number, string>();
+
+    if (this.platform.settings.includeBypassZones) {
+      for(const [index, zone] of this.platform.omniService.zones) {
+        const sensorType = this.platform.settings.sensors.get(index);
+        if (sensorType !== undefined && !sensorTypes.includes(sensorType.toLowerCase())) {
+          continue;
+        }
+        zones.set(index, `Bypass ${zone.name}`);
+      }
+    }
+
+    for(const [index, name] of zones) {
+      this.addAccessory(BypassZoneSwitch, BypassZoneSwitch.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof BypassZoneSwitch) {
+        if (!zones.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(BypassZoneSwitch.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
   discoverButtonSwitches(): void {
     this.platform.log.debug(this.constructor.name, 'discoverButtonSwitches');
 
@@ -543,6 +574,8 @@ export class AccessoryService {
         return new LeakSensor(this.platform, platformAccessory);
       case 'occupancysensor':
         return new OccupancySensor(this.platform, platformAccessory);
+      case 'bypasszoneswitch':
+        return new BypassZoneSwitch(this.platform, platformAccessory);
       case 'garagedooropener':
         return new GarageDoorOpener(this.platform, platformAccessory);
       case 'unitswitch':

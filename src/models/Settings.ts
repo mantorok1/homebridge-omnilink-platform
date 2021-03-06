@@ -113,6 +113,10 @@ export class Settings {
     return <boolean>this.config.includeZones ?? true;
   }
 
+  get includeBypassZones(): boolean {
+    return <boolean>this.config.includeBypassZones ?? false;
+  }
+
   get includeButtons(): boolean {
     return <boolean>this.config.includeButtons ?? true;
   }

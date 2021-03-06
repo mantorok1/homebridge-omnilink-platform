@@ -498,6 +498,36 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  async setZoneBypass(zoneId: number, state: boolean): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setZoneBypass', zoneId, state);
+
+    try {
+      const areaId = this.zones.get(zoneId)!.areaId;
+      const codeId = await this.getCodeId(areaId);
+      if (codeId === undefined) {
+        return;
+      }
+
+      const message = new ControllerCommandRequest({
+        command: state ? Commands.BypassZone : Commands.RestoreZone,
+        parameter1: codeId,
+        parameter2: zoneId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.zones.get(zoneId)!.name}: Set Bypass ${state ? 'On' : 'Off'} [${this.codes.get(codeId)?.name}]`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`${this.zones.get(zoneId)!.name}: Set Bypass failed: ${error.message}`);
+    }
+  }
+
   async setUnitState(unitId: number, state: boolean): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setUnitState', unitId, state);
 

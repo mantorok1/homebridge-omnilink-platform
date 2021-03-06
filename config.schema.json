@@ -51,6 +51,12 @@
         "default": true,
         "required": false
       },
+      "includeBypassZones": {
+        "title": "Include Bypass Zones (shown as Switch accessories)",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
       "includeButtons": {
         "title": "Include Buttons (shown as Switch accessories)",
         "type": "boolean",
@@ -374,6 +380,7 @@
       "items": [
         "includeAreas",
         "includeZones",
+        "includeBypassZones",
         "includeButtons",
         "includeUnits",
         "includeThermostats",

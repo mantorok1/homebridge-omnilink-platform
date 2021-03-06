@@ -14,6 +14,7 @@ Functions available:
 * Control thermostats
 * Open/close garage doors
 * Activate emergency alarms (burglary, fire & auxiliary)
+* Bypass zones
 * Sync Omni controller's date & time with Homebridge host
 * Pushover notifications when alarms are triggered or system has troubles
 * MQTT client (see section "MQTT Client" for further details)
@@ -65,6 +66,7 @@ If you find the default config is not correct for your system or not to your lik
 |`key2`|Yes|string|Second part of the hexadecimal private key<br/>Format: 00-00-00-00-00-00-00-00||
 |`includeAreas`|No|boolean|Include all enabled areas from the Omni controller. Each area will be added as a "Security System" accessory|`true`|
 |`includeZones`|No|boolean|Include all named zones from the Omni controller. Each zone will be added as a "Sensor" accessory. By default a zone with a type of `Fire Emergency` will shown as a "Smoke Sensor" and all other types will be shown as a "Motion Sensor"|`true`|
+|`includeBypassZones`|No|boolean|Include bypass for named zones. Each zone bypass will be added as a "Switch" accessory|`false`|
 |`includeButtons`|No|boolean|Include all named buttons from the Omni controller. Each button will be added as a "Switch" accessory|`true`|
 |`includeUnits`|No|boolean|Include all named units from the Omni controller. Each unit will be added as a "Switch" accessory by default|`true`|
 |`includeThermostats`|No|boolean|Include all named thermostats from the Omni controller. Each thermostat will be added as a "Thermostat" accessory|`true`|
@@ -118,6 +120,7 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "key2": "00-00-00-00-00-00-00-00",
         "includeAreas": true,
         "includeZones": true,
+        "includeBypassZones": true,
         "includeButtons": true,
         "includeUnits": true,
         "includeThermostats": true,
@@ -189,7 +192,8 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "syncTime": true,
         "showHomebridgeEvents": true,
         "showOmniEvents": true,
-        "clearCache": false
+        "clearCache": false,
+        "forceAutoDiscovery": false
       }
     ],
     ...
@@ -221,6 +225,8 @@ Published topics end with `/get` and subscribed topics end with `/set`
 |`zone/{number}/name/get`|Gets the name of zone `{number}`|string| 
 |`zone/{number}/ready/get`|Gets the ready state of zone `{number}`|"true", "false"|
 |`zone/{number}/trouble/get`|Gets the trouble state of zone `{number}`|"true", "false"|
+|`zone/{number}/bypass/get`|Gets the bypass state of zone `{number}`|"true", "false"|
+|`zone/{number}/bypass/set`|Sets the bypass state of zone `{number}`|"true", "false"|
 
 ### Button Topics
 |Topic|Description|Payload|
@@ -246,7 +252,7 @@ Note: Brightness level is specified as an integer between 0 and 100 inclusive
 |`thermostat/{number}/mode/get`|Gets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
 |`thermostat/{number}/mode/set`|Sets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
 |`thermostat/{number}/state/get`|Gets the state of thermostat `{number}`|"idle", "heating", "cooling"|
-|`thermostat/{number}/temperature/get`|Gets the current temperature of thermostat `{number}`|number<br/>(see note 1)|
+|`thermostat/{number}/temperature/get`|Gets the current temperature of thermostat `{number}`|number<br/>(see note)|
 |`thermostat/{number}/coolsetpoint/get`|Gets the Cooling SetPoint of thermostat `{number}`|number<br/>(see note)|
 |`thermostat/{number}/coolsetpoint/set`|Sets Cooling Set Point of thermostat `{number}`|number<br/>(see note)|
 |`thermostat/{number}/heatsetpoint/get`|Gets the Heating SetPoint of thermostat `{number}`|number<br/>(see note)|

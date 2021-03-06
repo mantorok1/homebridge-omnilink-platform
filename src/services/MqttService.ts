@@ -60,6 +60,8 @@ export class MqttService {
 
       // Zones
       for(const zoneId of this.platform.omniService.zones.keys()) {
+        this.subTopics.set(`${this.prefix}zone/${zoneId}/bypass/set`, this.setBypassZone.bind(this));
+
         this.platform.omniService.on(`zone-${zoneId}`, this.publishZone.bind(this, zoneId));
 
         const zoneStatus = await this.platform.omniService.getZoneStatus(zoneId);
@@ -213,6 +215,16 @@ export class MqttService {
     await this.platform.omniService.setEmergencyAlarm(this.getObjectId(topic), emergencyType);
   }
 
+  async setBypassZone(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setBypassZone', topic, payload);
+
+    if (payload !== 'true' && payload !== 'false' ) {
+      return;
+    }
+
+    await this.platform.omniService.setZoneBypass(this.getObjectId(topic), payload === 'true');
+  }
+
   async setButtonExecute(topic: string, payload: string): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setButtonExecute', topic, payload);
 
@@ -360,6 +372,7 @@ export class MqttService {
     this.publish(`zone/${zoneId}/name/get`, this.platform.omniService.zones.get(zoneId)!.name);
     this.publish(`zone/${zoneId}/ready/get`, String(zoneStatus.ready));
     this.publish(`zone/${zoneId}/trouble/get`, String(zoneStatus.trouble));
+    this.publish(`zone/${zoneId}/bypass/get`, String(zoneStatus.bypassed));
   }
 
   publishButton(buttonId: number) {

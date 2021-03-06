@@ -44,6 +44,8 @@ export enum ObjectTypes {
 export enum Commands {
   UnitOff = 0,
   UnitOn = 1,
+  BypassZone = 4,
+  RestoreZone = 5,
   ExecuteButton = 7,
   UnitLightingLevel = 9,
   Disarm = 48,
