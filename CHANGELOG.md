@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## NEXT
+## 1.3.4 (2021-03-07)
 
 * Use platformAccessory display name as service name
 * Support platformAccessory Identify event
