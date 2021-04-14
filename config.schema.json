@@ -81,6 +81,12 @@
         "default": true,
         "required": false
       },
+      "includeAccessControls": {
+        "title": "Include Access Controls (shown as Lock Mechanism accessories)",
+        "type": "boolean",
+        "default": true,
+        "required": false
+      },
       "setHomeToAway": {
         "title": "Set Home mode to Away mode",
         "type": "boolean",
@@ -385,6 +391,7 @@
         "includeUnits",
         "includeThermostats",
         "includeEmergencyAlarms",
+        "includeAccessControls",
         {
           "type": "section",
           "title": "Security Settings",

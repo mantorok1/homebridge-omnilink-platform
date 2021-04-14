@@ -6,6 +6,7 @@ import { AreaStatus, ExtendedArmedModes, Alarms } from '../models/AreaStatus';
 import { ZoneStatus } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
 import { ThermostatStatus, ThermostatModes, ThermostatStates } from '../models/ThermostatStatus';
+import { AccessControlLockStatus } from '../models/AccessControlLockStatus';
 import { TemperatureFormats } from '../omni/messages/SystemFormatsResponse';
 import { SystemTroubles, EmergencyTypes } from '../omni/messages/enums';
 
@@ -103,6 +104,18 @@ export class MqttService {
           this.publishThermostat(thermostatId, thermostatStatus);
         }
       }
+
+      // Access Controls
+      for(const accessControlId of this.platform.omniService.accessControls.keys()) {
+        this.subTopics.set(`${this.prefix}accesscontrol/${accessControlId}/locked/set`, this.setLockedState.bind(this));
+
+        this.platform.omniService.on(`lock-${accessControlId}`, this.publishLock.bind(this, accessControlId));
+
+        const lockStatus = await this.platform.omniService.getLockStatus(accessControlId);
+        if (lockStatus !== undefined) {
+          this.publishLock(accessControlId, lockStatus);
+        }
+      }      
 
       // System Troubles
       this.platform.omniService.on('system-troubles', this.publishSystemTroubles.bind(this));
@@ -304,6 +317,16 @@ export class MqttService {
     await this.platform.omniService.setThermostatHeatSetPoint(this.getObjectId(topic), temperature);
   }
 
+  async setLockedState(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setLockedState', topic, payload);
+
+    if (payload !== 'true' && payload !== 'false' ) {
+      return;
+    }
+
+    await this.platform.omniService.setLockState(this.getObjectId(topic), payload === 'true');
+  }
+
   // Publications
   private async publish(topic: string, payload: string): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'publish', topic, payload);
@@ -413,6 +436,16 @@ export class MqttService {
 
     this.publish(`thermostat/${thermostatId}/state/get`,
       ThermostatStates[thermostatStatus.state].toLowerCase());
+  }
+
+  publishLock(accessControlId: number, lockStatus: AccessControlLockStatus) {
+    this.platform.log.debug(this.constructor.name, 'publishLock', accessControlId, lockStatus);
+
+    this.publish(`accesscontrol/${accessControlId}/name/get`,
+      this.platform.omniService.accessControls.get(accessControlId)!.name);
+  
+    this.publish(`accesscontrol/${accessControlId}/locked/get`,
+      String(lockStatus.locked));
   }
 
   publishSystemTroubles(troubles: SystemTroubles[]) {

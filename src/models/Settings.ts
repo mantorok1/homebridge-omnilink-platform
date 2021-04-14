@@ -133,6 +133,10 @@ export class Settings {
     return <boolean>this.config.includeEmergencyAlarms ?? true;
   }
 
+  get includeAccessControls(): boolean {
+    return <boolean>this.config.includeAccessControls ?? true;
+  }
+
   get setHomeToAway(): boolean {
     return <boolean>this.config.setHomeToAway ?? false;
   }

@@ -1,7 +1,7 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { Settings } from './models/Settings';
-import { OmniService } from './omni/OmniService';
+import { OmniService, Devices } from './omni/OmniService';
 import { AccessoryService } from './accessories/AccessoryService';
 import { PushoverService } from './services/PushoverService';
 import { MqttService } from './services/MqttService';
@@ -127,9 +127,14 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     for (const [index, thermostat] of this.omniService.thermostats) {
       this.log.info(`  ${index}: ${thermostat.name}`);
     }
+
+    this.log.info('Access Controls found:', this.omniService.accessControls.size);
+    for (const [index, accessControl] of this.omniService.accessControls) {
+      this.log.info(`  ${index}: ${accessControl.name}`);
+    }
   }
 
-  private async readCache(): Promise<Record<string, number[]> | undefined> {
+  private async readCache(): Promise<Devices | undefined> {
     this.log.debug(this.constructor.name, 'readCache');
     
     if (this.settings.forceAutoDiscovery) {
@@ -137,7 +142,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    let devices: Record<string, number[]>;
+    let devices: Devices;
     const cacheFile = path.join(this.api.user.storagePath(), 'OmnilinkPlatform.json');
 
     try {
@@ -149,10 +154,15 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       return;
     }
 
+    if (!('accessControls' in devices)) {
+      this.log.info('Performing Auto-Discovery as cache is outdated');
+      return;
+    }
+
     return devices;
   }
 
-  private async writeCache(devices?: Record<string, number[]>): Promise<void> {
+  private async writeCache(devices?: Devices): Promise<void> {
     this.log.debug(this.constructor.name, 'writeCache', devices);
 
     if (devices !== undefined) {
@@ -168,6 +178,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       buttons: [...this.omniService.buttons.keys()],
       thermostats: [...this.omniService.thermostats.keys()],
       codes: [...this.omniService.codes.keys()],
+      accessControls: [...this.omniService.accessControls.keys()],
     };
 
     try {

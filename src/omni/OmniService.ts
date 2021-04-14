@@ -14,6 +14,7 @@ import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse';
 import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse';
 import { ThermostatPropertiesResponse } from './messages/ThermostatPropertiesResponse';
 import { CodePropertiesResponse } from './messages/CodePropertiesResponse';
+import { AccessControlPropertiesResponse } from './messages/AccessControlPropertiesResponse';
 import { SetTimeCommandRequest } from './messages/SetTimeCommandRequest';
 import { ControllerCommandRequest } from './messages/ControllerCommandRequest';
 import { EnableNotificationsRequest } from './messages/EnableNotificationsRequest';
@@ -32,14 +33,26 @@ import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusRespons
 import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatStatusResponse';
 import { SecurityCodeValidationRequest } from './messages/SecurityCodeValidationRequest';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
+import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAccessControlLockStatusResponse';
 import { KeypadEmergencyRequest } from './messages/KeypadEmergencyRequest';
 
 import { AreaStatus, ArmedModes, ExtendedArmedModes } from '../models/AreaStatus';
 import { ZoneStatus, ZoneStates } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
 import { ThermostatStatus, ThermostatModes } from '../models/ThermostatStatus';
+import { AccessControlLockStatus } from '../models/AccessControlLockStatus';
 
 export { ZoneTypes } from './messages/ZonePropertiesResponse';
+
+export type Devices = {
+  areas: number[],
+  zones: number[],
+  units: number[],
+  buttons: number[],
+  thermostats: number[],
+  codes: number[],
+  accessControls: number[]
+}
 
 export class OmniService extends events.EventEmitter {
   private readonly session: OmniSession;
@@ -54,6 +67,7 @@ export class OmniService extends events.EventEmitter {
   private _buttons: Map<number, ButtonPropertiesResponse>;
   private _codes: Map<number, CodePropertiesResponse>;
   private _thermostats: Map<number, ThermostatPropertiesResponse>;
+  private _accessControls: Map<number, AccessControlPropertiesResponse>; 
   private _troubles: SystemTroubles[];
 
   constructor(private readonly platform: OmniLinkPlatform) {
@@ -65,6 +79,7 @@ export class OmniService extends events.EventEmitter {
     this._buttons = new Map<number, ButtonPropertiesResponse>();
     this._codes = new Map<number, CodePropertiesResponse>();
     this._thermostats = new Map<number, ThermostatPropertiesResponse>();
+    this._accessControls = new Map<number, AccessControlPropertiesResponse>();
     this._troubles = [];
   }
 
@@ -102,6 +117,10 @@ export class OmniService extends events.EventEmitter {
 
   get thermostats(): Map<number, ThermostatPropertiesResponse> {
     return this._thermostats;
+  }
+
+  get accessControls(): Map<number, AccessControlPropertiesResponse> {
+    return this._accessControls;
   }
 
   async init(): Promise<void> {
@@ -168,7 +187,7 @@ export class OmniService extends events.EventEmitter {
     this.session.closeConnection();
   }
 
-  async discover(devices?: Record<string, number[]>): Promise<void> {
+  async discover(devices?: Devices): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'discover', devices);
 
     const systemInformation = await this.getSystemInformation();
@@ -188,12 +207,14 @@ export class OmniService extends events.EventEmitter {
     this._buttons = await this.getButtons(devices?.['buttons']);
     this._thermostats = await this.getThermostats(devices?.['thermostats']);
     this._codes = await this.getCodes(devices?.['codes']);
+    this._accessControls = await this.getAccessControls(devices?.['accessControls']);
 
     // Event Handlers
     this.session.on('areas', this.areaStatusHandler.bind(this));
     this.session.on('zones', this.zoneStatusHandler.bind(this));
     this.session.on('units', this.unitStatusHandler.bind(this));
     this.session.on('thermostats', this.thermostatStatusHandler.bind(this));
+    this.session.on('locks', this.lockStatusHandler.bind(this));
   }
 
   async getAreas(areaIds?: number[]): Promise<Map<number, AreaPropertiesResponse>> {
@@ -427,6 +448,45 @@ export class OmniService extends events.EventEmitter {
 
     if (response.type === MessageTypes.ObjectPropertiesResponse) {
       return <ThermostatPropertiesResponse>response;
+    }
+  }
+
+  async getAccessControls(accessControlIds?: number[]): Promise<Map<number, AccessControlPropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getAccessControls', accessControlIds);
+
+    const accessControls = new Map<number, AccessControlPropertiesResponse>();
+    try {
+      accessControlIds = accessControlIds ?? await this.getObjectIds(ObjectTypes.AccessControlReader);
+      for(const id of accessControlIds) {
+        const properties = await this.getAccessControlProperties(id);
+        if (properties !== undefined) {
+          accessControls.set(id, properties);
+        }
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;      
+    }
+
+    return accessControls;
+  }
+
+  async getAccessControlProperties(id: number): Promise<AccessControlPropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getAccessControlProperties', id);
+
+    const message = new ObjectPropertiesRequest({
+      objectType: ObjectTypes.AccessControlReader,
+      index: id,
+      relativeDirection: 0,
+      filter1: 1, // Named access controls only
+      filter2: 0,
+      filter3: 0,
+    });
+
+    const response = await this.session.sendApplicationDataMessage(message);
+
+    if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      return <AccessControlPropertiesResponse>response;
     }
   }
 
@@ -666,6 +726,31 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  async setLockState(accessControlId: number, lock: boolean): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'lockDoor', accessControlId, lock);
+
+    try {
+      const message = new ControllerCommandRequest({
+        command: lock ? Commands.LockDoor : Commands.UnlockDoor,
+        parameter1: 0,
+        parameter2: accessControlId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.accessControls.get(accessControlId)!.name}: ${lock ? 'Lock' : 'Unlock'} Door`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(
+        `${this.accessControls.get(accessControlId)!.name}: ${lock ? 'Lock' : 'Unlock'} Door failed: ${error.message}`);
+    }
+  }
+
   async notify(): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'notify');
 
@@ -823,6 +908,27 @@ export class OmniService extends events.EventEmitter {
   
       if (response instanceof ExtendedThermostatStatusResponse) {
         return response.thermostats.get(thermostatId);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;  
+    }
+  }
+
+  async getLockStatus(lockId: number): Promise<AccessControlLockStatus | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getLockStatus', lockId);
+
+    try {
+      const message = new ExtendedObjectStatusRequest({
+        objectType: ObjectTypes.AccessControlLock,
+        startId: lockId,
+        endId: lockId,
+      });
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+  
+      if (response instanceof ExtendedAccessControlLockStatusResponse) {
+        return response.locks.get(lockId);
       }
     } catch(error) {
       this.platform.log.error(error);
@@ -1011,7 +1117,6 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-
   thermostatStatusHandler(thermostats: Map<number, ThermostatStatus>): void {
     this.platform.log.debug(this.constructor.name, 'thermostatStatusHandler', thermostats);
 
@@ -1022,6 +1127,22 @@ export class OmniService extends events.EventEmitter {
           this.platform.log.info(`${name}: ${thermostatStatus.currentTemperature}; ${ThermostatModes[thermostatStatus.mode]}`);
         }
         this.emit(`thermostat-${thermostatId}`, thermostatStatus);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+    }
+  }
+
+  lockStatusHandler(locks: Map<number, AccessControlLockStatus>): void {
+    this.platform.log.debug(this.constructor.name, 'lockStatusHandler', locks);
+
+    try {
+      for(const [lockId, lockStatus] of locks.entries()) {
+        if (this.platform.settings.showOmniEvents) {
+          const name = this.accessControls.get(lockId)!.name;
+          this.platform.log.info(`${name}: ${lockStatus.locked ? 'Locked' : 'Unlocked'}`);
+        }
+        this.emit(`lock-${lockId}`, lockStatus);
       }
     } catch(error) {
       this.platform.log.error(error);

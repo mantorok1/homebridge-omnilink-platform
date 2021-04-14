@@ -15,6 +15,7 @@ Functions available:
 * Open/close garage doors
 * Activate emergency alarms (burglary, fire & auxiliary)
 * Bypass zones
+* Lock/unlock doors
 * Sync Omni controller's date & time with Homebridge host
 * Pushover notifications when alarms are triggered or system has troubles
 * MQTT client (see section "MQTT Client" for further details)
@@ -23,26 +24,21 @@ Functions available:
 This plugin supports Omni systems that meet the following requirements:
 * Connectivity via TCP/IP
 * Omni-Link II Protocol
-* Firmware 3.0 or higher (earlier versions may partially work)
+* Firmware 3.0 or higher
 
 ## Accessories
-The plugin will discover what features your system has and create Homekit accessories for them. The following are the currently supported Omni-Link objects and the default Homekit accessory they map to.
+The plugin will discover what features your system has and create HomeKit accessories for them. The following are the currently supported Omni-Link objects and the available HomeKit accessories they can map to.
 
-|Omni-Link Object|Homekit Accessory|
+|Omni-Link Object|Available HomeKit Accessory|
 |-|-|
 |`Area`|`Security System` (1 per area)|
-|`Zone` (Fire Emergency)|`Smoke Sensor`|
-|`Zone` (all other types)|`Motion Sensor`|
-|`Button`|`Switch`|
-|`Unit`|`Switch`|
+|`Zone`|`Motion Sensor` (default for non fire emergency)<br/>`Smoke Sensor` (default for fire emergency)<br/>`Contact Sensor`<br/>`Carbon Dioxide Sensor`<br/>`Carbon Monoxide Sensor`<br/>`Leak Sensor`<br/>`Occupancy Sensor`<br/>`Garage Door Opener` (when used with a button)|
+|`Button`|`Switch` (stateless)<br/>`Garage Door Opener` (when used with a zone)|
+|`Unit`|`Switch` (default)<br/>`Lightbulb` (dimmable)|
 |`Thermostat`|`Thermostat`|
 |`Emergency Alarms`|`Switch` (1 per area and emergency type)|
-
-The zones can be overriden to another type of sensor. Currently the plugin supports `Motion`, `Smoke`, `Contact`, `Carbon Dioxide`, `Carbon Monoxide`, `Leak` and `Occupancy` sensors.
-
-Units can also be overriden as a `Lightbulb` accessory.
-
-A combination of a button and zone can also be defined as a `Garage Door Opener`.
+|`Bypass Zone`|`Switch`|
+|`Access Contol`|`Lock Mechanism`|
 
 ## Installation
 Note: This plugin requires [Homebridge](https://homebridge.io) (version 1.0.0 or above) to be installed first.
@@ -71,12 +67,13 @@ If you find the default config is not correct for your system or not to your lik
 |`includeUnits`|No|boolean|Include all named units from the Omni controller. Each unit will be added as a "Switch" accessory by default|`true`|
 |`includeThermostats`|No|boolean|Include all named thermostats from the Omni controller. Each thermostat will be added as a "Thermostat" accessory|`true`|
 |`includeEmergencyAlarms`|No|boolean|Include emergency alarms (ie. burglary, fire and auxiliary). Each alarm for each area will be added as a "Switch" accessory|`true`|
+|`includeAccessControls`|No|boolean|Include all named Access Controls. Each access control will be added as a "Lock Mechanism" accessory|`true`|
 |`setHomeAsAway`|No|boolean|Changes the security mode to "Away" if "Home" is selected. This may be useful if you don't use the "Home" mode and want to ensure the alarm is set to "Away" if accidently set to "Home"|`false`|
 |`setNightAsAway`|No|boolean|Changes the security mode to "Away" if "Night" is selected. Likewise, useful if you don't use the "Night" mode|`false`|
 |`securityCode`|No|string|The 4 digit security code used to arm and disarm the security system. Without this the security system cannot be operated||
-|`sensors`|No|array|Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of Homekit sensor accessory to use (valid options: `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "contact" }`||
+|`sensors`|No|array|Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of HomeKit sensor accessory to use (valid options: `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "contact" }`||
 |`garageDoors`|No|array|Defines 1 or more garage door accessories. Each definition requires the following properties:<br/><ul><li>`buttonId` - the button number correspnding to the button that opens/closes the door<li>`zoneId` - the zone number corresponding to the sensor that determines if the garage door is closed or not<li>`openTime` - the time taken (in seconds) for the garage door to fully open</ul>Example garage door definition: `{ "buttonId": 2, "zoneId": 3, "openTime": 10 }`||
-|`units`|No|array|Defines 1 or more unit accessories. This can be useful to override a unit as the default one is incorrect. Each unit definition requires the following properties:<br/><ul><li>`unitId` - the unit number corresponding to the unit<li>`type` - type of Homekit accessory to use (valid options: `switch`, `lightbulb`). Any other value will remove the accessory</ul>Example unit definition: `{ "unitId": 2, "type": "lightbulb" }`||
+|`units`|No|array|Defines 1 or more unit accessories. This can be useful to override a unit as the default one is incorrect. Each unit definition requires the following properties:<br/><ul><li>`unitId` - the unit number corresponding to the unit<li>`type` - type of HomeKit accessory to use (valid options: `switch`, `lightbulb`). Any other value will remove the accessory</ul>Example unit definition: `{ "unitId": 2, "type": "lightbulb" }`||
 |`pushover`|No|object|See 'Pushover Notification Configuration' below||
 |`mqtt`|No|object|See 'MQTT Configuration' below||
 |`syncTime`|No|boolean|Sync the controller's date and time with the Homebridge host|`false`|
@@ -125,6 +122,7 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "includeUnits": true,
         "includeThermostats": true,
         "includeEmergencyAlarms": true,
+        "includeAccessControls": true,
         "setHomeToAway": true,
         "setNightToAway": true,
         "securityCode": "0000",
@@ -260,6 +258,13 @@ Note: Brightness level is specified as an integer between 0 and 100 inclusive
 
 Note: Temperatures are specified in either Celsius or Fahrenheit depending on how your Omni controller is configured.
 
+### Access Control Topics
+|Topic|Description|Payload|
+|-|-|-|
+|`accesscontrol/{number}/name/get`|Gets the name of access control `{number}`|string| 
+|`accesscontrol/{number}/locked/get`|Gets the locked state of access control `{number}`|"true", "false"|
+|`accesscontrol/{number}/locked/set`|Sets the locked state of access control `{number}`|"true", "false"|
+
 ### System Topics
 |Topic|Description|Payload|
 |-|-|-|
@@ -275,5 +280,5 @@ See [Change Log](CHANGELOG.md).
 
 ## Known Limitations
 * I've only been able to test this plugin using my own system. I can't guarantee it will work on others.
-* Thermostats were not able to be tested as my system doesn't have any. If you encounter any bugs please raise an issue on GitHub and I'll attempt to fix it ASAP.
+* Thermostats & Access Controls were not able to be tested as my system doesn't have any. If you encounter any bugs please raise an issue on GitHub and I'll attempt to fix it ASAP.
 * This plugin only supports a subset of the functionality provided by the Omni-Link II protocol. If there's specific functionality you'd like to see included with this plugin please raise an issue on GitHub and I'll see what I can do. I may need you to assist with beta testing though.

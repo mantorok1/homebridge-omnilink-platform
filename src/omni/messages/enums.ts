@@ -39,6 +39,8 @@ export enum ObjectTypes {
   Code = 4,
   Area = 5,
   Thermostat = 6,
+  AccessControlReader = 14,
+  AccessControlLock = 15,
 }
 
 export enum Commands {
@@ -60,6 +62,8 @@ export enum Commands {
   SetThermostatMode = 68,
   SetHumififySetPoint = 73,
   SetDehumidifySetPoint = 74,
+  LockDoor = 105,
+  UnlockDoor = 106,
 }
 
 export enum SecurityModes {

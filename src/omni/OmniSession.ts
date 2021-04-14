@@ -28,6 +28,9 @@ import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusRespons
 import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusResponse';
 import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatStatusResponse';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
+import { AccessControlPropertiesResponse } from './messages/AccessControlPropertiesResponse';
+import { ExtendedAccessControlReaderStatusResponse } from './messages/ExtendedAccessControlReaderStatusResponse';
+import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAccessControlLockStatusResponse';
 
 export class OmniSession extends events.EventEmitter {
   private socket: net.Socket;
@@ -325,6 +328,8 @@ export class OmniSession extends events.EventEmitter {
             return new AreaPropertiesResponse(message);
           case ObjectTypes.Thermostat:
             return new ThermostatPropertiesResponse(message);
+          case ObjectTypes.AccessControlReader:
+            return new AccessControlPropertiesResponse(message);
           default:
             this.platform.log.debug(`Object type ${message[3]} not supported for ObjectPropertiesResponse`);
             return;
@@ -339,6 +344,10 @@ export class OmniSession extends events.EventEmitter {
             return new ExtendedAreaStatusResponse(message);
           case ObjectTypes.Thermostat:
             return new ExtendedThermostatStatusResponse(message);
+          case ObjectTypes.AccessControlReader:
+            return new ExtendedAccessControlReaderStatusResponse(message);
+          case ObjectTypes.AccessControlLock:
+            return new ExtendedAccessControlLockStatusResponse(message);
           default:
             this.platform.log.debug(`Object type ${message[3]} not supported for ExtendedObjectStatusResponse`);
             return;
@@ -365,6 +374,10 @@ export class OmniSession extends events.EventEmitter {
       this.emit('units', response.units);
     } else if (response instanceof ExtendedThermostatStatusResponse) {
       this.emit('thermostats', response.thermostats);
+    } else if (response instanceof ExtendedAccessControlReaderStatusResponse) {
+      this.emit('readers', response.readers);
+    } else if (response instanceof ExtendedAccessControlLockStatusResponse) {
+      this.emit('locks', response.locks);
     }
   }
 }

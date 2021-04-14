@@ -18,6 +18,7 @@ import { UnitSwitch } from './UnitSwitch';
 import { UnitLightbulb } from './UnitLightbulb';
 import { Thermostat } from './Thermostat';
 import { EmergencyAlarmSwitch } from './EmergencyAlarmSwitch';
+import { LockMechanism } from './LockMechanism';
 import { EmergencyTypes } from '../omni/messages/enums';
 
 export class AccessoryService {
@@ -46,6 +47,7 @@ export class AccessoryService {
       this.discoverUnitLightbulbs();
       this.discoverThermostats();
       this.discoverEmergencyAlarmSwitches();
+      this.discoverAccessControls();
     } catch (error) {
       this.platform.log.error(error);
     }
@@ -495,6 +497,30 @@ export class AccessoryService {
     }
   }
 
+  discoverAccessControls(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverAccessControls');
+
+    const accessControls = new Map<number, string>();
+
+    if (this.platform.settings.includeAccessControls) {
+      for(const [index, accessControl] of this.platform.omniService.accessControls) {
+        accessControls.set(index, accessControl.name);
+      }
+    }
+
+    for(const [index, name] of accessControls) {
+      this.addAccessory(LockMechanism, LockMechanism.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof LockMechanism) {
+        if (!accessControls.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(LockMechanism.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
   addAccessory<TAccessory extends AccessoryBase>(
     Accessory: new (platform: OmniLinkPlatform, accessory: PlatformAccessory) => TAccessory,
     type: string, name: string, index?: number,
@@ -586,6 +612,8 @@ export class AccessoryService {
         return new Thermostat(this.platform, platformAccessory);
       case 'emergencyalarm':
         return new EmergencyAlarmSwitch(this.platform, platformAccessory);
+      case 'lockmechanism':
+        return new LockMechanism(this.platform, platformAccessory);
     }
   }
 

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## NEXT
+
+* Lock Mechanism accessories for Omni access controls
+
 ## 1.3.4 (2021-03-07)
 
 * Use platformAccessory display name as service name
