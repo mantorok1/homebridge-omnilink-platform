@@ -16,6 +16,7 @@ Functions available:
 * Activate emergency alarms (burglary, fire & auxiliary)
 * Bypass zones
 * Lock/unlock doors
+* Notify temperature/humidity from auxiliary sensors
 * Sync Omni controller's date & time with Homebridge host
 * Pushover notifications when alarms are triggered or system has troubles
 * MQTT client (see section "MQTT Client" for further details)
@@ -32,13 +33,14 @@ The plugin will discover what features your system has and create HomeKit access
 |Omni-Link Object|Available HomeKit Accessory|
 |-|-|
 |`Area`|`Security System` (1 per area)|
-|`Zone`|`Motion Sensor` (default for non fire emergency)<br/>`Smoke Sensor` (default for fire emergency)<br/>`Contact Sensor`<br/>`Carbon Dioxide Sensor`<br/>`Carbon Monoxide Sensor`<br/>`Leak Sensor`<br/>`Occupancy Sensor`<br/>`Garage Door Opener` (when used with a button)|
+|`Zone`|`Motion Sensor` (default for non fire emergency)<br/>`Smoke Sensor` (default for fire emergency [33])<br/>`Contact Sensor`<br/>`Carbon Dioxide Sensor`<br/>`Carbon Monoxide Sensor`<br/>`Leak Sensor`<br/>`Occupancy Sensor`<br/>`Garage Door Opener` (when used with a button)|
 |`Button`|`Switch` (stateless)<br/>`Garage Door Opener` (when used with a zone)|
 |`Unit`|`Switch` (default)<br/>`Lightbulb` (dimmable)|
 |`Thermostat`|`Thermostat`|
 |`Emergency Alarms`|`Switch` (1 per area and emergency type)|
 |`Bypass Zone`|`Switch`|
 |`Access Contol`|`Lock Mechanism`|
+|`Auxiliary Sensor`|`Temperature Sensor` (default)<br/>`Humidity Sensor` (for humidity sensor type [84])|
 
 ## Installation
 Note: This plugin requires [Homebridge](https://homebridge.io) (version 1.0.0 or above) to be installed first.
@@ -68,6 +70,7 @@ If you find the default config is not correct for your system or not to your lik
 |`includeThermostats`|No|boolean|Include all named thermostats from the Omni controller. Each thermostat will be added as a "Thermostat" accessory|`true`|
 |`includeEmergencyAlarms`|No|boolean|Include emergency alarms (ie. burglary, fire and auxiliary). Each alarm for each area will be added as a "Switch" accessory|`true`|
 |`includeAccessControls`|No|boolean|Include all named Access Controls. Each access control will be added as a "Lock Mechanism" accessory|`true`|
+|`includeAuxiliarySensors`|No|boolean|Include all named Auxiliary Sensors. Each auxiliary sensor will be added as either a "Temperature Sensor" or "Humidity Sensor" accessory|`true`|
 |`setHomeAsAway`|No|boolean|Changes the security mode to "Away" if "Home" is selected. This may be useful if you don't use the "Home" mode and want to ensure the alarm is set to "Away" if accidently set to "Home"|`false`|
 |`setNightAsAway`|No|boolean|Changes the security mode to "Away" if "Night" is selected. Likewise, useful if you don't use the "Night" mode|`false`|
 |`securityCode`|No|string|The 4 digit security code used to arm and disarm the security system. Without this the security system cannot be operated||
@@ -123,6 +126,7 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "includeThermostats": true,
         "includeEmergencyAlarms": true,
         "includeAccessControls": true,
+        "includeAuxiliarySensors": true,
         "setHomeToAway": true,
         "setNightToAway": true,
         "securityCode": "0000",
@@ -265,6 +269,15 @@ Note: Temperatures are specified in either Celsius or Fahrenheit depending on ho
 |`accesscontrol/{number}/locked/get`|Gets the locked state of access control `{number}`|"true", "false"|
 |`accesscontrol/{number}/locked/set`|Sets the locked state of access control `{number}`|"true", "false"|
 
+### Auxiliary Sensor Topics
+|Topic|Description|Payload|
+|-|-|-|
+|`auxiliary/{number}/name/get`|Gets the name of auxiliary sensor `{number}`|string| 
+|`auxiliary/{number}/temperature/get`|Gets the temperature of auxiliary sensor `{number}`|number<br/>(see note)|
+|`auxiliary/{number}/humidity/get`|Gets the humidity of auxiliary sensor `{number}`|number|
+
+Note: Temperatures are specified in either Celsius or Fahrenheit depending on how your Omni controller is configured.
+
 ### System Topics
 |Topic|Description|Payload|
 |-|-|-|
@@ -280,5 +293,6 @@ See [Change Log](CHANGELOG.md).
 
 ## Known Limitations
 * I've only been able to test this plugin using my own system. I can't guarantee it will work on others.
-* Thermostats & Access Controls were not able to be tested as my system doesn't have any. If you encounter any bugs please raise an issue on GitHub and I'll attempt to fix it ASAP.
+* Thermostats, Access Controls & Auxiliary Sensors were not able to be tested as my system doesn't have any. If you encounter any bugs please raise an issue on GitHub and I'll attempt to fix it ASAP.
 * This plugin only supports a subset of the functionality provided by the Omni-Link II protocol. If there's specific functionality you'd like to see included with this plugin please raise an issue on GitHub and I'll see what I can do. I may need you to assist with beta testing though.
+* There is a limit of 149 HomeKit accessories on a single Bridge which includes those from other plugins. If you have a lot of accessories it is recommended that you run this plugin in a [Child Bridge](https://github.com/homebridge/homebridge/wiki/Child-Bridges).

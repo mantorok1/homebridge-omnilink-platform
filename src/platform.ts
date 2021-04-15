@@ -132,6 +132,11 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     for (const [index, accessControl] of this.omniService.accessControls) {
       this.log.info(`  ${index}: ${accessControl.name}`);
     }
+
+    this.log.info('Auxiliary Sensors found:', this.omniService.auxiliarySensors.size);
+    for (const [index, auxiliarySensor] of this.omniService.auxiliarySensors) {
+      this.log.info(`  ${index}: ${auxiliarySensor.name}`);
+    }
   }
 
   private async readCache(): Promise<Devices | undefined> {
@@ -154,7 +159,9 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    if (!('accessControls' in devices)) {
+    // Check that cache file contains all supported Omni object types
+    const objectTypes = ['areas', 'zones', 'units', 'buttons', 'thermostats', 'codes', 'accessControls', 'auxiliarySensors'];
+    if (!objectTypes.every(dt => dt in devices)) {
       this.log.info('Performing Auto-Discovery as cache is outdated');
       return;
     }
@@ -179,6 +186,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       thermostats: [...this.omniService.thermostats.keys()],
       codes: [...this.omniService.codes.keys()],
       accessControls: [...this.omniService.accessControls.keys()],
+      auxiliarySensors: [...this.omniService.auxiliarySensors.keys()],
     };
 
     try {

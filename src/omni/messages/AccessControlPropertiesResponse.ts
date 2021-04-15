@@ -18,6 +18,6 @@ export class AccessControlPropertiesResponse extends ObjectPropertiesResponse {
     this._unlockTimer = message[7] * 256 + message[8];
     this._accessGranted = message[9] === 0;
     this._lastUser = message[10];
-    this._name = this.getName(message.subarray(11, 25), 'Reader');
+    this._name = this.getName(message.subarray(11, 26), 'Reader');
   }
 }

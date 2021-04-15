@@ -15,6 +15,7 @@ import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse';
 import { ThermostatPropertiesResponse } from './messages/ThermostatPropertiesResponse';
 import { CodePropertiesResponse } from './messages/CodePropertiesResponse';
 import { AccessControlPropertiesResponse } from './messages/AccessControlPropertiesResponse';
+import { AuxiliarySensorPropertiesResponse, SensorTypes } from './messages/AuxiliarySensorPropertiesResponse';
 import { SetTimeCommandRequest } from './messages/SetTimeCommandRequest';
 import { ControllerCommandRequest } from './messages/ControllerCommandRequest';
 import { EnableNotificationsRequest } from './messages/EnableNotificationsRequest';
@@ -34,6 +35,7 @@ import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatS
 import { SecurityCodeValidationRequest } from './messages/SecurityCodeValidationRequest';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
 import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAccessControlLockStatusResponse';
+import { ExtendedAuxiliarySensorStatusResponse } from './messages/ExtendedAuxiliarySensorStatusResponse';
 import { KeypadEmergencyRequest } from './messages/KeypadEmergencyRequest';
 
 import { AreaStatus, ArmedModes, ExtendedArmedModes } from '../models/AreaStatus';
@@ -41,6 +43,7 @@ import { ZoneStatus, ZoneStates } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
 import { ThermostatStatus, ThermostatModes } from '../models/ThermostatStatus';
 import { AccessControlLockStatus } from '../models/AccessControlLockStatus';
+import { AuxiliarySensorStatus } from '../models/AuxiliarySensorStatus';
 
 export { ZoneTypes } from './messages/ZonePropertiesResponse';
 
@@ -51,7 +54,8 @@ export type Devices = {
   buttons: number[],
   thermostats: number[],
   codes: number[],
-  accessControls: number[]
+  accessControls: number[],
+  auxiliarySensors: number[]
 }
 
 export class OmniService extends events.EventEmitter {
@@ -67,7 +71,8 @@ export class OmniService extends events.EventEmitter {
   private _buttons: Map<number, ButtonPropertiesResponse>;
   private _codes: Map<number, CodePropertiesResponse>;
   private _thermostats: Map<number, ThermostatPropertiesResponse>;
-  private _accessControls: Map<number, AccessControlPropertiesResponse>; 
+  private _accessControls: Map<number, AccessControlPropertiesResponse>;
+  private _auxiliarySensors: Map<number, AuxiliarySensorPropertiesResponse>;
   private _troubles: SystemTroubles[];
 
   constructor(private readonly platform: OmniLinkPlatform) {
@@ -80,6 +85,7 @@ export class OmniService extends events.EventEmitter {
     this._codes = new Map<number, CodePropertiesResponse>();
     this._thermostats = new Map<number, ThermostatPropertiesResponse>();
     this._accessControls = new Map<number, AccessControlPropertiesResponse>();
+    this._auxiliarySensors = new Map<number, AuxiliarySensorPropertiesResponse>();
     this._troubles = [];
   }
 
@@ -121,6 +127,10 @@ export class OmniService extends events.EventEmitter {
 
   get accessControls(): Map<number, AccessControlPropertiesResponse> {
     return this._accessControls;
+  }
+
+  get auxiliarySensors(): Map<number, AuxiliarySensorPropertiesResponse> {
+    return this._auxiliarySensors;
   }
 
   async init(): Promise<void> {
@@ -208,6 +218,7 @@ export class OmniService extends events.EventEmitter {
     this._thermostats = await this.getThermostats(devices?.['thermostats']);
     this._codes = await this.getCodes(devices?.['codes']);
     this._accessControls = await this.getAccessControls(devices?.['accessControls']);
+    this._auxiliarySensors = await this.getAuxiliarySensors(devices?.['auxiliarySensors']);
 
     // Event Handlers
     this.session.on('areas', this.areaStatusHandler.bind(this));
@@ -215,6 +226,7 @@ export class OmniService extends events.EventEmitter {
     this.session.on('units', this.unitStatusHandler.bind(this));
     this.session.on('thermostats', this.thermostatStatusHandler.bind(this));
     this.session.on('locks', this.lockStatusHandler.bind(this));
+    this.session.on('sensors', this.auxiliarySensorStatusHandler.bind(this));
   }
 
   async getAreas(areaIds?: number[]): Promise<Map<number, AreaPropertiesResponse>> {
@@ -490,6 +502,46 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  async getAuxiliarySensors(auxiliarySensorIds?: number[]): Promise<Map<number, AuxiliarySensorPropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getAuxiliarySensors', auxiliarySensorIds);
+
+    const sensors = new Map<number, AuxiliarySensorPropertiesResponse>();
+    try {
+      auxiliarySensorIds = auxiliarySensorIds ?? await this.getObjectIds(ObjectTypes.AuxiliarySensor);
+
+      for(const id of auxiliarySensorIds) {
+        const properties = await this.getAuxiliarySensorsProperties(id);
+        if (properties !== undefined) {
+          sensors.set(id, properties);
+        }
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;      
+    }
+
+    return sensors;
+  }
+
+  async getAuxiliarySensorsProperties(id: number): Promise<AuxiliarySensorPropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getAuxiliarySensorsProperties', id);
+
+    const message = new ObjectPropertiesRequest({
+      objectType: ObjectTypes.AuxiliarySensor,
+      index: id,
+      relativeDirection: 0,
+      filter1: 1, // Named Auxiliary Sensors only
+      filter2: 0,
+      filter3: 0,
+    });
+
+    const response = await this.session.sendApplicationDataMessage(message);
+
+    if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      return <AuxiliarySensorPropertiesResponse>response;
+    }
+  }
+
   async setTime(): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setTime');
 
@@ -737,7 +789,7 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.accessControls.get(accessControlId)!.name}: ${lock ? 'Lock' : 'Unlock'} Door`);
+        this.platform.log.info(`${this.accessControls.get(accessControlId)!.name}: ${lock ? 'Lock' : 'Unlock'}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -747,7 +799,7 @@ export class OmniService extends events.EventEmitter {
       }
     } catch(error) {
       this.platform.log.warn(
-        `${this.accessControls.get(accessControlId)!.name}: ${lock ? 'Lock' : 'Unlock'} Door failed: ${error.message}`);
+        `${this.accessControls.get(accessControlId)!.name}: ${lock ? 'Lock' : 'Unlock'} failed: ${error.message}`);
     }
   }
 
@@ -929,6 +981,27 @@ export class OmniService extends events.EventEmitter {
   
       if (response instanceof ExtendedAccessControlLockStatusResponse) {
         return response.locks.get(lockId);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+      throw error;  
+    }
+  }
+
+  async getAuxiliarySensorStatus(auxiliarySensorId: number): Promise<AuxiliarySensorStatus | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getAuxiliarySensorStatus', auxiliarySensorId);
+
+    try {
+      const message = new ExtendedObjectStatusRequest({
+        objectType: ObjectTypes.AuxiliarySensor,
+        startId: auxiliarySensorId,
+        endId: auxiliarySensorId,
+      });
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+  
+      if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
+        return response.sensors.get(auxiliarySensorId);
       }
     } catch(error) {
       this.platform.log.error(error);
@@ -1149,6 +1222,25 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  auxiliarySensorStatusHandler(sensors: Map<number, AuxiliarySensorStatus>): void {
+    this.platform.log.debug(this.constructor.name, 'auxiliarySensorStatusHandler', sensors);
+
+    try {
+      for(const [sensorId, sensorStatus] of sensors.entries()) {
+        if (this.platform.settings.showOmniEvents) {
+          const name = this.auxiliarySensors.get(sensorId)!.name;
+          const message = this.auxiliarySensors.get(sensorId)!.sensorType === SensorTypes.Temperature
+            ? `${sensorStatus.temperature} oC`
+            : `${sensorStatus.humidity}%`;
+          this.platform.log.info(`${name}: ${message}`);
+        }
+        this.emit(`sensor-${sensorId}`, sensorStatus);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
+    }
+  }
+
   // Helpers
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -1161,6 +1253,10 @@ export class OmniService extends events.EventEmitter {
       objectType: objectType,
     });
     const response = await this.session.sendApplicationDataMessage(message);
-    return [...Array((<ObjectTypeCapacitiesResponse>response).capcity).keys()].map(i => ++i);
+    const capacity = response instanceof ObjectTypeCapacitiesResponse
+      ? response.capacity
+      : 0;
+
+    return [...Array(capacity).keys()].map(i => ++i);
   }
 }

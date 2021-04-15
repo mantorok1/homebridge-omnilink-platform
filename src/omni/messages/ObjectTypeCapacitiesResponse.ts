@@ -4,20 +4,20 @@ import { ApplicationDataResponse } from './ApplicationDataResponse';
 export class ObjectTypeCapacitiesResponse extends ApplicationDataResponse {
 
   private _objectType?: number;
-  private _capcity?: number;
+  private _capacity?: number;
 
   get objectType(): ObjectTypes {
     return this._objectType!;
   }
 
-  get capcity(): number {
-    return this._capcity!;
+  get capacity(): number {
+    return this._capacity ?? 0;
   }
 
   deserialize(message: Buffer): void {
     super.deserialize(message);
 
     this._objectType = message[3];
-    this._capcity = message[4] * 256 + message[5];
+    this._capacity = message[4] * 256 + message[5];
   }
 }

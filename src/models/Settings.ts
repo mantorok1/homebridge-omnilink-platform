@@ -137,6 +137,10 @@ export class Settings {
     return <boolean>this.config.includeAccessControls ?? true;
   }
 
+  get includeAuxiliarySensors(): boolean {
+    return <boolean>this.config.includeAuxiliarySensors ?? true;
+  }
+
   get setHomeToAway(): boolean {
     return <boolean>this.config.setHomeToAway ?? false;
   }

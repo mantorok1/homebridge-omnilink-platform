@@ -31,6 +31,8 @@ import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidatio
 import { AccessControlPropertiesResponse } from './messages/AccessControlPropertiesResponse';
 import { ExtendedAccessControlReaderStatusResponse } from './messages/ExtendedAccessControlReaderStatusResponse';
 import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAccessControlLockStatusResponse';
+import { AuxiliarySensorPropertiesResponse } from './messages/AuxiliarySensorPropertiesResponse';
+import { ExtendedAuxiliarySensorStatusResponse } from './messages/ExtendedAuxiliarySensorStatusResponse';
 
 export class OmniSession extends events.EventEmitter {
   private socket: net.Socket;
@@ -299,7 +301,7 @@ export class OmniSession extends events.EventEmitter {
 
     switch (type) {
       case MessageTypes.Acknowledge:
-      case MessageTypes.NegativeAchnowledge:
+      case MessageTypes.NegativeAcknowledge:
       case MessageTypes.EndOfData:
         return new AcknowledgeResponse(message);
       case MessageTypes.SystemInformationResponse:
@@ -328,6 +330,8 @@ export class OmniSession extends events.EventEmitter {
             return new AreaPropertiesResponse(message);
           case ObjectTypes.Thermostat:
             return new ThermostatPropertiesResponse(message);
+          case ObjectTypes.AuxiliarySensor:
+            return new AuxiliarySensorPropertiesResponse(message);
           case ObjectTypes.AccessControlReader:
             return new AccessControlPropertiesResponse(message);
           default:
@@ -344,6 +348,8 @@ export class OmniSession extends events.EventEmitter {
             return new ExtendedAreaStatusResponse(message);
           case ObjectTypes.Thermostat:
             return new ExtendedThermostatStatusResponse(message);
+          case ObjectTypes.AuxiliarySensor:
+            return new ExtendedAuxiliarySensorStatusResponse(message);
           case ObjectTypes.AccessControlReader:
             return new ExtendedAccessControlReaderStatusResponse(message);
           case ObjectTypes.AccessControlLock:
@@ -378,6 +384,8 @@ export class OmniSession extends events.EventEmitter {
       this.emit('readers', response.readers);
     } else if (response instanceof ExtendedAccessControlLockStatusResponse) {
       this.emit('locks', response.locks);
+    } else if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
+      this.emit('sensors', response.sensors);
     }
   }
 }

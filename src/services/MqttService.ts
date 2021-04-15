@@ -7,8 +7,10 @@ import { ZoneStatus } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
 import { ThermostatStatus, ThermostatModes, ThermostatStates } from '../models/ThermostatStatus';
 import { AccessControlLockStatus } from '../models/AccessControlLockStatus';
+import { AuxiliarySensorStatus } from '../models/AuxiliarySensorStatus';
 import { TemperatureFormats } from '../omni/messages/SystemFormatsResponse';
 import { SystemTroubles, EmergencyTypes } from '../omni/messages/enums';
+import { SensorTypes } from '../omni/messages/AuxiliarySensorPropertiesResponse';
 
 export class MqttService {
   private settings: MqttSettings | undefined;
@@ -115,7 +117,17 @@ export class MqttService {
         if (lockStatus !== undefined) {
           this.publishLock(accessControlId, lockStatus);
         }
-      }      
+      }
+
+      // Auxiliary Sensors
+      for(const auxiliarySensorId of this.platform.omniService.auxiliarySensors.keys()) {
+        this.platform.omniService.on(`auxiliary-${auxiliarySensorId}`, this.publishAuxiliarySensor.bind(this, auxiliarySensorId));
+
+        const auxiliarySensorStatus = await this.platform.omniService.getAuxiliarySensorStatus(auxiliarySensorId);
+        if (auxiliarySensorStatus !== undefined) {
+          this.publishAuxiliarySensor(auxiliarySensorId, auxiliarySensorStatus);
+        }
+      }
 
       // System Troubles
       this.platform.omniService.on('system-troubles', this.publishSystemTroubles.bind(this));
@@ -446,6 +458,21 @@ export class MqttService {
   
     this.publish(`accesscontrol/${accessControlId}/locked/get`,
       String(lockStatus.locked));
+  }
+
+  publishAuxiliarySensor(auxiliarySensorId: number, auxiliarySensorStatus: AuxiliarySensorStatus) {
+    this.platform.log.debug(this.constructor.name, 'publishAuxiliarySensor', auxiliarySensorId, auxiliarySensorStatus);
+
+    this.publish(`auxiliary/${auxiliarySensorId}/name/get`,
+      this.platform.omniService.auxiliarySensors.get(auxiliarySensorId)!.name);
+
+    if (this.platform.omniService.auxiliarySensors.get(auxiliarySensorId)!.sensorType === SensorTypes.Temperature) {
+      this.publish(`auxiliary/${auxiliarySensorId}/temperature/get`,
+        this.formatTemperature(auxiliarySensorStatus.temperature));
+    } else if (this.platform.omniService.auxiliarySensors.get(auxiliarySensorId)!.sensorType === SensorTypes.Humidity) {
+      this.publish(`auxiliary/${auxiliarySensorId}/humidity/get`,
+        String(auxiliarySensorStatus.humidity));
+    } 
   }
 
   publishSystemTroubles(troubles: SystemTroubles[]) {

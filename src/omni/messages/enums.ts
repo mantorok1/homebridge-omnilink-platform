@@ -1,7 +1,7 @@
 
 export enum MessageTypes {
   Acknowledge = 0x01,
-  NegativeAchnowledge = 0x02,
+  NegativeAcknowledge = 0x02,
   EndOfData = 0x03,
 
   SetTimeCommandRequest = 0x13,
@@ -39,6 +39,7 @@ export enum ObjectTypes {
   Code = 4,
   Area = 5,
   Thermostat = 6,
+  AuxiliarySensor = 8,
   AccessControlReader = 14,
   AccessControlLock = 15,
 }
