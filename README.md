@@ -82,6 +82,7 @@ If you find the default config is not correct for your system or not to your lik
 |`syncTime`|No|boolean|Sync the controller's date and time with the Homebridge host|`false`|
 |`showHomebridgeEvents`|No|boolean|Show Homebridge events in the Homebridge log|`false`|
 |`showOmniEvents`|No|boolean|Show Omni notification events in the Homebridge log|`false`|
+|`showRequestResponse`|No|boolean|Show requests to and responses from controller in the Homebridge log|`false`|
 |`clearCache`|No|boolean|Clear all the plugin's cached accessories from homebridge to force re-creation of HomeKit accessories on restart<br/>This is equivalent to deleting the `cachedAccessories` file|`false`|
 |`forceAutoDiscovery`|No|boolean|Force auto-discovery of Omni-Link devices on restart<br/>This is equivalent to deleting the `OmnilinkPlatform.json` file|`false`|
 
@@ -194,6 +195,7 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "syncTime": true,
         "showHomebridgeEvents": true,
         "showOmniEvents": true,
+        "showRequestResponse": false,
         "clearCache": false,
         "forceAutoDiscovery": false
       }

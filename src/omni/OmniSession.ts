@@ -239,6 +239,10 @@ export class OmniSession extends events.EventEmitter {
   private sendPacket(packet: OmniPacket): Promise<OmniPacket>{
     this.platform.log.debug(this.constructor.name, 'sendPacket', packet.serialise());
 
+    if (this.platform.settings.showRequestResponse) {
+      this.platform.log.info(`Request: ${[...packet.message?.values() ?? '']}`);
+    }
+
     return new Promise((resolve) => {
       const key = packet.type === PacketTypes.ApplicationData ? packet.message!.toString('hex') : '';
       if (key.length > 0) {
@@ -297,70 +301,99 @@ export class OmniSession extends events.EventEmitter {
   processMessage(message: Buffer): ApplicationDataResponse | undefined {
     this.platform.log.debug(this.constructor.name, 'processMessage', message);
 
+    let response: ApplicationDataResponse | undefined;
     const type: MessageTypes = message[2];
 
     switch (type) {
       case MessageTypes.Acknowledge:
       case MessageTypes.NegativeAcknowledge:
       case MessageTypes.EndOfData:
-        return new AcknowledgeResponse(message);
+        response = new AcknowledgeResponse(message);
+        break;
       case MessageTypes.SystemInformationResponse:
-        return new SystemInformationResponse(message);
+        response = new SystemInformationResponse(message);
+        break;
       case MessageTypes.SystemStatusResponse:
-        return new SystemStatusResponse(message);
+        response = new SystemStatusResponse(message);
+        break;
       case MessageTypes.SystemTroublesResponse:
-        return new SystemTroublesResponse(message);
+        response = new SystemTroublesResponse(message);
+        break;
       case MessageTypes.SystemFormatsResponse:
-        return new SystemFormatsResponse(message);
+        response = new SystemFormatsResponse(message);
+        break;
       case MessageTypes.ObjectTypeCapacitiesResponse:
-        return new ObjectTypeCapacitiesResponse(message);
+        response = new ObjectTypeCapacitiesResponse(message);
+        break;
       case MessageTypes.SecurityCodeValidationResponse:
-        return new SecurityCodeValidationResponse(message);
+        response = new SecurityCodeValidationResponse(message);
+        break;
       case MessageTypes.ObjectPropertiesResponse:
         switch (<ObjectTypes>message[3]) {
           case ObjectTypes.Zone:
-            return new ZonePropertiesResponse(message);
+            response = new ZonePropertiesResponse(message);
+            break;
           case ObjectTypes.Unit:
-            return new UnitPropertiesResponse(message);
+            response = new UnitPropertiesResponse(message);
+            break;
           case ObjectTypes.Button:
-            return new ButtonPropertiesResponse(message);
+            response = new ButtonPropertiesResponse(message);
+            break;
           case ObjectTypes.Code:
-            return new CodePropertiesResponse(message);
+            response = new CodePropertiesResponse(message);
+            break;
           case ObjectTypes.Area:
-            return new AreaPropertiesResponse(message);
+            response = new AreaPropertiesResponse(message);
+            break;
           case ObjectTypes.Thermostat:
-            return new ThermostatPropertiesResponse(message);
+            response = new ThermostatPropertiesResponse(message);
+            break;
           case ObjectTypes.AuxiliarySensor:
-            return new AuxiliarySensorPropertiesResponse(message);
+            response = new AuxiliarySensorPropertiesResponse(message);
+            break;
           case ObjectTypes.AccessControlReader:
-            return new AccessControlPropertiesResponse(message);
+            response = new AccessControlPropertiesResponse(message);
+            break;
           default:
             this.platform.log.debug(`Object type ${message[3]} not supported for ObjectPropertiesResponse`);
-            return;
+            break;
         }
+        break;
       case MessageTypes.ExtendedObjectStatusResponse:
         switch (<ObjectTypes>message[3]) {
           case ObjectTypes.Zone:
-            return new ExtendedZoneStatusResponse(message);
+            response = new ExtendedZoneStatusResponse(message);
+            break;
           case ObjectTypes.Unit:
-            return new ExtendedUnitStatusResponse(message);
+            response = new ExtendedUnitStatusResponse(message);
+            break;
           case ObjectTypes.Area:
-            return new ExtendedAreaStatusResponse(message);
+            response = new ExtendedAreaStatusResponse(message);
+            break;
           case ObjectTypes.Thermostat:
-            return new ExtendedThermostatStatusResponse(message);
+            response = new ExtendedThermostatStatusResponse(message);
+            break;
           case ObjectTypes.AuxiliarySensor:
-            return new ExtendedAuxiliarySensorStatusResponse(message);
+            response = new ExtendedAuxiliarySensorStatusResponse(message);
+            break;
           case ObjectTypes.AccessControlReader:
-            return new ExtendedAccessControlReaderStatusResponse(message);
+            response = new ExtendedAccessControlReaderStatusResponse(message);
+            break;
           case ObjectTypes.AccessControlLock:
-            return new ExtendedAccessControlLockStatusResponse(message);
+            response = new ExtendedAccessControlLockStatusResponse(message);
+            break;
           default:
             this.platform.log.debug(`Object type ${message[3]} not supported for ExtendedObjectStatusResponse`);
-            return;
+            break;
         }
+        break;
     }
 
-    this.platform.log.debug(`Message type ${type} not supported`);
+    if (this.platform.settings.showRequestResponse) {
+      this.platform.log.info(`Response: ${[...message.values()]} (${response?.constructor.name ?? 'unsupported'})`);
+    }
+
+    return response;
   }
 
   notificationHandler(packet: OmniPacket) {

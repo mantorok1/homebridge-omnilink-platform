@@ -181,6 +181,10 @@ export class Settings {
     return <boolean>this.config.showOmniEvents ?? false;
   }
 
+  get showRequestResponse(): boolean {
+    return <boolean>this.config.showRequestResponse ?? false;
+  }
+
   get clearCache(): boolean {
     return <boolean>this.config.clearCache ?? false;
   }

@@ -2,9 +2,9 @@ export class AuxiliarySensorStatus {
   private readonly _temperature: number;
   private readonly _humidity: number;
 
-  constructor(temperatureHumidity: number) {
-    this._temperature = this.convertToCelcius(temperatureHumidity);
-    this._humidity = this.convertToFahrenheit(temperatureHumidity); // Humidity is reported in Omni temperature format (0-100 F => 0-100%) 
+  constructor(omniTemperature: number) {
+    this._temperature = this.convertToCelcius(omniTemperature);
+    this._humidity = this.convertToHumidity(omniTemperature);  
   }
 
   get temperature(): number {
@@ -15,11 +15,18 @@ export class AuxiliarySensorStatus {
     return this._humidity;
   }
 
-  private convertToCelcius(temperature: number): number {
-    return -40.0 + (temperature / 2.0);
+  private convertToCelcius(omniTemperature: number): number {
+    return -40.0 + (omniTemperature / 2.0);
   }
 
-  private convertToFahrenheit(humidity: number): number {
-    return -40.0 + (humidity / 255.0 * 229.5);
+  // Humidity is reported in Omni temperature format (0-100 F => 0-100%)
+  private convertToHumidity(omniTemperature: number): number {
+    if (omniTemperature <= 44) {
+      return 0;
+    } else if (omniTemperature >= 156) {
+      return 100;
+    } else {
+      return Math.round(-40.0 + (omniTemperature / 255.0 * 229.5));
+    }
   }
 }

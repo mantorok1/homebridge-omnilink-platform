@@ -358,6 +358,12 @@
         "default": false,
         "required": false
       },      
+      "showRequestResponse": {
+        "title": "Show Requests and Responses in the log",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },      
       "clearCache": {
         "title": "Clear plugin's accessory cache",
         "type": "boolean",
@@ -570,6 +576,7 @@
         "syncTime",
         "showHomebridgeEvents",
         "showOmniEvents",
+        "showRequestResponse",
         "clearCache",
         "forceAutoDiscovery"
       ]
