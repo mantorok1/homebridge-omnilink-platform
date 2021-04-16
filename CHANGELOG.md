@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 * Lock Mechanism accessories for Omni access controls
 * Temperature & Humidity Sensor accessories for Omni auxiliary sensors ([#5](https://github.com/mantorok1/homebridge-omnilink-platform/issues/5))
 * Show Request/Response in Homebridge logs
+* Improvements to mapping zones and units to HomeKit accessories in settings ([#4](https://github.com/mantorok1/homebridge-omnilink-platform/issues/4))
 
 ## 1.3.4 (2021-03-07)
 

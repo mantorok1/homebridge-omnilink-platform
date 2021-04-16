@@ -115,6 +115,135 @@
         "pattern": "^[0-9]{4}$",
         "required": false
       },
+      "defaultAccessoryMappings": {
+        "type": "object",
+        "properties": {
+          "zone": {
+            "title": "Zone",
+            "type": "string",
+            "required": true,
+            "default": "motion",
+            "oneOf": [
+              { "title": "Motion Sensor", "enum": [ "motion" ] },
+              { "title": "Smoke Sensor", "enum": [ "smoke" ] },
+              { "title": "Contact Sensor", "enum": [ "contact" ] },
+              { "title": "Carbon Dioxide Sensor", "enum": [ "carbondioxide" ] },
+              { "title": "Carbon Monoxide Sensor", "enum": [ "carbonmonoxide" ] },
+              { "title": "Leak Sensor", "enum": [ "leak" ] },
+              { "title": "Occupancy Sensor", "enum": [ "occupancy" ] },
+              { "title": "None", "enum": [ "none" ] }
+            ]
+          },
+          "zoneFireEmergency": {
+            "title": "Zone (Fire Emergency)",
+            "type": "string",
+            "required": true,
+            "default": "smoke",
+            "oneOf": [
+              { "title": "Motion Sensor", "enum": [ "motion" ] },
+              { "title": "Smoke Sensor", "enum": [ "smoke" ] },
+              { "title": "Contact Sensor", "enum": [ "contact" ] },
+              { "title": "Carbon Dioxide Sensor", "enum": [ "carbondioxide" ] },
+              { "title": "Carbon Monoxide Sensor", "enum": [ "carbonmonoxide" ] },
+              { "title": "Leak Sensor", "enum": [ "leak" ] },
+              { "title": "Occupancy Sensor", "enum": [ "occupancy" ] },
+              { "title": "None", "enum": [ "none" ] }
+            ]
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string",
+            "required": true,
+            "default": "switch",
+            "oneOf": [
+              { "title": "Switch", "enum": [ "switch" ] },
+              { "title": "Lightbulb", "enum": [ "lightbulb" ] },
+              { "title": "None", "enum": [ "none" ] }
+            ]
+          }
+        }
+      },
+      "map": {
+        "type": "object",
+        "properties": {
+          "zones": {
+            "type": "object",
+            "properties": {
+              "motion": {
+                "title": "Motion Sensors",
+                "description": "comma seperated list of zone numbers to be mapped to motion sensors",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "smoke": {
+                "title": "Smoke Sensors",
+                "description": "comma seperated list of zone numbers to be mapped to smoke sensors",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "contact": {
+                "title": "Contact Sensors",
+                "description": "comma seperated list of zone numbers to be mapped to contact sensors",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "carbondioxide": {
+                "title": "Carbon Dioxide Sensors",
+                "description": "comma seperated list of zone numbers to be mapped to carbon dioxide sensors",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "carbonmonoxide": {
+                "title": "Carbon Monoxide Sensors",
+                "description": "comma seperated list of zone numbers to be mapped to carbon monoxide sensors",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "leak": {
+                "title": "Leak Sensors",
+                "description": "comma seperated list of zone numbers to be mapped to leak sensors",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "occupancy": {
+                "title": "Occupancy Sensors",
+                "description": "comma seperated list of zone numbers to be mapped to occupancy sensors",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "none": {
+                "title": "None",
+                "description": "comma seperated list of zone numbers that are not to be mapped",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              }
+            }
+          },
+          "units": {
+            "type": "object",
+            "properties": {
+              "switch": {
+                "title": "Switches",
+                "description": "comma seperated list of unit numbers to be mapped to switches",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "lightbulb": {
+                "title": "Lightbulbs",
+                "description": "comma seperated list of unit numbers to be mapped to lightbulbs",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "none": {
+                "title": "None",
+                "description": "comma seperated list of unit numbers that are not to be mapped",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              }
+            }
+          }
+        }
+      },
       "sensors": {
         "title": "Zone Sensor Overrides",
         "type": "array",
@@ -418,25 +547,40 @@
         },
         {
           "type": "section",
-          "title": "Zone Sensor Settings",
+          "title": "Default Accessory Mappings (Zones & Units)",
           "expandable": true,
           "expanded": false,
           "items": [
-            {
-              "type": "array",
-              "orderable": false,
-              "buttonText": "Add Zone Sensor Override",
-              "items": [
-                {
-                  "type": "flex",
-                  "flex-flow": "row wrap",
-                  "items": [
-                    "sensors[].zoneId",
-                    "sensors[].sensorType"
-                  ]
-                }
-              ]
-            }
+            "defaultAccessoryMappings.zone",
+            "defaultAccessoryMappings.zoneFireEmergency",
+            "defaultAccessoryMappings.unit"
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Zone Accessory Mappings",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            "map.zones.motion",
+            "map.zones.smoke",
+            "map.zones.contact",
+            "map.zones.carbondioxide",
+            "map.zones.carbonmonoxide",
+            "map.zones.leak",
+            "map.zones.occupancy",
+            "map.zones.none"
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Unit Accessory Mappings",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            "map.units.switch",
+            "map.units.lightbulb",
+            "map.units.none"
           ]
         },
         {
@@ -465,7 +609,30 @@
         },
         {
           "type": "section",
-          "title": "Unit Accessory Settings",
+          "title": "Zone Sensor Settings (DEPRECATED)",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            {
+              "type": "array",
+              "orderable": false,
+              "buttonText": "Add Zone Sensor Override",
+              "items": [
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    "sensors[].zoneId",
+                    "sensors[].sensorType"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Unit Accessory Settings (DEPRECATED)",
           "expandable": true,
           "expanded": false,
           "items": [

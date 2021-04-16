@@ -33,14 +33,14 @@ The plugin will discover what features your system has and create HomeKit access
 |Omni-Link Object|Available HomeKit Accessory|
 |-|-|
 |`Area`|`Security System` (1 per area)|
-|`Zone`|`Motion Sensor` (default for non fire emergency)<br/>`Smoke Sensor` (default for fire emergency [33])<br/>`Contact Sensor`<br/>`Carbon Dioxide Sensor`<br/>`Carbon Monoxide Sensor`<br/>`Leak Sensor`<br/>`Occupancy Sensor`<br/>`Garage Door Opener` (when used with a button)|
+|`Zone`|`Motion Sensor` (default)<br/>`Smoke Sensor` (default for fire emergency)<br/>`Contact Sensor`<br/>`Carbon Dioxide Sensor`<br/>`Carbon Monoxide Sensor`<br/>`Leak Sensor`<br/>`Occupancy Sensor`<br/>`Garage Door Opener` (when used with a button)|
 |`Button`|`Switch` (stateless)<br/>`Garage Door Opener` (when used with a zone)|
 |`Unit`|`Switch` (default)<br/>`Lightbulb` (dimmable)|
 |`Thermostat`|`Thermostat`|
 |`Emergency Alarms`|`Switch` (1 per area and emergency type)|
 |`Bypass Zone`|`Switch`|
 |`Access Contol`|`Lock Mechanism`|
-|`Auxiliary Sensor`|`Temperature Sensor` (default)<br/>`Humidity Sensor` (for humidity sensor type [84])|
+|`Auxiliary Sensor`|`Temperature Sensor` (for sensors that report temperature)<br/>`Humidity Sensor` (for sensors that report humidity)|
 
 ## Installation
 Note: This plugin requires [Homebridge](https://homebridge.io) (version 1.0.0 or above) to be installed first.
@@ -50,7 +50,7 @@ It is highly recommended that you use [Homebridge Config UI X](https://www.npmjs
     npm install -g homebridge-omnilink-platform
 
 ## Configuration
-This is a platform plugin that will register accessories and their services with the bridge provided by Homebridge. The plugin will attempt to discover your Omni controller's objects (ie. zones, areas, buttons) automatically thus requiring minimal configuration to the `config.json` file.
+This is a platform plugin that will register accessories and their services with the bridge provided by Homebridge. The plugin will attempt to discover your Omni controller's objects (ie. zones, areas, buttons, etc.) automatically thus requiring minimal configuration to the `config.json` file.
 
 If you find the default config is not correct for your system or not to your liking there are some overrides you can define in the `config.json` file.
 
@@ -63,10 +63,10 @@ If you find the default config is not correct for your system or not to your lik
 |`key1`|Yes|string|First part of the hexadecimal private key<br/>Format: 00-00-00-00-00-00-00-00||
 |`key2`|Yes|string|Second part of the hexadecimal private key<br/>Format: 00-00-00-00-00-00-00-00||
 |`includeAreas`|No|boolean|Include all enabled areas from the Omni controller. Each area will be added as a "Security System" accessory|`true`|
-|`includeZones`|No|boolean|Include all named zones from the Omni controller. Each zone will be added as a "Sensor" accessory. By default a zone with a type of `Fire Emergency` will shown as a "Smoke Sensor" and all other types will be shown as a "Motion Sensor"|`true`|
+|`includeZones`|No|boolean|Include all named zones from the Omni controller. Each zone will be added as a "Sensor" accessory|`true`|
 |`includeBypassZones`|No|boolean|Include bypass for named zones. Each zone bypass will be added as a "Switch" accessory|`false`|
 |`includeButtons`|No|boolean|Include all named buttons from the Omni controller. Each button will be added as a "Switch" accessory|`true`|
-|`includeUnits`|No|boolean|Include all named units from the Omni controller. Each unit will be added as a "Switch" accessory by default|`true`|
+|`includeUnits`|No|boolean|Include all named units from the Omni controller|`true`|
 |`includeThermostats`|No|boolean|Include all named thermostats from the Omni controller. Each thermostat will be added as a "Thermostat" accessory|`true`|
 |`includeEmergencyAlarms`|No|boolean|Include emergency alarms (ie. burglary, fire and auxiliary). Each alarm for each area will be added as a "Switch" accessory|`true`|
 |`includeAccessControls`|No|boolean|Include all named Access Controls. Each access control will be added as a "Lock Mechanism" accessory|`true`|
@@ -74,9 +74,11 @@ If you find the default config is not correct for your system or not to your lik
 |`setHomeAsAway`|No|boolean|Changes the security mode to "Away" if "Home" is selected. This may be useful if you don't use the "Home" mode and want to ensure the alarm is set to "Away" if accidently set to "Home"|`false`|
 |`setNightAsAway`|No|boolean|Changes the security mode to "Away" if "Night" is selected. Likewise, useful if you don't use the "Night" mode|`false`|
 |`securityCode`|No|string|The 4 digit security code used to arm and disarm the security system. Without this the security system cannot be operated||
-|`sensors`|No|array|Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of HomeKit sensor accessory to use (valid options: `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "contact" }`||
+|`defaultAccessoryMappings`|No|object|Defines the default zone and unit HomeKit accessory mappings.<br/>For `zone` and `zoneFireEmergency` the defaults can be either `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy` or `none`<br/>For `unit` the defaults can be either `switch`, `lightbulb` or `none`|`{"zone": "motion", "zoneFireEmergency": "smoke", "unit": "switch"}`|
+|`map`|No|object|See 'Map Configuration' below||
 |`garageDoors`|No|array|Defines 1 or more garage door accessories. Each definition requires the following properties:<br/><ul><li>`buttonId` - the button number correspnding to the button that opens/closes the door<li>`zoneId` - the zone number corresponding to the sensor that determines if the garage door is closed or not<li>`openTime` - the time taken (in seconds) for the garage door to fully open</ul>Example garage door definition: `{ "buttonId": 2, "zoneId": 3, "openTime": 10 }`||
-|`units`|No|array|Defines 1 or more unit accessories. This can be useful to override a unit as the default one is incorrect. Each unit definition requires the following properties:<br/><ul><li>`unitId` - the unit number corresponding to the unit<li>`type` - type of HomeKit accessory to use (valid options: `switch`, `lightbulb`). Any other value will remove the accessory</ul>Example unit definition: `{ "unitId": 2, "type": "lightbulb" }`||
+|`sensors`|No|array|**DEPRECATED: Use `map.zones` instead**<br/>Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of HomeKit sensor accessory to use (valid options: `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "contact" }`||
+|`units`|No|array|**DEPRECATED: Use `map.units` instead**<br/>Defines 1 or more unit accessories. This can be useful to override a unit as the default one is incorrect. Each unit definition requires the following properties:<br/><ul><li>`unitId` - the unit number corresponding to the unit<li>`type` - type of HomeKit accessory to use (valid options: `switch`, `lightbulb`). Any other value will remove the accessory</ul>Example unit definition: `{ "unitId": 2, "type": "lightbulb" }`||
 |`pushover`|No|object|See 'Pushover Notification Configuration' below||
 |`mqtt`|No|object|See 'MQTT Configuration' below||
 |`syncTime`|No|boolean|Sync the controller's date and time with the Homebridge host|`false`|
@@ -87,6 +89,37 @@ If you find the default config is not correct for your system or not to your lik
 |`forceAutoDiscovery`|No|boolean|Force auto-discovery of Omni-Link devices on restart<br/>This is equivalent to deleting the `OmnilinkPlatform.json` file|`false`|
 
 *TIP:* The area, zone, button, unit and themostat numbers are displayed in the Homebridge logs when it starts up.
+
+**NOTE:**  Config options `sensors` & `units` may be removed in a future version of the plugin. Please migrate to the new `map` option ASAP.
+
+### Map Configuration
+Defines how Omni zones and units are to be mapped to HomeKit accessories. This can be useful to override an accessory if the default one is not the correct type or you wish to exclude it from HomeKit.
+
+|Option|Required|Type|Description|
+|-|-|-|-|
+|`zones`|No|object|Contains the zone mappings (see below)|
+|`units`|No|object|Contains the unit mappings (see below)|
+
+Zone Mappings
+|Option|Required|Type|Description|
+|-|-|-|-|
+|`motion`|No|string|List of the zone numbers that are to be mapped to Motion Sensors|
+|`smoke`|No|string|List of the zone numbers that are to be mapped to Smoke Sensors|
+|`contact`|No|string|List of the zone numbers that are to be mapped to Contact Sensors|
+|`carbondioxide`|No|string|List of the zone numbers that are to be mapped to Carbon Dioxide Sensors|
+|`carbonmonoxide`|No|string|List of the zone numbers that are to be mapped to Carbon Monoxide Sensors|
+|`leak`|No|string|List of the zone numbers that are to be mapped to Leak Sensors|
+|`occupancy`|No|string|List of the zone numbers that are to be mapped to Occupancy Sensors|
+|`none`|No|string|List of the zone numbers that are not to be mapped to any accessory|
+
+Unit Mappings
+|Option|Required|Type|Description|
+|-|-|-|-|
+|`switch`|No|string|List of the unit numbers that are to be mapped to Switches|
+|`lightbulb`|No|string|List of the unit numbers that are to be mapped to Lightbulbs|
+|`none`|No|string|List of the unit numbers that are not to be mapped to any accessory|
+
+NOTE: The lists are to be supplied as comma seperated (eg. `"1,2,3"`)
 
 ### Pushover Notification Configuration
 This plugin can be configured to send Push notifications to your phone when alarms are trigggered or the system encounters troubles. To do this you'll need a [Pushover](https://pushover.net) account. The following describes the configuration options available:
@@ -131,16 +164,22 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "setHomeToAway": true,
         "setNightToAway": true,
         "securityCode": "0000",
-        "sensors": [
-          {
-            "zoneId": 7,
-            "sensorType": "contact"
+        "defaultAccessoryMappings": {
+          "zone": "motion",
+          "zoneFireEmergency": "smoke",
+          "unit": "switch"
+        },
+        "map": {
+          "zones": {
+            "contact": "1,2,3",
+            "occupancy": "6",
+            "none": "4,5"
           },
-          {
-            "zoneId": 8,
-            "sensorType": "carbondioxide"
-          }        
-        ],
+          "units": {
+            "lightbulb": "1,3",
+            "none": "2"
+          }
+        },
         "garageDoors": [
           {
             "buttonId": 2,
@@ -151,12 +190,6 @@ Option|Required|Type|Description|Default Value (if not supplied)|
             "buttonId": 3,
             "zoneId": 12,
             "openTime": 10
-          }
-        ],
-        "units": [
-          {
-            "unitId": 32,
-            "type": "lightbulb"
           }
         ],
         "pushover": {

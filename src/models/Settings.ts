@@ -43,6 +43,11 @@ export class Settings {
   private readonly _garageDoors: Map<number, GarageDoor>;
   private readonly _units: Map<number, string>;
   private readonly _mqtt?: MqttSettings;
+  private readonly _defaultAccessoryMappings = {
+    zone: 'motion',
+    zoneFireEmergency: 'smoke',
+    unit: 'switch',
+  }
 
   constructor(private readonly config: PlatformConfig) {
     this._privateKey = this.getPrivateKey([<string>config.key1, <string>config.key2]);
@@ -50,10 +55,19 @@ export class Settings {
     this._garageDoors = new Map<number, GarageDoor>();
     this._units = new Map<number, string>();
 
-    if (config.sensors !== undefined && Array.isArray(config.sensors)) {
-      for(const sensor of config.sensors) {
-        if (sensor.zoneId !== undefined && sensor.sensorType !== undefined) {
-          this._sensors.set(sensor.zoneId, sensor.sensorType);
+    if (config.map?.zones !== undefined) {
+      for(const sensorType of Object.keys(config.map.zones)) {
+        const zoneIds: number[] = config.map.zones[sensorType].split(',').map(Number);
+        for(const zoneId of zoneIds) {
+          this._sensors.set(zoneId, sensorType);
+        }
+      }
+    } else if (config.sensors !== undefined) {
+      if (Array.isArray(config.sensors)) {
+        for(const sensor of config.sensors) {
+          if (sensor.zoneId !== undefined && sensor.sensorType !== undefined) {
+            this._sensors.set(sensor.zoneId, sensor.sensorType);
+          }
         }
       }
     }
@@ -66,10 +80,19 @@ export class Settings {
       }
     }
 
-    if (config.units !== undefined && Array.isArray(config.units)) {
-      for(const unit of config.units) {
-        if (unit.unitId !== undefined && unit.type !== undefined) {
-          this._units.set(unit.unitId, unit.type);
+    if (config.map?.units !== undefined) {
+      for (const accessoryType of Object.keys(config.map.units)) {
+        const unitIds: number[] = config.map.units[accessoryType].split(',').map(Number);
+        for(const unitId of unitIds) {
+          this._units.set(unitId, accessoryType);
+        }
+      }
+    } else if (config.units !== undefined) {
+      if (Array.isArray(config.units)) {
+        for(const unit of config.units) {
+          if (unit.unitId !== undefined && unit.type !== undefined) {
+            this._units.set(unit.unitId, unit.type);
+          }
         }
       }
     }
@@ -151,6 +174,18 @@ export class Settings {
 
   get securityCode(): string {
     return <string>this.config.securityCode ?? '';
+  }
+
+  get defaultZoneAccessoryType(): string {
+    return <string>this.config.defaultAccessoryMappings?.zone ?? this._defaultAccessoryMappings.zone;
+  }
+
+  get defaultZoneFireEmergencyAccessoryType(): string {
+    return <string>this.config.defaultAccessoryMappings?.zoneFireEmergency ?? this._defaultAccessoryMappings.zoneFireEmergency;
+  }
+
+  get defaultUnitAccessoryType(): string {
+    return <string>this.config.defaultAccessoryMappings?.unit ?? this._defaultAccessoryMappings.unit;
   }
 
   get sensors(): Map<number, string> {

@@ -89,17 +89,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeZones) {
       for(const [index, zone] of this.platform.omniService.zones) {
-        const sensorType = this.platform.settings.sensors.get(index);
-        if (sensorType === undefined && zone.zoneType === ZoneTypes.FireEmergency) {
-          continue;
+        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'motion')) {
+          zones.set(index, zone.name);
         }
-        if (sensorType !== undefined && sensorType.toLowerCase() !== 'motion') {
-          continue;
-        }
-        if (this.platform.settings.garageDoorZones.includes(index)) {
-          continue;
-        }
-        zones.set(index, zone.name);
       }
     }
 
@@ -123,17 +115,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeZones) {
       for(const [index, zone] of this.platform.omniService.zones) {
-        const sensorType = this.platform.settings.sensors.get(index);
-        if (sensorType === undefined && zone.zoneType !== ZoneTypes.FireEmergency) {
-          continue;
+        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'smoke')) {
+          zones.set(index, zone.name);
         }
-        if (sensorType !== undefined && sensorType.toLowerCase() !== 'smoke') {
-          continue;
-        }
-        if (this.platform.settings.garageDoorZones.includes(index)) {
-          continue;
-        }
-        zones.set(index, zone.name);
       }
     }
 
@@ -157,17 +141,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeZones) {
       for(const [index, zone] of this.platform.omniService.zones) {
-        const sensorType = this.platform.settings.sensors.get(index);
-        if (sensorType === undefined) {
-          continue;
+        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'contact')) {
+          zones.set(index, zone.name);
         }
-        if (sensorType !== undefined && sensorType.toLowerCase() !== 'contact') {
-          continue;
-        }
-        if (this.platform.settings.garageDoorZones.includes(index)) {
-          continue;
-        }
-        zones.set(index, zone.name);
       }
     }
 
@@ -191,17 +167,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeZones) {
       for(const [index, zone] of this.platform.omniService.zones) {
-        const sensorType = this.platform.settings.sensors.get(index);
-        if (sensorType === undefined) {
-          continue;
+        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'carbondioxide')) {
+          zones.set(index, zone.name);
         }
-        if (sensorType !== undefined && sensorType.toLowerCase() !== 'carbondioxide') {
-          continue;
-        }
-        if (this.platform.settings.garageDoorZones.includes(index)) {
-          continue;
-        }
-        zones.set(index, zone.name);
       }
     }
 
@@ -225,17 +193,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeZones) {
       for(const [index, zone] of this.platform.omniService.zones) {
-        const sensorType = this.platform.settings.sensors.get(index);
-        if (sensorType === undefined) {
-          continue;
+        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'carbonmonoxide')) {
+          zones.set(index, zone.name);
         }
-        if (sensorType !== undefined && sensorType.toLowerCase() !== 'carbonmonoxide') {
-          continue;
-        }
-        if (this.platform.settings.garageDoorZones.includes(index)) {
-          continue;
-        }
-        zones.set(index, zone.name);
       }
     }
 
@@ -259,17 +219,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeZones) {
       for(const [index, zone] of this.platform.omniService.zones) {
-        const sensorType = this.platform.settings.sensors.get(index);
-        if (sensorType === undefined) {
-          continue;
+        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'leak')) {
+          zones.set(index, zone.name);
         }
-        if (sensorType !== undefined && sensorType.toLowerCase() !== 'leak') {
-          continue;
-        }
-        if (this.platform.settings.garageDoorZones.includes(index)) {
-          continue;
-        }
-        zones.set(index, zone.name);
       }
     }
 
@@ -293,17 +245,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeZones) {
       for(const [index, zone] of this.platform.omniService.zones) {
-        const sensorType = this.platform.settings.sensors.get(index);
-        if (sensorType === undefined) {
-          continue;
+        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'occupancy')) {
+          zones.set(index, zone.name);
         }
-        if (sensorType !== undefined && sensorType.toLowerCase() !== 'occupancy') {
-          continue;
-        }
-        if (this.platform.settings.garageDoorZones.includes(index)) {
-          continue;
-        }
-        zones.set(index, zone.name);
       }
     }
 
@@ -318,6 +262,29 @@ export class AccessoryService {
         }
       }
     }
+  }
+
+  private isZoneOfAccessoryType(index: number, zoneType: ZoneTypes, accessoryType: string): boolean {
+    const sensorType = this.platform.settings.sensors.get(index);
+    if (sensorType === undefined) {
+      if (zoneType === ZoneTypes.FireEmergency) {
+        if (this.platform.settings.defaultZoneFireEmergencyAccessoryType !== accessoryType) {
+          return false;
+        }
+      } else {
+        if (this.platform.settings.defaultZoneAccessoryType !== accessoryType) {
+          return false;
+        }
+      }
+    } else { 
+      if (sensorType.toLowerCase() !== accessoryType) {
+        return false;
+      }
+    }
+    if (this.platform.settings.garageDoorZones.includes(index)) {
+      return false;
+    }
+    return true;
   }
 
   discoverBypassZoneSwitches(): void {
@@ -400,11 +367,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeUnits) {
       for(const [index, unit] of this.platform.omniService.units) {
-        const accessoryType = this.platform.settings.units.get(index);
-        if (accessoryType !== undefined && accessoryType.toLowerCase() !== 'switch') {
-          continue;
+        if (this.isUnitOfAccessoryType(index, 'switch')) {
+          units.set(index, unit.name);
         }
-        units.set(index, unit.name);
       }
     }
 
@@ -428,11 +393,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeUnits) {
       for(const [index, unit] of this.platform.omniService.units) {
-        const accessoryType = this.platform.settings.units.get(index);
-        if (accessoryType === undefined || accessoryType.toLowerCase() !== 'lightbulb') {
-          continue;
+        if (this.isUnitOfAccessoryType(index, 'lightbulb')) {
+          units.set(index, unit.name);
         }
-        units.set(index, unit.name);
       }
     }
 
@@ -447,6 +410,20 @@ export class AccessoryService {
         }
       }
     }
+  }
+
+  private isUnitOfAccessoryType(index: number, accessoryType: string): boolean {
+    const unitAccessoryType = this.platform.settings.units.get(index);
+    if (unitAccessoryType === undefined) {
+      if (this.platform.settings.defaultUnitAccessoryType !== accessoryType) {
+        return false;
+      }
+    } else {
+      if (unitAccessoryType.toLowerCase() !== accessoryType) {
+        return false;
+      }
+    }
+    return true;
   }
 
   discoverThermostats(): void {
