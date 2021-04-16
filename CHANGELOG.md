@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## NEXT
+## 1.4.0 (2021-04-16)
 
 * Lock Mechanism accessories for Omni access controls
 * Temperature & Humidity Sensor accessories for Omni auxiliary sensors ([#5](https://github.com/mantorok1/homebridge-omnilink-platform/issues/5))
