@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## NEXT
+
+* Add build on node 16.x
+
 ## 1.4.0 (2021-04-16)
 
 * Lock Mechanism accessories for Omni access controls
