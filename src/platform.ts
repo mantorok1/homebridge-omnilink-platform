@@ -19,6 +19,8 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
   public readonly accessoryService!: AccessoryService;
   public readonly pushoverService!: PushoverService;
   public readonly mqttService!: MqttService;
+  private _serviceInitialised = false;
+  private _serviceInitialising = false;
 
   constructor(
     public readonly log: Logger,
@@ -48,7 +50,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     }
   }
 
-  configureAccessory(platformAccessory: PlatformAccessory) {
+  async configureAccessory(platformAccessory: PlatformAccessory) {
     this.log.debug(this.constructor.name, 'configureAccessory');
 
     if (this.settings.clearCache) {
@@ -56,7 +58,30 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       return;
     }
 
+    await this.initOmniService();
+
     this.accessoryService.configure(platformAccessory);
+  }
+
+  private async initOmniService(): Promise<void> {
+    this.log.debug(this.constructor.name, 'initService');
+
+    return new Promise((resolve) => {
+      if (this._serviceInitialised) {
+        resolve();
+      }
+
+      this.omniService.once('initialised', () => {
+        this._serviceInitialised = true;
+        this._serviceInitialising = false;
+        resolve();
+      });
+
+      if (!this._serviceInitialising) {
+        this._serviceInitialising = true;
+        this.omniService.init();
+      }
+    });
   }
 
   async discoverDevices(): Promise<void> {
@@ -75,7 +100,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
         this.deletedAccessories = [];
       }
 
-      await this.omniService.init();
+      await this.initOmniService();
 
       const devices = await this.readCache();
       await this.omniService.discover(devices);

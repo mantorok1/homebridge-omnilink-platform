@@ -168,6 +168,8 @@ export class OmniService extends events.EventEmitter {
           await this.setTime();
         }, 3600000); // every hour
       }
+
+      this.emit('initialised');
     } catch(error) {
       this.platform.log.error(error);
       throw error;      

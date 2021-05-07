@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## NEXT
 
 * Add build on node 16.x
+* [FIX] Wait for module connection before configuring cached accessories
 
 ## 1.4.0 (2021-04-16)
 
