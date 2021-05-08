@@ -21,6 +21,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
   public readonly mqttService!: MqttService;
   private _serviceInitialised = false;
   private _serviceInitialising = false;
+  private _cacheFile = '';
 
   constructor(
     public readonly log: Logger,
@@ -35,6 +36,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       this.accessoryService = new AccessoryService(this);
       this.pushoverService = new PushoverService(this);
       this.mqttService = new MqttService(this);
+      this._cacheFile = path.join(this.api.user.storagePath(), 'OmnilinkPlatform', `${this.settings.name}.json`);
 
       this.api.on('didFinishLaunching', () => {
         this.log.debug('Finished launching plugin');
@@ -173,11 +175,10 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     }
 
     let devices: Devices;
-    const cacheFile = path.join(this.api.user.storagePath(), 'OmnilinkPlatform.json');
 
     try {
-      const content = await fs.promises.readFile(cacheFile, { encoding: 'utf8' });
-      this.log.info(`Read config from cache [${cacheFile}]`);
+      const content = await fs.promises.readFile(this._cacheFile, { encoding: 'utf8' });
+      this.log.info(`Read config from cache [${this._cacheFile}]`);
       devices = JSON.parse(content);
     } catch {
       this.log.info('Performing Auto-Discovery');
@@ -201,8 +202,6 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    const cacheFile = path.join(this.api.user.storagePath(), 'OmnilinkPlatform.json');
-
     devices = {
       areas: [...this.omniService.areas.keys()],
       zones: [...this.omniService.zones.keys()],
@@ -215,9 +214,17 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     };
 
     try {
-      this.log.info(`Writing config to cache [${cacheFile}]`);
+      this.log.info(`Writing config to cache [${this._cacheFile}]`);
       const content = JSON.stringify(devices);
-      await fs.promises.writeFile(cacheFile, content, { encoding: 'utf8'});
+      await fs.promises.mkdir(path.dirname(this._cacheFile), {recursive: true});
+      await fs.promises.writeFile(this._cacheFile, content, { encoding: 'utf8'});
+      
+      // Remove the old config file if it exists
+      try {
+        await fs.promises.unlink(path.join(this.api.user.storagePath(), 'OmnilinkPlatform.json'));
+      } catch {
+        // do nothing
+      }
     } catch(ex) {
       this.log.warn(`Writing config failed [${ex.message}]`);
     }

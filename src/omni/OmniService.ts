@@ -77,6 +77,7 @@ export class OmniService extends events.EventEmitter {
 
   constructor(private readonly platform: OmniLinkPlatform) {
     super();
+    this.setMaxListeners(150);
     this.session = new OmniSession(platform);
     this._zones = new Map<number, ZonePropertiesResponse>();
     this._units = new Map<number, UnitPropertiesResponse>();
