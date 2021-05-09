@@ -117,6 +117,17 @@ export class Thermostat extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getHeatingThresholdTemperature.bind(this), 'HeatingThresholdTemperature'))
       .on('set', this.setCharacteristicValue.bind(this, this.setHeatingThresholdTemperature.bind(this), 'HeatingThresholdTemperature'));
 
+    if (this.platform.settings.includeHumidityControls) {
+      this.service
+        .getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
+        .on('get', this.getCharacteristicValue.bind(this, this.getCurrentRelativeHumidity.bind(this), 'CurrentRelativeHumidity'));
+
+      this.service
+        .getCharacteristic(this.platform.Characteristic.TargetRelativeHumidity)
+        .on('get', this.getCharacteristicValue.bind(this, this.getTargetRelativeHumidity.bind(this), 'TargetRelativeHumidity'))
+        .on('set', this.setCharacteristicValue.bind(this, this.setTargetRelativeHumidity.bind(this), 'TargetRelativeHumidity'));
+    }
+
     this.platform.omniService.on(`thermostat-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
   }
 
@@ -271,6 +282,60 @@ export class Thermostat extends AccessoryBase {
     await this.platform.omniService.setThermostatHeatSetPoint(this.platformAccessory.context.index, value);
   }
 
+  async getCurrentRelativeHumidity(): Promise<number> {
+    this.platform.log.debug(this.constructor.name, 'getCurrentRelativeHumidity');
+
+    const thermostatStatus = await this.platform.omniService.getThermostatStatus(this.platformAccessory.context.index);
+    if (thermostatStatus === undefined) {
+      return 0;
+    }
+
+    return thermostatStatus.currentHumidity;
+  }
+
+  async getTargetRelativeHumidity(): Promise<number> {
+    this.platform.log.debug(this.constructor.name, 'getTargetRelativeHumidity');
+
+    const thermostatStatus = await this.platform.omniService.getThermostatStatus(this.platformAccessory.context.index);
+    if (thermostatStatus === undefined) {
+      return 0;
+    }
+
+    return this.platform.settings.targetHumiditySetPointType === 1
+      ? thermostatStatus.humidifySetPoint
+      : thermostatStatus.dehumidifySetPoint;
+  }
+
+  async setTargetRelativeHumidity(value: number): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setTargetRelativeHumidity', value);
+
+    const thermostatStatus = await this.platform.omniService.getThermostatStatus(this.platformAccessory.context.index);
+    if (thermostatStatus === undefined) {
+      return;
+    }
+
+    let humidifySetPoint: number | undefined;
+    let dehumidifySetPoint: number | undefined;
+    if (this.platform.settings.targetHumiditySetPointType === 1) {
+      humidifySetPoint = value;
+      if (this.platform.settings.targetHumidityDifference !== 0) {
+        dehumidifySetPoint = value + this.platform.settings.targetHumidityDifference;
+      }
+    } else {
+      dehumidifySetPoint = value;
+      if (this.platform.settings.targetHumidityDifference !== 0) {
+        humidifySetPoint = value - this.platform.settings.targetHumidityDifference;
+      }
+    }
+
+    if (humidifySetPoint !== undefined) {
+      await this.platform.omniService.setThermostatHumidifySetPoint(this.platformAccessory.context.index, humidifySetPoint);
+    }
+    if (dehumidifySetPoint !== undefined) {
+      await this.platform.omniService.setThermostatDehumidifySetPoint(this.platformAccessory.context.index, dehumidifySetPoint);
+    }
+  }
+
   async updateValues(thermostatStatus: ThermostatStatus): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'updateValues', thermostatStatus);
 
@@ -297,5 +362,17 @@ export class Thermostat extends AccessoryBase {
     this.service
       .getCharacteristic(this.platform.Characteristic.HeatingThresholdTemperature)
       .updateValue(thermostatStatus.heatSetPoint);
+
+    if (this.platform.settings.includeHumidityControls) {
+      this.service
+        .getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
+        .updateValue(thermostatStatus.currentHumidity);
+
+      this.service
+        .getCharacteristic(this.platform.Characteristic.TargetRelativeHumidity)
+        .updateValue(this.platform.settings.targetHumiditySetPointType === 1
+          ? thermostatStatus.humidifySetPoint
+          : thermostatStatus.dehumidifySetPoint);
+    }
   }
 }

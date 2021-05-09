@@ -61,7 +61,7 @@ export enum Commands {
   SetHeatSetPoint = 66,
   SetCoolSetPoint = 67,
   SetThermostatMode = 68,
-  SetHumififySetPoint = 73,
+  SetHumidifySetPoint = 73,
   SetDehumidifySetPoint = 74,
   LockDoor = 105,
   UnlockDoor = 106,

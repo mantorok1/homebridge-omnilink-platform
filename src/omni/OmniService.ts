@@ -757,6 +757,16 @@ export class OmniService extends events.EventEmitter {
     return omniTemperature;
   }
 
+  private convertToOmniHumidity(humidity: number): number {
+    if (humidity <= 0) {
+      return 44;
+    } else if (humidity >= 100) {
+      return 156;
+    } else {
+      return 44 + Math.round(humidity / 100.0 * 112.0);
+    }
+  }
+
   async setThermostatMode(thermostatId: number, mode: ThermostatModes): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setThermostatMode', thermostatId, mode);
 
@@ -778,6 +788,54 @@ export class OmniService extends events.EventEmitter {
       }
     } catch(error) {
       this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Mode failed: ${error.message}`);
+    }
+  }
+
+  async setThermostatHumidifySetPoint(thermostatId: number, humidity: number): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatHumidifySetPoint', thermostatId, humidity);
+
+    try {
+      const message = new ControllerCommandRequest({
+        command: Commands.SetHumidifySetPoint,
+        parameter1: this.convertToOmniHumidity(humidity),
+        parameter2: thermostatId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Humidity SetPoint ${humidity}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Humidity SetPoint failed: ${error.message}`);
+    }
+  }
+
+  async setThermostatDehumidifySetPoint(thermostatId: number, humidity: number): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatDehumidifySetPoint', thermostatId, humidity);
+
+    try {
+      const message = new ControllerCommandRequest({
+        command: Commands.SetDehumidifySetPoint,
+        parameter1: this.convertToOmniHumidity(humidity),
+        parameter2: thermostatId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Dehumidity SetPoint ${humidity}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+
+      if (response.type !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledgement not received');
+      }
+    } catch(error) {
+      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Dehumidity SetPoint failed: ${error.message}`);
     }
   }
 

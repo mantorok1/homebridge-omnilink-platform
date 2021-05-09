@@ -19,7 +19,7 @@ export class ExtendedThermostatStatusResponse extends ApplicationDataResponse {
       const startPos = (i - 1) * 14 + 5;
       const thermostatId = message[startPos] * 256 + message[startPos + 1];
       const status = new ThermostatStatus(message[startPos + 3], message[startPos + 4], message[startPos + 5],
-        message[startPos + 6], message[startPos + 13]);
+        message[startPos + 6], message[startPos + 13], message[startPos + 9], message[startPos + 10], message[startPos + 11]);
       this._thermostats.set(thermostatId, status);
     }
   }

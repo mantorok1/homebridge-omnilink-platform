@@ -204,6 +204,18 @@ export class Settings {
     return [...this._garageDoors.values()].map(g => g.zoneId);
   }
 
+  get includeHumidityControls(): boolean {
+    return <boolean>this.config.includeHumidityControls ?? false;
+  }
+
+  get targetHumiditySetPointType(): number {
+    return <number>this.config.targetHumiditySetPointType ?? 1;
+  }
+
+  get targetHumidityDifference(): number {
+    return <number>this.config.targetHumidityDifference ?? 0;
+  }
+
   get syncTime(): boolean {
     return <boolean>this.config.syncTime ?? false;
   }

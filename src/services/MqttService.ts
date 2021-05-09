@@ -98,6 +98,10 @@ export class MqttService {
         this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/mode/set`, this.setThermostatMode.bind(this));
         this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/coolsetpoint/set`, this.setThermostatCoolSetPoint.bind(this));
         this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/heatsetpoint/set`, this.setThermostatHeatSetPoint.bind(this));
+        this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/humidifysetpoint/set`,
+          this.setThermostatHumidifySetPoint.bind(this));
+        this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/dehumidifysetpoint/set`,
+          this.setThermostatDehumidifySetPoint.bind(this));
 
         this.platform.omniService.on(`thermostat-${thermostatId}`, this.publishThermostat.bind(this, thermostatId));
 
@@ -329,6 +333,28 @@ export class MqttService {
     await this.platform.omniService.setThermostatHeatSetPoint(this.getObjectId(topic), temperature);
   }
 
+  async setThermostatHumidifySetPoint(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatHumidifySetPoint', topic, payload);
+
+    const humidity = this.parseHumidity(payload);
+    if (humidity === undefined) {
+      return;
+    }
+
+    await this.platform.omniService.setThermostatHumidifySetPoint(this.getObjectId(topic), humidity);
+  }
+
+  async setThermostatDehumidifySetPoint(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatDehumidifySetPoint', topic, payload);
+
+    const humidity = this.parseHumidity(payload);
+    if (humidity === undefined) {
+      return;
+    }
+
+    await this.platform.omniService.setThermostatDehumidifySetPoint(this.getObjectId(topic), humidity);
+  }
+
   async setLockedState(topic: string, payload: string): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setLockedState', topic, payload);
 
@@ -448,6 +474,15 @@ export class MqttService {
 
     this.publish(`thermostat/${thermostatId}/state/get`,
       ThermostatStates[thermostatStatus.state].toLowerCase());
+
+    this.publish(`thermostat/${thermostatId}/humidity/get`,
+      String(thermostatStatus.currentHumidity));
+    
+    this.publish(`thermostat/${thermostatId}/humidifysetpoint/get`,
+      String(thermostatStatus.humidifySetPoint));
+    
+    this.publish(`thermostat/${thermostatId}/dehumidifysetpoint/get`,
+      String(thermostatStatus.dehumidifySetPoint));
   }
 
   publishLock(accessControlId: number, lockStatus: AccessControlLockStatus) {
@@ -515,5 +550,12 @@ export class MqttService {
       return temperature;
     }
     return Math.round(((temperature - 32.0) * 5.0 / 9.0) * 2.0) / 2.0;
+  }
+
+  private parseHumidity(value: string): number | undefined {
+    const humidity = Number(value);
+    return isNaN(humidity)
+      ? undefined
+      : Math.round(humidity);
   }
 }

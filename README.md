@@ -74,6 +74,9 @@ If you find the default config is not correct for your system or not to your lik
 |`setHomeAsAway`|No|boolean|Changes the security mode to "Away" if "Home" is selected. This may be useful if you don't use the "Home" mode and want to ensure the alarm is set to "Away" if accidently set to "Home"|`false`|
 |`setNightAsAway`|No|boolean|Changes the security mode to "Away" if "Night" is selected. Likewise, useful if you don't use the "Night" mode|`false`|
 |`securityCode`|No|string|The 4 digit security code used to arm and disarm the security system. Without this the security system cannot be operated||
+|`includeHumidityControls`|No|boolean|Include the Humidity controls in the HomeKit Thermostat accessory|`false`|
+|`targetHumiditySetPointType`|No|number|Selects which type of Omni set point (ie. Humidify or Dehumidify) that HomeKit's Target Humidity will map to<br/>[`1` = Humidify, `2` = Dehumidify]|`1`|
+|`targetHumidityDifference`|No|number|The difference between the Humidify and Dehumidify set points. This allows the plugin to set the other Omni humidity set point. `0` means do not set|`0`|
 |`defaultAccessoryMappings`|No|object|Defines the default zone and unit HomeKit accessory mappings.<br/>For `zone` and `zoneFireEmergency` the defaults can be either `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy` or `none`<br/>For `unit` the defaults can be either `switch`, `lightbulb` or `none`|`{"zone": "motion", "zoneFireEmergency": "smoke", "unit": "switch"}`|
 |`map`|No|object|See 'Map Configuration' below||
 |`garageDoors`|No|array|Defines 1 or more garage door accessories. Each definition requires the following properties:<br/><ul><li>`buttonId` - the button number correspnding to the button that opens/closes the door<li>`zoneId` - the zone number corresponding to the sensor that determines if the garage door is closed or not<li>`openTime` - the time taken (in seconds) for the garage door to fully open</ul>Example garage door definition: `{ "buttonId": 2, "zoneId": 3, "openTime": 10 }`||
@@ -290,10 +293,15 @@ Note: Brightness level is specified as an integer between 0 and 100 inclusive
 |`thermostat/{number}/mode/set`|Sets the mode of thermostat `{number}`|"off", "heat", "cool", "auto", "emergencyheat"|
 |`thermostat/{number}/state/get`|Gets the state of thermostat `{number}`|"idle", "heating", "cooling"|
 |`thermostat/{number}/temperature/get`|Gets the current temperature of thermostat `{number}`|number<br/>(see note)|
-|`thermostat/{number}/coolsetpoint/get`|Gets the Cooling SetPoint of thermostat `{number}`|number<br/>(see note)|
-|`thermostat/{number}/coolsetpoint/set`|Sets Cooling Set Point of thermostat `{number}`|number<br/>(see note)|
-|`thermostat/{number}/heatsetpoint/get`|Gets the Heating SetPoint of thermostat `{number}`|number<br/>(see note)|
-|`thermostat/{number}/heatsetpoint/set`|Sets Heating Set Point of thermostat `{number}`|number<br/>(see note)|
+|`thermostat/{number}/coolsetpoint/get`|Gets the Cooling Set Point of thermostat `{number}`|number<br/>(see note)|
+|`thermostat/{number}/coolsetpoint/set`|Sets the Cooling Set Point of thermostat `{number}`|number<br/>(see note)|
+|`thermostat/{number}/heatsetpoint/get`|Gets the Heating Set Point of thermostat `{number}`|number<br/>(see note)|
+|`thermostat/{number}/heatsetpoint/set`|Sets the Heating Set Point of thermostat `{number}`|number<br/>(see note)|
+|`thermostat/{number}/humidity/get`|Gets the current humidity of thermostat `{number}`|number<br/>(0 - 100)|
+|`thermostat/{number}/humidifysetpoint/get`|Gets the Humidify Set Point of thermostat `{number}`|number<br/>(0 - 100)|
+|`thermostat/{number}/humidifysetpoint/set`|Sets the Humidify Set Point of thermostat `{number}`|number<br/>(0 - 100)|
+|`thermostat/{number}/dehumidifysetpoint/get`|Gets the Dehumidify Set Point of thermostat `{number}`|number<br/>(0 - 100)|
+|`thermostat/{number}/dehumidifysetpoint/set`|Sets the Dehumidify Set Point of thermostat `{number}`|number<br/>(0 - 100)|
 
 Note: Temperatures are specified in either Celsius or Fahrenheit depending on how your Omni controller is configured.
 

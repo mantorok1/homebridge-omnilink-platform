@@ -115,6 +115,32 @@
         "pattern": "^[0-9]{4}$",
         "required": false
       },
+      "includeHumidityControls": {
+        "title": "Include Humidity Controls",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "targetHumiditySetPointType": {
+        "title": "Target Humidity Set Point Type",
+        "description": "The set point type of Omni's thermostat that will be associated to the HomeKit Target Humidity",
+        "type": "integer",
+        "default": 1,
+        "required": true,
+        "oneOf": [
+          { "title": "Humidify Set Point", "enum": [ 1 ] },
+          { "title": "Dehumidify Set Point", "enum": [ 2 ] }
+        ]
+      },
+      "targetHumidityDifference": {
+        "title": "Target Humidity Difference (%)",
+        "description": "Difference between the Humidify and Dehumidify set points (0 = don't modify set point)",
+        "type": "number",
+        "default": 0,
+        "required": false,
+        "minimum": 0,
+        "maximum": 100
+      },
       "defaultAccessoryMappings": {
         "type": "object",
         "properties": {
@@ -605,6 +631,17 @@
                 }
               ]
             }
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Thermostat Settings",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            "includeHumidityControls",
+            "targetHumiditySetPointType",
+            "targetHumidityDifference"
           ]
         },
         {

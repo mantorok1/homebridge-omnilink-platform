@@ -1,3 +1,5 @@
+import { util } from './util';
+
 export enum ThermostatModes {
   Off = 0,
   Heat = 1,
@@ -18,11 +20,16 @@ export class ThermostatStatus {
   private readonly _coolSetPoint: number;
   private readonly _mode: ThermostatModes;
   private readonly _state: ThermostatStates = ThermostatStates.Idle;
+  private readonly _currentHumidity: number;
+  private readonly _humidifySetPoint: number;
+  private readonly _dehumidifySetPoint: number;
 
-  constructor(currentTemperature: number, heatSetPoint: number, coolSetPoint: number, mode: number, currentState: number) {
-    this._currentTemperature = this.convertToCelcius(currentTemperature);
-    this._heatSetPoint = this.convertToCelcius(heatSetPoint);
-    this._coolSetPoint = this.convertToCelcius(coolSetPoint);
+  constructor(currentTemperature: number, heatSetPoint: number, coolSetPoint: number, mode: number, currentState: number,
+    currentHumidity: number, humidifySetPoint: number, dehumidifySetPoint: number) {
+
+    this._currentTemperature = util.convertToCelcius(currentTemperature);
+    this._heatSetPoint = util.convertToCelcius(heatSetPoint);
+    this._coolSetPoint = util.convertToCelcius(coolSetPoint);
     this._mode = mode;
 
     if ((currentState & 0b00000001) === 0b00000001) {
@@ -30,6 +37,10 @@ export class ThermostatStatus {
     } else if ((currentState & 0b00000010) === 0b00000010) {
       this._state = ThermostatStates.Cooling;
     }
+
+    this._currentHumidity = util.convertToHumidity(currentHumidity);
+    this._humidifySetPoint = util.convertToHumidity(humidifySetPoint);
+    this._dehumidifySetPoint = util.convertToHumidity(dehumidifySetPoint);
   }
 
   get currentTemperature(): number {
@@ -52,8 +63,15 @@ export class ThermostatStatus {
     return this._state;
   }
 
-  private convertToCelcius(temperature: number) {
-    return -40.0 + (temperature / 2.0);
+  get currentHumidity(): number {
+    return this._currentHumidity;
   }
 
+  get humidifySetPoint(): number {
+    return this._humidifySetPoint;
+  }
+
+  get dehumidifySetPoint(): number {
+    return this._dehumidifySetPoint;
+  }
 }
