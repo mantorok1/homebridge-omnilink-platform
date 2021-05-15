@@ -1,15 +1,12 @@
 import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
-
-export enum ZoneTypes {
-  FireEmergency = 33,
-}
+import { ZoneTypes } from './enums';
 
 export class ZonePropertiesResponse extends ObjectPropertiesResponse {
 
-  private _zoneType?: number;
+  private _zoneType?: ZoneTypes;
   private _areaId?: number;
   
-  get zoneType(): number {
+  get zoneType(): ZoneTypes {
     return this._zoneType!;
   }
 

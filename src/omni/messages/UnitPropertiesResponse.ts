@@ -1,10 +1,11 @@
 import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
+import { UnitTypes } from './enums';
 
 export class UnitPropertiesResponse extends ObjectPropertiesResponse {
 
   private _unitState?: number;
   private _unitTime?: number;
-  private _unitType?: number;
+  private _unitType?: UnitTypes;
   
   get unitState(): number {
     return this._unitState!;
@@ -14,7 +15,7 @@ export class UnitPropertiesResponse extends ObjectPropertiesResponse {
     return this._unitTime!;
   }
   
-  get unitType(): number {
+  get unitType(): UnitTypes {
     return this._unitType!;
   }
 

@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 * [FIX] Wait for module connection before configuring cached accessories
 * Support multiple cache files to allow more than 1 connection to Omni controller(s) via Child Bridges
 * Support Humidity control for Thermostat accessories
+* Minor improvements to some log messages (such as temperature display)
 
 ## 1.4.0 (2021-04-16)
 

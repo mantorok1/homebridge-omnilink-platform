@@ -5,6 +5,7 @@ import { OmniService, Devices } from './omni/OmniService';
 import { AccessoryService } from './accessories/AccessoryService';
 import { PushoverService } from './services/PushoverService';
 import { MqttService } from './services/MqttService';
+import { ZoneTypes, UnitTypes } from './omni/messages/enums';
 import fs = require('fs');
 import path = require('path');
 
@@ -132,37 +133,37 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     // Display found devices
     this.log.info('Areas found:', this.omniService.areas.size);
     for (const [index, area] of this.omniService.areas) {
-      this.log.info(`  ${index}: ${area.name}`);
+      this.log.info(`  ${String(index).padStart(3)}: ${area.name}`);
     }
 
     this.log.info('Zones found:', this.omniService.zones.size);
     for (const [index, zone] of this.omniService.zones) {
-      this.log.info(`  ${index}: ${zone.name}`);
+      this.log.info(`  ${String(index).padStart(3)}: ${zone.name.padEnd(17)} [${ZoneTypes[zone.zoneType]}]`);
     }
 
     this.log.info('Units found:', this.omniService.units.size);
     for (const [index, unit] of this.omniService.units) {
-      this.log.info(`  ${index}: ${unit.name}`);
+      this.log.info(`  ${String(index).padStart(3)}: ${unit.name.padEnd(17)} [${UnitTypes[unit.unitType]}]`);
     }
 
     this.log.info('Buttons found:', this.omniService.buttons.size);
     for (const [index, button] of this.omniService.buttons) {
-      this.log.info(`  ${index}: ${button.name}`);
+      this.log.info(`  ${String(index).padStart(3)}: ${button.name}`);
     }
 
     this.log.info('Thermostats found:', this.omniService.thermostats.size);
     for (const [index, thermostat] of this.omniService.thermostats) {
-      this.log.info(`  ${index}: ${thermostat.name}`);
+      this.log.info(`  ${String(index).padStart(3)}: ${thermostat.name}`);
     }
 
     this.log.info('Access Controls found:', this.omniService.accessControls.size);
     for (const [index, accessControl] of this.omniService.accessControls) {
-      this.log.info(`  ${index}: ${accessControl.name}`);
+      this.log.info(`  ${String(index).padStart(3)}: ${accessControl.name}`);
     }
 
     this.log.info('Auxiliary Sensors found:', this.omniService.auxiliarySensors.size);
     for (const [index, auxiliarySensor] of this.omniService.auxiliarySensors) {
-      this.log.info(`  ${index}: ${auxiliarySensor.name}`);
+      this.log.info(`  ${String(index).padStart(3)}: ${auxiliarySensor.name}`);
     }
   }
 

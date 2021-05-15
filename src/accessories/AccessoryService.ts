@@ -1,7 +1,6 @@
 import { PlatformAccessory } from 'homebridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from '../settings';
 import { OmniLinkPlatform } from '../platform';
-import { ZoneTypes } from '../omni/OmniService';
 import { AccessoryBase } from './AccessoryBase';
 import { SecuritySystem } from './SecuritySystem';
 import { ButtonSwitch } from './ButtonSwitch';
@@ -21,7 +20,7 @@ import { EmergencyAlarmSwitch } from './EmergencyAlarmSwitch';
 import { LockMechanism } from './LockMechanism';
 import { TemperatureSensor} from './TemperatureSensor';
 import { HumiditySensor } from './HumiditySensor';
-import { EmergencyTypes } from '../omni/messages/enums';
+import { EmergencyTypes, ZoneTypes } from '../omni/messages/enums';
 import { SensorTypes } from '../omni/messages/AuxiliarySensorPropertiesResponse';
 
 export class AccessoryService {

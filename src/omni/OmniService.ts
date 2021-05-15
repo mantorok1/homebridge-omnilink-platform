@@ -3,7 +3,7 @@ import events = require('events');
 import { OmniLinkPlatform } from '../platform';
 import { OmniSession } from './OmniSession';
 
-import { MessageTypes, ObjectTypes, Commands, SecurityModes, Alarms, AuthorityLevels, SystemTroubles, EmergencyTypes}
+import { MessageTypes, ObjectTypes, Commands, SecurityModes, Alarms, AuthorityLevels, SystemTroubles, EmergencyTypes }
   from './messages/enums';
 import { ObjectTypeCapacitiesRequest } from './messages/ObjectTypeCapacitiesRequest';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
@@ -44,8 +44,6 @@ import { UnitStatus, UnitStates } from '../models/UnitStatus';
 import { ThermostatStatus, ThermostatModes } from '../models/ThermostatStatus';
 import { AccessControlLockStatus } from '../models/AccessControlLockStatus';
 import { AuxiliarySensorStatus } from '../models/AuxiliarySensorStatus';
-
-export { ZoneTypes } from './messages/ZonePropertiesResponse';
 
 export type Devices = {
   areas: number[],
@@ -1258,7 +1256,9 @@ export class OmniService extends events.EventEmitter {
       for(const [thermostatId, thermostatStatus] of thermostats.entries()) {
         if (this.platform.settings.showOmniEvents) {
           const name = this.thermostats.get(thermostatId)!.name;
-          this.platform.log.info(`${name}: ${thermostatStatus.currentTemperature}; ${ThermostatModes[thermostatStatus.mode]}`);
+          const message = this.formatTemperature(thermostatStatus.currentTemperature) + '; ' +
+            ThermostatModes[thermostatStatus.mode];
+          this.platform.log.info(`${name}: ${message}`);
         }
         this.emit(`thermostat-${thermostatId}`, thermostatStatus);
       }
@@ -1291,7 +1291,7 @@ export class OmniService extends events.EventEmitter {
         if (this.platform.settings.showOmniEvents) {
           const name = this.auxiliarySensors.get(sensorId)!.name;
           const message = this.auxiliarySensors.get(sensorId)!.sensorType === SensorTypes.Temperature
-            ? `${sensorStatus.temperature} oC`
+            ? `${this.formatTemperature(sensorStatus.temperature)}`
             : `${sensorStatus.humidity}%`;
           this.platform.log.info(`${name}: ${message}`);
         }
@@ -1319,5 +1319,14 @@ export class OmniService extends events.EventEmitter {
       : 0;
 
     return [...Array(capacity).keys()].map(i => ++i);
+  }
+
+  private formatTemperature(celcius: number): string {
+    if (this.temperatureFormat === TemperatureFormats.Celsius) {
+      return `${celcius.toFixed(1)}C`;
+    } else {
+      const fahrenheit = (celcius * 9.0 / 5.0) + 32.0;
+      return `${fahrenheit.toFixed(1)}F`;
+    }
   }
 }
