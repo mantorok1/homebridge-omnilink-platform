@@ -240,6 +240,10 @@ export class Settings {
     return <boolean | undefined>this.config.forceAutoDiscovery ?? false;
   }
 
+  get auxMap(): Record<number, number> {
+    return <Record<number, number>>this.config.auxMap ?? {};
+  }
+
   get pushover(): Pushover | undefined {
     return <Pushover | undefined>this.config.pushover;
   }

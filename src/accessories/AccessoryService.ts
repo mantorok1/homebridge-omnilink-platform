@@ -21,7 +21,6 @@ import { LockMechanism } from './LockMechanism';
 import { TemperatureSensor} from './TemperatureSensor';
 import { HumiditySensor } from './HumiditySensor';
 import { EmergencyTypes, ZoneTypes } from '../omni/messages/enums';
-import { SensorTypes } from '../omni/messages/AuxiliarySensorPropertiesResponse';
 
 export class AccessoryService {
   private accessories: Map<string, AccessoryBase> = new Map();
@@ -42,6 +41,8 @@ export class AccessoryService {
       this.discoverZoneCarbonMonoxideSensors();
       this.discoverZoneLeakSensors();
       this.discoverZoneOccupancySensors();
+      this.discoverZoneTemperatureSensors();
+      this.discoverZoneHumiditySensors();
       this.discoverBypassZoneSwitches();
       this.discoverButtonSwitches();
       this.discoverGarageDoors();
@@ -50,8 +51,6 @@ export class AccessoryService {
       this.discoverThermostats();
       this.discoverEmergencyAlarmSwitches();
       this.discoverAccessControls();
-      this.discoverTemperatureSensors();
-      this.discoverHumiditySensors();
     } catch (error) {
       this.platform.log.error(error);
     }
@@ -263,7 +262,72 @@ export class AccessoryService {
     }
   }
 
+  discoverZoneTemperatureSensors(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverZoneTemperatureSensors');
+
+    const zones = new Map<number, string>();
+    const temperatureTypes = [
+      ZoneTypes.OutdoorTemperature,
+      ZoneTypes.Temperature,
+      ZoneTypes.TemperatureAlarm,
+      ZoneTypes.ExtendedRangeOutdoorTemperature,
+      ZoneTypes.ExtendedRangeTemperature,
+      ZoneTypes.ExtendedRangeTemperatureAlarm,
+    ];
+
+    if (this.platform.settings.includeAuxiliarySensors) {
+      for(const [index, zone] of this.platform.omniService.zones) {
+        if (temperatureTypes.includes(zone.zoneType)) {
+          zones.set(index, zone.name);
+        }
+      }
+    }
+
+    for(const [index, name] of zones) {
+      this.addAccessory(TemperatureSensor, TemperatureSensor.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof TemperatureSensor) {
+        if (!zones.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(TemperatureSensor.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
+  discoverZoneHumiditySensors(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverZoneHumiditySensors');
+
+    const zones = new Map<number, string>();
+
+    if (this.platform.settings.includeAuxiliarySensors) {
+      for(const [index, zone] of this.platform.omniService.zones) {
+        if (zone.zoneType === ZoneTypes.Humidity) {
+          zones.set(index, zone.name);
+        }
+      }
+    }
+
+    for(const [index, name] of zones) {
+      this.addAccessory(HumiditySensor, HumiditySensor.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof HumiditySensor) {
+        if (!zones.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(HumiditySensor.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
   private isZoneOfAccessoryType(index: number, zoneType: ZoneTypes, accessoryType: string): boolean {
+    // Special handling for Auxiliary sensors
+    if (zoneType >= ZoneTypes.ProgrammableEnergySaverModule) {
+      return false;
+    }
+
     const sensorType = this.platform.settings.sensors.get(index);
     if (sensorType === undefined) {
       if (zoneType === ZoneTypes.FireEmergency) {
@@ -497,58 +561,6 @@ export class AccessoryService {
       if (accessory instanceof LockMechanism) {
         if (!accessControls.has(accessory.platformAccessory.context.index)) {
           this.removeAccessory(LockMechanism.type, accessory.platformAccessory.context.index);
-        }
-      }
-    }
-  }
-
-  discoverTemperatureSensors(): void {
-    this.platform.log.debug(this.constructor.name, 'discoverTemperatureSensors');
-
-    const temperatureSensors = new Map<number, string>();
-
-    if (this.platform.settings.includeAuxiliarySensors) {
-      for(const [index, auxiliarySensor] of this.platform.omniService.auxiliarySensors) {
-        if (auxiliarySensor.sensorType === SensorTypes.Temperature) {
-          temperatureSensors.set(index, auxiliarySensor.name);
-        }
-      }
-    }
-
-    for(const [index, name] of temperatureSensors) {
-      this.addAccessory(TemperatureSensor, TemperatureSensor.type, name, index);
-    }
-
-    for(const accessory of this.accessories.values()) {
-      if (accessory instanceof TemperatureSensor) {
-        if (!temperatureSensors.has(accessory.platformAccessory.context.index)) {
-          this.removeAccessory(TemperatureSensor.type, accessory.platformAccessory.context.index);
-        }
-      }
-    }
-  }
-
-  discoverHumiditySensors(): void {
-    this.platform.log.debug(this.constructor.name, 'discoverHumiditySensors');
-
-    const humiditySensors = new Map<number, string>();
-
-    if (this.platform.settings.includeAuxiliarySensors) {
-      for(const [index, auxiliarySensor] of this.platform.omniService.auxiliarySensors) {
-        if (auxiliarySensor.sensorType === SensorTypes.Humidity) {
-          humiditySensors.set(index, auxiliarySensor.name);
-        }
-      }
-    }
-
-    for(const [index, name] of humiditySensors) {
-      this.addAccessory(HumiditySensor, HumiditySensor.type, name, index);
-    }
-
-    for(const accessory of this.accessories.values()) {
-      if (accessory instanceof HumiditySensor) {
-        if (!humiditySensors.has(accessory.platformAccessory.context.index)) {
-          this.removeAccessory(HumiditySensor.type, accessory.platformAccessory.context.index);
         }
       }
     }

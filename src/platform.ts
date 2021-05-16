@@ -186,13 +186,6 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    // Check that cache file contains all supported Omni object types
-    const objectTypes = ['areas', 'zones', 'units', 'buttons', 'thermostats', 'codes', 'accessControls', 'auxiliarySensors'];
-    if (!objectTypes.every(dt => dt in devices)) {
-      this.log.info('Performing Auto-Discovery as cache is outdated');
-      return;
-    }
-
     return devices;
   }
 
@@ -211,7 +204,6 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       thermostats: [...this.omniService.thermostats.keys()],
       codes: [...this.omniService.codes.keys()],
       accessControls: [...this.omniService.accessControls.keys()],
-      auxiliarySensors: [...this.omniService.auxiliarySensors.keys()],
     };
 
     try {

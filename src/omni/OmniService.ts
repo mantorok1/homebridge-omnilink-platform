@@ -3,7 +3,7 @@ import events = require('events');
 import { OmniLinkPlatform } from '../platform';
 import { OmniSession } from './OmniSession';
 
-import { MessageTypes, ObjectTypes, Commands, SecurityModes, Alarms, AuthorityLevels, SystemTroubles, EmergencyTypes }
+import { MessageTypes, ObjectTypes, Commands, SecurityModes, Alarms, AuthorityLevels, SystemTroubles, EmergencyTypes, ZoneTypes }
   from './messages/enums';
 import { ObjectTypeCapacitiesRequest } from './messages/ObjectTypeCapacitiesRequest';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
@@ -52,8 +52,7 @@ export type Devices = {
   buttons: number[],
   thermostats: number[],
   codes: number[],
-  accessControls: number[],
-  auxiliarySensors: number[]
+  accessControls: number[]
 }
 
 export class OmniService extends events.EventEmitter {
@@ -219,7 +218,7 @@ export class OmniService extends events.EventEmitter {
     this._thermostats = await this.getThermostats(devices?.['thermostats']);
     this._codes = await this.getCodes(devices?.['codes']);
     this._accessControls = await this.getAccessControls(devices?.['accessControls']);
-    this._auxiliarySensors = await this.getAuxiliarySensors(devices?.['auxiliarySensors']);
+    this._auxiliarySensors = await this.getAuxiliarySensors();
 
     // Event Handlers
     this.session.on('areas', this.areaStatusHandler.bind(this));
@@ -503,14 +502,12 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  async getAuxiliarySensors(auxiliarySensorIds?: number[]): Promise<Map<number, AuxiliarySensorPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getAuxiliarySensors', auxiliarySensorIds);
+  async getAuxiliarySensors(): Promise<Map<number, AuxiliarySensorPropertiesResponse>> {
+    this.platform.log.debug(this.constructor.name, 'getAuxiliarySensors');
 
     const sensors = new Map<number, AuxiliarySensorPropertiesResponse>();
     try {
-      auxiliarySensorIds = auxiliarySensorIds ?? await this.getObjectIds(ObjectTypes.AuxiliarySensor);
-
-      for(const id of auxiliarySensorIds) {
+      for(const id of this.getAuxiliarySensorIdsFromZones()) {
         const properties = await this.getAuxiliarySensorsProperties(id);
         if (properties !== undefined) {
           sensors.set(id, properties);
@@ -524,6 +521,29 @@ export class OmniService extends events.EventEmitter {
     return sensors;
   }
 
+  private getAuxiliarySensorIdsFromZones(): number[] {
+    const auxiliarySensorTypes = [
+      ZoneTypes.OutdoorTemperature,
+      ZoneTypes.Temperature,
+      ZoneTypes.TemperatureAlarm,
+      ZoneTypes.Humidity,
+      ZoneTypes.ExtendedRangeOutdoorTemperature,
+      ZoneTypes.ExtendedRangeTemperature,
+      ZoneTypes.ExtendedRangeTemperatureAlarm,
+    ];
+
+    const sensorIds: number[] = [];
+
+    for(const [zoneId, zone] of this._zones.entries()) {
+      if (auxiliarySensorTypes.includes(zone.zoneType)) {
+        const sensorId = this.platform.settings.auxMap[zoneId] ?? zoneId;
+        sensorIds.push(sensorId);
+      }
+    }
+
+    return sensorIds;
+  }
+
   async getAuxiliarySensorsProperties(id: number): Promise<AuxiliarySensorPropertiesResponse | undefined> {
     this.platform.log.debug(this.constructor.name, 'getAuxiliarySensorsProperties', id);
 
@@ -531,7 +551,7 @@ export class OmniService extends events.EventEmitter {
       objectType: ObjectTypes.AuxiliarySensor,
       index: id,
       relativeDirection: 0,
-      filter1: 1, // Named Auxiliary Sensors only
+      filter1: 0, // Named or unnamed Auxiliary Sensors
       filter2: 0,
       filter3: 0,
     });
