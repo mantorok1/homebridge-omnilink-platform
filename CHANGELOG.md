@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## NEXT
+## 1.4.1 (2021-05-16)
 
 * Add build on node 16.x
 * [FIX] Wait for Omni connection before configuring cached accessories
