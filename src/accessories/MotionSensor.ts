@@ -27,7 +27,7 @@ export class MotionSensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.MotionDetected)
       .on('get', this.getCharacteristicValue.bind(this, this.getMotionDetected.bind(this), 'MotionDetected'));
 
-    this.platform.omniService.on(`zone-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   private async getMotionDetected(): Promise<boolean> {

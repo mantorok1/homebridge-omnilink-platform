@@ -1,23 +1,18 @@
 import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
+import { AccessControlLockStatus } from '../../models/AccessControlLockStatus';
 
 export class AccessControlPropertiesResponse extends ObjectPropertiesResponse {
 
-  private _locked?: boolean;
-  private _unlockTimer?: number;
-  private _accessGranted?: boolean;
-  private _lastUser?: number;
+  private _status?: AccessControlLockStatus;
 
-  get locked(): boolean {
-    return this._locked!;
+  get status(): AccessControlLockStatus {
+    return this._status!;
   }
-  
+
   deserialize(message: Buffer): void {
     super.deserialize(message);
 
-    this._locked = message[6] === 0;
-    this._unlockTimer = message[7] * 256 + message[8];
-    this._accessGranted = message[9] === 0;
-    this._lastUser = message[10];
-    this._name = this.getName(message.subarray(11, 26), 'Reader');
+    this._status = new AccessControlLockStatus(message[6]);
+    this._name = this.getName(message.subarray(11, 26), 'Lock');
   }
 }

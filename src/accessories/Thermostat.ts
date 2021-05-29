@@ -1,13 +1,15 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
-import { ThermostatTypes } from '../omni/messages/ThermostatPropertiesResponse';
+import { ThermostatTypes } from '../omni/messages/enums';
 import { TemperatureFormats } from '../omni/messages/SystemFormatsResponse';
 import { ThermostatStatus, ThermostatStates, ThermostatModes } from '../models/ThermostatStatus';
 
 export class Thermostat extends AccessoryBase {
   private heaterTypes = [ThermostatTypes.AutoHeatCool, ThermostatTypes.HeatCool, ThermostatTypes.Heat];
   private coolerTypes = [ThermostatTypes.AutoHeatCool, ThermostatTypes.HeatCool, ThermostatTypes.Cool];
+  private minTemperature: number;
+  private maxTemperature: number;
 
   constructor(
     platform: OmniLinkPlatform,
@@ -22,6 +24,9 @@ export class Thermostat extends AccessoryBase {
       this.service = this.platformAccessory.addService(this.platform.Service.Thermostat, platformAccessory.displayName);
       this.initialiseService();
     }
+
+    this.minTemperature = this.service.getCharacteristic(this.platform.Characteristic.TargetTemperature).props.minValue ?? 10;
+    this.maxTemperature = this.service.getCharacteristic(this.platform.Characteristic.TargetTemperature).props.maxValue ?? 30;
 
     this.setEventHandlers();
   }
@@ -128,7 +133,7 @@ export class Thermostat extends AccessoryBase {
         .on('set', this.setCharacteristicValue.bind(this, this.setTargetRelativeHumidity.bind(this), 'TargetRelativeHumidity'));
     }
 
-    this.platform.omniService.on(`thermostat-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(ThermostatStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   async getCurrentHeatingCoolingState(): Promise<number> {
@@ -221,8 +226,8 @@ export class Thermostat extends AccessoryBase {
 
   getTargetTemperatureCharacteristicValue(thermostatStatus: ThermostatStatus): number {
     return thermostatStatus.mode === ThermostatModes.Cool
-      ? thermostatStatus.coolSetPoint
-      : thermostatStatus.heatSetPoint;
+      ? Math.min(thermostatStatus.coolSetPoint, this.maxTemperature)
+      : Math.max(thermostatStatus.heatSetPoint, this.minTemperature);
   }
 
   async setTargetTemperature(value: number): Promise<void> {
@@ -253,10 +258,10 @@ export class Thermostat extends AccessoryBase {
 
     const thermostatStatus = await this.platform.omniService.getThermostatStatus(this.platformAccessory.context.index);
     if (thermostatStatus === undefined) {
-      return 0;
+      return this.maxTemperature;
     }
 
-    return thermostatStatus.coolSetPoint;
+    return Math.min(thermostatStatus.coolSetPoint, this.maxTemperature);
   }
 
   async setCoolingThresholdTemperature(value: number): Promise<void> {
@@ -270,10 +275,10 @@ export class Thermostat extends AccessoryBase {
 
     const thermostatStatus = await this.platform.omniService.getThermostatStatus(this.platformAccessory.context.index);
     if (thermostatStatus === undefined) {
-      return 0;
+      return this.minTemperature;
     }
 
-    return thermostatStatus.heatSetPoint;
+    return Math.max(thermostatStatus.heatSetPoint, this.minTemperature);
   }
 
   async setHeatingThresholdTemperature(value: number): Promise<void> {

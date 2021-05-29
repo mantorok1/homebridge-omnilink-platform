@@ -5,7 +5,7 @@ import { OmniService, Devices } from './omni/OmniService';
 import { AccessoryService } from './accessories/AccessoryService';
 import { PushoverService } from './services/PushoverService';
 import { MqttService } from './services/MqttService';
-import { ZoneTypes, UnitTypes } from './omni/messages/enums';
+import { ZoneTypes, UnitTypes, ThermostatTypes, AuxiliarySensorTypes } from './omni/messages/enums';
 import fs = require('fs');
 import path = require('path');
 
@@ -108,6 +108,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       const devices = await this.readCache();
       await this.omniService.discover(devices);
       await this.writeCache(devices);
+      await this.omniService.refreshAllStatuses();
 
       this.displayDevices();
 
@@ -153,7 +154,7 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
 
     this.log.info('Thermostats found:', this.omniService.thermostats.size);
     for (const [index, thermostat] of this.omniService.thermostats) {
-      this.log.info(`  ${String(index).padStart(3)}: ${thermostat.name}`);
+      this.log.info(`  ${String(index).padStart(3)}: ${thermostat.name.padEnd(17)} [${ThermostatTypes[thermostat.thermostatType]}]`);
     }
 
     this.log.info('Access Controls found:', this.omniService.accessControls.size);
@@ -162,8 +163,8 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     }
 
     this.log.info('Auxiliary Sensors found:', this.omniService.auxiliarySensors.size);
-    for (const [index, auxiliarySensor] of this.omniService.auxiliarySensors) {
-      this.log.info(`  ${String(index).padStart(3)}: ${auxiliarySensor.name}`);
+    for (const [index, sensor] of this.omniService.auxiliarySensors) {
+      this.log.info(`  ${String(index).padStart(3)}: ${sensor.name.padEnd(17)} [${AuxiliarySensorTypes[sensor.sensorType]}]`);
     }
   }
 

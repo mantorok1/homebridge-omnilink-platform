@@ -27,7 +27,7 @@ export class ContactSensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.ContactSensorState)
       .on('get', this.getCharacteristicValue.bind(this, this.getContactSensorState.bind(this), 'ContactSensorState'));
 
-    this.platform.omniService.on(`zone-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   private async getContactSensorState(): Promise<number> {

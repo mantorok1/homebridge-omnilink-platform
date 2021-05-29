@@ -27,7 +27,7 @@ export class LeakSensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.LeakDetected)
       .on('get', this.getCharacteristicValue.bind(this, this.getLeakDetected.bind(this), 'LeakDetected'));
 
-    this.platform.omniService.on(`zone-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   private async getLeakDetected(): Promise<number> {

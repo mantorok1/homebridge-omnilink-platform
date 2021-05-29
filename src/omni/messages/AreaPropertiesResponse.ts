@@ -1,18 +1,13 @@
-import { SecurityModes } from './enums';
 import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
+import { AreaStatus } from '../../models/AreaStatus';
 
 export class AreaPropertiesResponse extends ObjectPropertiesResponse {
 
-  private _mode?: number;
-  private _alarms?: number;
+  private _status?: AreaStatus;
   private _enabled?: boolean;
   
-  get mode(): SecurityModes {
-    return this._mode!;
-  }
-
-  get alarms(): number {
-    return this._alarms!;
+  get status(): AreaStatus {
+    return this._status!;
   }
 
   get enabled(): boolean {
@@ -22,8 +17,7 @@ export class AreaPropertiesResponse extends ObjectPropertiesResponse {
   deserialize(message: Buffer): void {
     super.deserialize(message);
 
-    this._mode = message[6];
-    this._alarms = message[7];
+    this._status = new AreaStatus(message[6], message[7]);
     this._enabled = message[10] !== 0;
     this._name = this.getName(message.subarray(13, 25), 'Area');
   }

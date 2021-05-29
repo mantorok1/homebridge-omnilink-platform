@@ -27,7 +27,7 @@ export class OccupancySensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.OccupancyDetected)
       .on('get', this.getCharacteristicValue.bind(this, this.getOccupancyDetected.bind(this), 'OccupancyDetected'));
 
-    this.platform.omniService.on(`zone-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   private async getOccupancyDetected(): Promise<number> {

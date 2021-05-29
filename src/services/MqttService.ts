@@ -10,7 +10,6 @@ import { AccessControlLockStatus } from '../models/AccessControlLockStatus';
 import { AuxiliarySensorStatus } from '../models/AuxiliarySensorStatus';
 import { TemperatureFormats } from '../omni/messages/SystemFormatsResponse';
 import { SystemTroubles, EmergencyTypes } from '../omni/messages/enums';
-import { SensorTypes } from '../omni/messages/AuxiliarySensorPropertiesResponse';
 
 export class MqttService {
   private settings: MqttSettings | undefined;
@@ -53,7 +52,7 @@ export class MqttService {
 
         this.subTopics.set(`${this.prefix}area/${areaId}/alarm/set`, this.setAreaAlarm.bind(this));
 
-        this.platform.omniService.on(`area-${areaId}`, this.publishArea.bind(this, areaId));
+        this.platform.omniService.on(AreaStatus.getKey(areaId), this.publishArea.bind(this, areaId));
 
         const areaStatus = await this.platform.omniService.getAreaStatus(areaId);
         if (areaStatus !== undefined) {
@@ -65,7 +64,7 @@ export class MqttService {
       for(const zoneId of this.platform.omniService.zones.keys()) {
         this.subTopics.set(`${this.prefix}zone/${zoneId}/bypass/set`, this.setBypassZone.bind(this));
 
-        this.platform.omniService.on(`zone-${zoneId}`, this.publishZone.bind(this, zoneId));
+        this.platform.omniService.on(ZoneStatus.getKey(zoneId), this.publishZone.bind(this, zoneId));
 
         const zoneStatus = await this.platform.omniService.getZoneStatus(zoneId);
         if (zoneStatus !== undefined) {
@@ -78,7 +77,7 @@ export class MqttService {
         this.subTopics.set(`${this.prefix}unit/${unitId}/state/set`, this.setUnitState.bind(this));
         this.subTopics.set(`${this.prefix}unit/${unitId}/brightness/set`, this.setUnitBrightness.bind(this));
 
-        this.platform.omniService.on(`unit-${unitId}`, this.publishUnit.bind(this, unitId));
+        this.platform.omniService.on(UnitStatus.getKey(unitId), this.publishUnit.bind(this, unitId));
 
         const unitStatus = await this.platform.omniService.getUnitStatus(unitId);
         if (unitStatus !== undefined) {
@@ -103,7 +102,7 @@ export class MqttService {
         this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/dehumidifysetpoint/set`,
           this.setThermostatDehumidifySetPoint.bind(this));
 
-        this.platform.omniService.on(`thermostat-${thermostatId}`, this.publishThermostat.bind(this, thermostatId));
+        this.platform.omniService.on(ThermostatStatus.getKey(thermostatId), this.publishThermostat.bind(this, thermostatId));
 
         const thermostatStatus = await this.platform.omniService.getThermostatStatus(thermostatId);
         if (thermostatStatus !== undefined) {
@@ -115,7 +114,7 @@ export class MqttService {
       for(const accessControlId of this.platform.omniService.accessControls.keys()) {
         this.subTopics.set(`${this.prefix}accesscontrol/${accessControlId}/locked/set`, this.setLockedState.bind(this));
 
-        this.platform.omniService.on(`lock-${accessControlId}`, this.publishLock.bind(this, accessControlId));
+        this.platform.omniService.on(AccessControlLockStatus.getKey(accessControlId), this.publishLock.bind(this, accessControlId));
 
         const lockStatus = await this.platform.omniService.getLockStatus(accessControlId);
         if (lockStatus !== undefined) {
@@ -125,7 +124,8 @@ export class MqttService {
 
       // Auxiliary Sensors
       for(const auxiliarySensorId of this.platform.omniService.auxiliarySensors.keys()) {
-        this.platform.omniService.on(`auxiliary-${auxiliarySensorId}`, this.publishAuxiliarySensor.bind(this, auxiliarySensorId));
+        this.platform.omniService.on(AuxiliarySensorStatus.getKey(auxiliarySensorId),
+          this.publishAuxiliarySensor.bind(this, auxiliarySensorId));
 
         const auxiliarySensorStatus = await this.platform.omniService.getAuxiliarySensorStatus(auxiliarySensorId);
         if (auxiliarySensorStatus !== undefined) {
@@ -501,10 +501,10 @@ export class MqttService {
     this.publish(`auxiliary/${auxiliarySensorId}/name/get`,
       this.platform.omniService.auxiliarySensors.get(auxiliarySensorId)!.name);
 
-    if (this.platform.omniService.auxiliarySensors.get(auxiliarySensorId)!.sensorType === SensorTypes.Temperature) {
+    if (this.platform.omniService.auxiliarySensors.get(auxiliarySensorId)!.isTemperatureSensor) {
       this.publish(`auxiliary/${auxiliarySensorId}/temperature/get`,
         this.formatTemperature(auxiliarySensorStatus.temperature));
-    } else if (this.platform.omniService.auxiliarySensors.get(auxiliarySensorId)!.sensorType === SensorTypes.Humidity) {
+    } else { // Humidity sensor
       this.publish(`auxiliary/${auxiliarySensorId}/humidity/get`,
         String(auxiliarySensorStatus.humidity));
     } 

@@ -52,7 +52,7 @@ export class GarageDoorOpener extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getObstructionDetected.bind(this), 'ObstructionDetected'));
 
     if (this.zoneId !== undefined) {
-      this.platform.omniService.on(`zone-${this.zoneId}`, this.updateValues.bind(this));
+      this.platform.omniService.on(ZoneStatus.getKey(this.zoneId), this.updateValues.bind(this));
     }
   }
 

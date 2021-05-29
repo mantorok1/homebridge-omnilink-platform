@@ -1,10 +1,13 @@
+import { IStatus } from './IStatus';
+
 export enum ZoneStates {
   Ready = 0,
   NotReady = 1,
   Trouble = 2 
 }
 
-export class ZoneStatus {
+export class ZoneStatus implements IStatus {
+  public readonly statusBuffer: Buffer;
   private readonly _currentState: ZoneStates;
   private readonly _latchedAlarmState: number;
   private readonly _armingState: number;
@@ -12,11 +15,26 @@ export class ZoneStatus {
   private readonly _bypassed: boolean;
 
   constructor(status: number) {
+    this.statusBuffer = Buffer.from([status]);
     this._currentState = status & 0b00000011;
     this._latchedAlarmState = status & 0b00001100;
     this._armingState = status & 0b00110000;
     this._troubleAcknowledged = (status & 0b01000000) === 0b01000000;
     this._bypassed = (status & 0b00100000) === 0b00100000;
+  }
+
+  static getKey(zoneId: number): string {
+    return `zone-${zoneId}`;
+  }
+
+  equals(status: ZoneStatus | undefined): boolean {
+    return status === undefined
+      ? false
+      : (this.statusBuffer.equals(status.statusBuffer));
+  }
+
+  getKey(id: number): string {
+    return ZoneStatus.getKey(id);
   }
 
   get currentState(): ZoneStates {

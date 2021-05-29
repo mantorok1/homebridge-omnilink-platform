@@ -39,7 +39,7 @@ export class EmergencyAlarmSwitch extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getEmergencyAlarmSwitchOn.bind(this), 'On'))
       .on('set', this.setCharacteristicValue.bind(this, this.setEmergencyAlarmSwitchOn.bind(this), 'On'));
 
-    this.platform.omniService.on(`area-${this.areaId}`, this.updateValues.bind(this));
+    this.platform.omniService.on(AreaStatus.getKey(this.areaId), this.updateValues.bind(this));
   }
 
   async getEmergencyAlarmSwitchOn(): Promise<boolean> {

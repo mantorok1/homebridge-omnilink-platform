@@ -38,7 +38,7 @@ export class SecuritySystem extends AccessoryBase {
       .getCharacteristic(this.platform.Characteristic.StatusFault)
       .on('get', this.getCharacteristicValue.bind(this, this.getStatusFault.bind(this), 'StatusFault'));
     
-    this.platform.omniService.on(`area-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(AreaStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
 
     this.platform.omniService.on('system-troubles', this.updateStatusFault.bind(this));
   }

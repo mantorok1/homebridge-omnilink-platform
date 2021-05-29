@@ -44,7 +44,7 @@ export class PushoverService {
     });
 
     for(const [areaId, area] of this.platform.omniService.areas.entries()) {
-      this.platform.omniService.on(`area-${areaId}`, this.sendAlarmMessage.bind(this, area.name));
+      this.platform.omniService.on(AreaStatus.getKey(areaId), this.sendAlarmMessage.bind(this, area.name));
     }
 
     this.platform.omniService.on('system-trouble', this.sendSystemTroubleMessage.bind(this));

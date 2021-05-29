@@ -1,4 +1,5 @@
 import events = require('events');
+import NodeCache = require('node-cache');
 
 import { OmniLinkPlatform } from '../platform';
 import { OmniSession } from './OmniSession';
@@ -15,7 +16,7 @@ import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse';
 import { ThermostatPropertiesResponse } from './messages/ThermostatPropertiesResponse';
 import { CodePropertiesResponse } from './messages/CodePropertiesResponse';
 import { AccessControlPropertiesResponse } from './messages/AccessControlPropertiesResponse';
-import { AuxiliarySensorPropertiesResponse, SensorTypes } from './messages/AuxiliarySensorPropertiesResponse';
+import { AuxiliarySensorPropertiesResponse } from './messages/AuxiliarySensorPropertiesResponse';
 import { SetTimeCommandRequest } from './messages/SetTimeCommandRequest';
 import { ControllerCommandRequest } from './messages/ControllerCommandRequest';
 import { EnableNotificationsRequest } from './messages/EnableNotificationsRequest';
@@ -37,7 +38,10 @@ import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidatio
 import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAccessControlLockStatusResponse';
 import { ExtendedAuxiliarySensorStatusResponse } from './messages/ExtendedAuxiliarySensorStatusResponse';
 import { KeypadEmergencyRequest } from './messages/KeypadEmergencyRequest';
+import { ApplicationDataResponse } from './messages/ApplicationDataResponse';
+import { ObjectPropertiesResponse } from './messages/ObjectPropertiesResponse';
 
+import { IStatus } from '../models/IStatus';
 import { AreaStatus, ArmedModes, ExtendedArmedModes } from '../models/AreaStatus';
 import { ZoneStatus, ZoneStates } from '../models/ZoneStatus';
 import { UnitStatus, UnitStates } from '../models/UnitStatus';
@@ -62,29 +66,17 @@ export class OmniService extends events.EventEmitter {
   private _model?: string;
   private _version?: string;
   private _temperatureFormat?: TemperatureFormats;
-  private _zones: Map<number, ZonePropertiesResponse>;
-  private _units: Map<number, UnitPropertiesResponse>;
-  private _areas: Map<number, AreaPropertiesResponse>;
-  private _buttons: Map<number, ButtonPropertiesResponse>;
-  private _codes: Map<number, CodePropertiesResponse>;
-  private _thermostats: Map<number, ThermostatPropertiesResponse>;
-  private _accessControls: Map<number, AccessControlPropertiesResponse>;
-  private _auxiliarySensors: Map<number, AuxiliarySensorPropertiesResponse>;
+  private _omniObjects: Record<number, Map<number, ObjectPropertiesResponse>>;
   private _troubles: SystemTroubles[];
+  private _statusCache: NodeCache;
 
   constructor(private readonly platform: OmniLinkPlatform) {
     super();
     this.setMaxListeners(150);
     this.session = new OmniSession(platform);
-    this._zones = new Map<number, ZonePropertiesResponse>();
-    this._units = new Map<number, UnitPropertiesResponse>();
-    this._areas = new Map<number, AreaPropertiesResponse>();
-    this._buttons = new Map<number, ButtonPropertiesResponse>();
-    this._codes = new Map<number, CodePropertiesResponse>();
-    this._thermostats = new Map<number, ThermostatPropertiesResponse>();
-    this._accessControls = new Map<number, AccessControlPropertiesResponse>();
-    this._auxiliarySensors = new Map<number, AuxiliarySensorPropertiesResponse>();
+    this._omniObjects = {};
     this._troubles = [];
+    this._statusCache = new NodeCache();
   }
 
   get model(): string {
@@ -99,36 +91,36 @@ export class OmniService extends events.EventEmitter {
     return this._temperatureFormat ?? TemperatureFormats.Celsius;
   }
 
+  get areas(): Map<number, AreaPropertiesResponse> {
+    return <Map<number, AreaPropertiesResponse>>this._omniObjects[ObjectTypes.Area];
+  }
+
   get zones(): Map<number, ZonePropertiesResponse> {
-    return this._zones;
+    return <Map<number, ZonePropertiesResponse>>this._omniObjects[ObjectTypes.Zone];
   }
 
   get units(): Map<number, UnitPropertiesResponse> {
-    return this._units;
-  }
-
-  get areas(): Map<number, AreaPropertiesResponse> {
-    return this._areas;
+    return <Map<number, UnitPropertiesResponse>>this._omniObjects[ObjectTypes.Unit];
   }
 
   get buttons(): Map<number, ButtonPropertiesResponse> {
-    return this._buttons;
+    return <Map<number, ButtonPropertiesResponse>>this._omniObjects[ObjectTypes.Button];
   }
 
   get codes(): Map<number, CodePropertiesResponse> {
-    return this._codes;
+    return <Map<number, CodePropertiesResponse>>this._omniObjects[ObjectTypes.Code];
   }
 
   get thermostats(): Map<number, ThermostatPropertiesResponse> {
-    return this._thermostats;
+    return <Map<number, ThermostatPropertiesResponse>>this._omniObjects[ObjectTypes.Thermostat];
   }
 
   get accessControls(): Map<number, AccessControlPropertiesResponse> {
-    return this._accessControls;
+    return <Map<number, AccessControlPropertiesResponse>>this._omniObjects[ObjectTypes.AccessControlLock];
   }
 
   get auxiliarySensors(): Map<number, AuxiliarySensorPropertiesResponse> {
-    return this._auxiliarySensors;
+    return <Map<number, AuxiliarySensorPropertiesResponse>>this._omniObjects[ObjectTypes.AuxiliarySensor];
   }
 
   async init(): Promise<void> {
@@ -179,6 +171,7 @@ export class OmniService extends events.EventEmitter {
     this.platform.log.warn('Attempting to reconnect');
     this.terminate();
     await this.init();
+    await this.refreshAllStatuses();
   }
 
   terminate(): void {
@@ -211,22 +204,22 @@ export class OmniService extends events.EventEmitter {
       this._temperatureFormat = systemFormats.temperatureFormat;
     }
 
-    this._areas = await this.getAreas(devices?.['areas']);
-    this._zones = await this.getZones(devices?.['zones']);
-    this._units = await this.getUnits(devices?.['units']);
-    this._buttons = await this.getButtons(devices?.['buttons']);
-    this._thermostats = await this.getThermostats(devices?.['thermostats']);
-    this._codes = await this.getCodes(devices?.['codes']);
-    this._accessControls = await this.getAccessControls(devices?.['accessControls']);
-    this._auxiliarySensors = await this.getAuxiliarySensors();
+    this._omniObjects[ObjectTypes.Area] = await this.getAreas(devices?.['areas']);
+    this._omniObjects[ObjectTypes.Zone] = await this.getZones(devices?.['zones']);
+    this._omniObjects[ObjectTypes.Unit] = await this.getUnits(devices?.['units']);
+    this._omniObjects[ObjectTypes.Button] = await this.getButtons(devices?.['buttons']);
+    this._omniObjects[ObjectTypes.Code] = await this.getCodes(devices?.['codes']);
+    this._omniObjects[ObjectTypes.Thermostat] = await this.getThermostats(devices?.['thermostats']);
+    this._omniObjects[ObjectTypes.AccessControlLock] = await this.getAccessControls(devices?.['accessControls']);
+    this._omniObjects[ObjectTypes.AuxiliarySensor] = await this.getAuxiliarySensors();
 
     // Event Handlers
-    this.session.on('areas', this.areaStatusHandler.bind(this));
-    this.session.on('zones', this.zoneStatusHandler.bind(this));
-    this.session.on('units', this.unitStatusHandler.bind(this));
-    this.session.on('thermostats', this.thermostatStatusHandler.bind(this));
-    this.session.on('locks', this.lockStatusHandler.bind(this));
-    this.session.on('sensors', this.auxiliarySensorStatusHandler.bind(this));
+    this.session.on('areas', this.processStatus.bind(this, ObjectTypes.Area));
+    this.session.on('zones', this.processStatus.bind(this, ObjectTypes.Zone));
+    this.session.on('units', this.processStatus.bind(this, ObjectTypes.Unit));
+    this.session.on('thermostats', this.processStatus.bind(this, ObjectTypes.Thermostat));
+    this.session.on('locks', this.processStatus.bind(this, ObjectTypes.AccessControlLock));
+    this.session.on('sensors', this.processStatus.bind(this, ObjectTypes.AuxiliarySensor));
   }
 
   async getAreas(areaIds?: number[]): Promise<Map<number, AreaPropertiesResponse>> {
@@ -264,6 +257,7 @@ export class OmniService extends events.EventEmitter {
     const response = await this.session.sendApplicationDataMessage(message);
 
     if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      this._statusCache.set(AreaStatus.getKey(id), (<AreaPropertiesResponse>response).status);
       return <AreaPropertiesResponse>response;
     }
   }
@@ -303,6 +297,7 @@ export class OmniService extends events.EventEmitter {
     const response = await this.session.sendApplicationDataMessage(message);
 
     if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      this._statusCache.set(ZoneStatus.getKey(id), (<ZonePropertiesResponse>response).status);
       return <ZonePropertiesResponse>response;
     }
   }
@@ -342,6 +337,7 @@ export class OmniService extends events.EventEmitter {
     const response = await this.session.sendApplicationDataMessage(message);
 
     if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      this._statusCache.set(UnitStatus.getKey(id), (<UnitPropertiesResponse>response).status);
       return <UnitPropertiesResponse>response;
     }
   }
@@ -459,6 +455,7 @@ export class OmniService extends events.EventEmitter {
     const response = await this.session.sendApplicationDataMessage(message);
 
     if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      this._statusCache.set(ThermostatStatus.getKey(id), (<ThermostatPropertiesResponse>response).status);
       return <ThermostatPropertiesResponse>response;
     }
   }
@@ -498,6 +495,7 @@ export class OmniService extends events.EventEmitter {
     const response = await this.session.sendApplicationDataMessage(message);
 
     if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      this._statusCache.set(AccessControlLockStatus.getKey(id), (<AccessControlPropertiesResponse>response).status);
       return <AccessControlPropertiesResponse>response;
     }
   }
@@ -534,10 +532,9 @@ export class OmniService extends events.EventEmitter {
 
     const sensorIds: number[] = [];
 
-    for(const [zoneId, zone] of this._zones.entries()) {
+    for(const [zoneId, zone] of this.zones.entries()) {
       if (auxiliarySensorTypes.includes(zone.zoneType)) {
-        const sensorId = this.platform.settings.auxMap[zoneId] ?? zoneId;
-        sensorIds.push(sensorId);
+        sensorIds.push(zoneId);
       }
     }
 
@@ -559,6 +556,7 @@ export class OmniService extends events.EventEmitter {
     const response = await this.session.sendApplicationDataMessage(message);
 
     if (response.type === MessageTypes.ObjectPropertiesResponse) {
+      this._statusCache.set(AuxiliarySensorStatus.getKey(id), (<AuxiliarySensorPropertiesResponse>response).status);
       return <AuxiliarySensorPropertiesResponse>response;
     }
   }
@@ -616,7 +614,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.buttons.get(buttonId)!.name}: Execute Button`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Button, buttonId);
+        this.platform.log.info(`${prefix} Execute Button`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -627,7 +626,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.buttons.get(buttonId)!.name}: Execute Button failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Button, buttonId);
+      this.platform.log.warn(`${prefix} Execute Button failed [${error.message}]`);
     }
   }
 
@@ -648,7 +648,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.zones.get(zoneId)!.name}: Set Bypass ${state ? 'On' : 'Off'} [${this.codes.get(codeId)?.name}]`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Zone, zoneId);
+        this.platform.log.info(`${prefix} Set Bypass ${state ? 'On' : 'Off'} [${this.codes.get(codeId)?.name}]`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -657,7 +658,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.zones.get(zoneId)!.name}: Set Bypass failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Zone, zoneId);
+      this.platform.log.warn(`${prefix} Set Bypass failed [${error.message}]`);
     }
   }
 
@@ -672,7 +674,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.units.get(unitId)!.name}: Set State ${state ? 'On' : 'Off'}`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Unit, unitId);
+        this.platform.log.info(`${prefix} Set State ${state ? 'On' : 'Off'}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -681,7 +684,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.units.get(unitId)!.name}: Set State failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Unit, unitId);
+      this.platform.log.warn(`${prefix} Set State failed [${error.message}]`);
     }
   }
 
@@ -704,7 +708,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.units.get(unitId)!.name}: Set Lighting Level ${brightness}%`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Unit, unitId);
+        this.platform.log.info(`${prefix} Set Lighting Level ${brightness}%`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -713,7 +718,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.units.get(unitId)!.name}: Set Lighting Level failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Unit, unitId);
+      this.platform.log.warn(`${prefix} Set Lighting Level failed [${error.message}]`);
     }
   }
   
@@ -728,7 +734,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Heat SetPoint ${temperature}`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+        this.platform.log.info(`${prefix} Set Heat SetPoint ${this.formatTemperature(temperature)}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -737,7 +744,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Heat SetPoint failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+      this.platform.log.warn(`${prefix} Set Heat SetPoint failed [${error.message}]`);
     }
   }
 
@@ -752,7 +760,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Cool SetPoint ${temperature}`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+        this.platform.log.info(`${prefix} Set Cool SetPoint ${this.formatTemperature(temperature)}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -761,27 +770,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Cool SetPoint failed: ${error.message}`);
-    }
-  }
-
-  private convertToOmniTemperature(temperature: number): number {
-    let omniTemperature = (40 + temperature) * 2;
-    if (omniTemperature < 44) {
-      omniTemperature = 44;
-    } else if (omniTemperature > 180) {
-      omniTemperature = 180;
-    }
-    return omniTemperature;
-  }
-
-  private convertToOmniHumidity(humidity: number): number {
-    if (humidity <= 0) {
-      return 44;
-    } else if (humidity >= 100) {
-      return 156;
-    } else {
-      return 44 + Math.round(humidity / 100.0 * 112.0);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+      this.platform.log.warn(`${prefix} Set Cool SetPoint failed [${error.message}]`);
     }
   }
 
@@ -796,7 +786,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Mode ${ThermostatModes[mode]}`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+        this.platform.log.info(`${prefix} Set Mode ${ThermostatModes[mode]}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -805,7 +796,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Mode failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+      this.platform.log.warn(`${prefix} Set Mode failed [${error.message}]`);
     }
   }
 
@@ -820,7 +812,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Humidity SetPoint ${humidity}`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+        this.platform.log.info(`${prefix} Set Humidity SetPoint ${humidity}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -829,7 +822,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Humidity SetPoint failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+      this.platform.log.warn(`${prefix} Set Humidity SetPoint failed [${error.message}]`);
     }
   }
 
@@ -844,7 +838,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.thermostats.get(thermostatId)!.name}: Set Dehumidity SetPoint ${humidity}`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+        this.platform.log.info(`${prefix} Set Dehumidity SetPoint ${humidity}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -853,7 +848,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.thermostats.get(thermostatId)!.name}: Set Dehumidity SetPoint failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
+      this.platform.log.warn(`${prefix} Set Dehumidity SetPoint failed [${error.message}]`);
     }
   }
 
@@ -868,7 +864,8 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${this.accessControls.get(accessControlId)!.name}: ${lock ? 'Lock' : 'Unlock'}`);
+        const prefix = this.getLogMessagePrefix(ObjectTypes.AccessControlLock, accessControlId);
+        this.platform.log.info(`${prefix} ${lock ? 'Lock' : 'Unlock'}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -877,8 +874,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(
-        `${this.accessControls.get(accessControlId)!.name}: ${lock ? 'Lock' : 'Unlock'} failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.AccessControlLock, accessControlId);
+      this.platform.log.warn(`${prefix} ${lock ? 'Lock' : 'Unlock'} failed [${error.message}]`);
     }
   }
 
@@ -898,6 +895,7 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
+  // System
   async getSystemInformation(): Promise<SystemInformationResponse | undefined> {
     this.platform.log.debug(this.constructor.name, 'getSystemInformation');
 
@@ -962,149 +960,274 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  async getAreaStatus(areaId: number): Promise<AreaStatus | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getAreaStatus', areaId);
+  // Object Status
+  async refreshAllStatuses(): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'refreshAllStatuses');
+
+    let startId: number;
+    let endId: number;
+    let response: ApplicationDataResponse | undefined;
+
+    // Areas
+    if (this.areas.size > 0) {
+      startId = Math.min(...this.areas.keys());
+      endId = Math.max(...this.areas.keys());
+      response = await this.getObjectStatus(ObjectTypes.Area, startId, endId);
+      if (response instanceof ExtendedAreaStatusResponse) {
+        this.processStatus(ObjectTypes.Area, response.areas);
+      }
+    }
+
+    // Zones
+    if (this.zones.size > 0) {
+      startId = Math.min(...this.zones.keys());
+      endId = Math.max(...this.zones.keys());
+      response = await this.getObjectStatus(ObjectTypes.Zone, startId, endId);
+      if (response instanceof ExtendedZoneStatusResponse) {
+        this.processStatus(ObjectTypes.Zone, response.zones);
+      }
+    }
+
+    // Units
+    if (this.units.size > 0) {
+      startId = Math.min(...this.units.keys());
+      endId = Math.max(...this.units.keys());
+      response = await this.getObjectStatus(ObjectTypes.Unit, startId, endId);
+      if (response instanceof ExtendedUnitStatusResponse) {
+        this.processStatus(ObjectTypes.Unit, response.units);
+      }
+    }
+
+    // Thermostats
+    if (this.thermostats.size > 0) {
+      startId = Math.min(...this.thermostats.keys());
+      endId = Math.max(...this.thermostats.keys());
+      response = await this.getObjectStatus(ObjectTypes.Thermostat, startId, endId);
+      if (response instanceof ExtendedThermostatStatusResponse) {
+        this.processStatus(ObjectTypes.Thermostat, response.thermostats);
+      }
+    }
+
+    // Access Control Lock
+    if (this.accessControls.size > 0) {
+      startId = Math.min(...this.accessControls.keys());
+      endId = Math.max(...this.accessControls.keys());
+      response = await this.getObjectStatus(ObjectTypes.AccessControlLock, startId, endId);
+      if (response instanceof ExtendedAccessControlLockStatusResponse) {
+        this.processStatus(ObjectTypes.AccessControlLock, response.locks);
+      }
+    }
+
+    // Auxiliary Sensors
+    if (this.auxiliarySensors.size > 0) {
+      startId = Math.min(...this.auxiliarySensors.keys());
+      endId = Math.max(...this.auxiliarySensors.keys());
+      response = await this.getObjectStatus(ObjectTypes.AuxiliarySensor, startId, endId);
+      if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
+        this.processStatus(ObjectTypes.AuxiliarySensor, response.sensors);
+      }
+    }
+  }
+
+  private async getObjectStatus(
+    objectType: ObjectTypes, startId: number, endId: number): Promise<ApplicationDataResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getObjectStatus', objectType, startId, endId);
 
     try {
       const message = new ExtendedObjectStatusRequest({
-        objectType: ObjectTypes.Area,
-        startId: areaId,
-        endId: areaId,
+        objectType: objectType,
+        startId: startId,
+        endId: endId,
       });
   
-      const response = await this.session.sendApplicationDataMessage(message);
-  
-      if (response instanceof ExtendedAreaStatusResponse) {
-        return response.areas.get(areaId);
+      return await this.session.sendApplicationDataMessage(message);
+    } catch(error) {
+      this.platform.log.error(error);
+    }
+  }
+
+  private processStatus(objectType: ObjectTypes, statuses: Map<number, IStatus>): void {
+    this.platform.log.debug(this.constructor.name, 'processStatus', objectType, statuses);
+
+    try {
+      for(const [id, status] of statuses.entries()) {
+        if (!this._omniObjects[objectType].has(id)) {
+          continue;
+        }
+        if (status.equals(this._statusCache.get(status.getKey(id)))) {
+          continue;
+        }
+        if (this.platform.settings.showOmniEvents) {
+          this.platform.log.info(this.getOmniEventMessage(objectType, id, status));
+        }
+        this._statusCache.set(status.getKey(id), status);
+        this.emit(status.getKey(id), status);
       }
     } catch(error) {
       this.platform.log.error(error);
-      throw error;  
+    }
+  }
+
+  private getOmniEventMessage(objectType: ObjectTypes, id: number, status: IStatus): string {
+    let message = this.getLogMessagePrefix(objectType, id);
+    switch(objectType) {
+      case ObjectTypes.Area:
+        if (status instanceof AreaStatus) {
+          message = `${message} ${SecurityModes[status.securityMode]}`;
+          if (status.alarmsTriggered.length > 0) {
+            const alarms = status.alarmsTriggered.map((alarm) => Alarms[alarm]);
+            message = `${message}; Alarm(s) triggered: ${alarms.join()}`;
+          }
+        }
+        return message;
+      case ObjectTypes.Zone:
+        if (status instanceof ZoneStatus) {
+          return `${message} ${ZoneStates[status.currentState]}`;
+        }
+        break;
+      case ObjectTypes.Unit:
+        if (status instanceof UnitStatus) {
+          return `${message} ${UnitStates[status.state]}`;
+        }
+        break;
+      case ObjectTypes.Thermostat:
+        if (status instanceof ThermostatStatus) {
+          return `${message} ${this.formatTemperature(status.currentTemperature)}; ${ThermostatModes[status.mode]}`;
+        }
+        break;
+      case ObjectTypes.AccessControlLock:
+        if (status instanceof AccessControlLockStatus) {
+          return `${message} ${status.locked ? 'Locked' : 'Unlocked'}`;
+        }
+        break;
+      case ObjectTypes.AuxiliarySensor:
+        if (status instanceof AuxiliarySensorStatus) {
+          message += this.auxiliarySensors.get(id)!.isTemperatureSensor
+            ? `${this.formatTemperature(status.temperature)}`
+            : `${status.humidity}%`;
+          return message;
+        }
+        break;
+    }
+    return `${message} Unsupported object type`;
+  }
+
+  async getAreaStatus(areaId: number): Promise<AreaStatus | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getAreaStatus', areaId);
+
+    const status = <AreaStatus | undefined>this._statusCache.get(AreaStatus.getKey(areaId));
+    if (status !== undefined) {
+      return status;
+    }
+
+    const response = await this.getObjectStatus(ObjectTypes.Area, areaId, areaId);
+    if (response instanceof ExtendedAreaStatusResponse) {
+      const status = response.areas.get(areaId);
+      this._statusCache.set(status!.getKey(areaId), status);
+      return status;
     }
   }
 
   async getZoneStatus(zoneId: number): Promise<ZoneStatus | undefined> {
     this.platform.log.debug(this.constructor.name, 'getZoneStatus', zoneId);
 
-    try {
-      const message = new ExtendedObjectStatusRequest({
-        objectType: ObjectTypes.Zone,
-        startId: zoneId,
-        endId: zoneId,
-      });
-  
-      const response = await this.session.sendApplicationDataMessage(message);
-  
-      if (response instanceof ExtendedZoneStatusResponse) {
-        return response.zones.get(zoneId);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-      throw error;  
+    const status = <ZoneStatus | undefined>this._statusCache.get(ZoneStatus.getKey(zoneId));
+    if (status !== undefined) {
+      return status;
+    }
+
+    const response = await this.getObjectStatus(ObjectTypes.Zone, zoneId, zoneId);
+    if (response instanceof ExtendedZoneStatusResponse) {
+      const status = response.zones.get(zoneId);
+      this._statusCache.set(status!.getKey(zoneId), status);
+      return status;
     }
   }
 
   async getUnitStatus(unitId: number): Promise<UnitStatus | undefined> {
     this.platform.log.debug(this.constructor.name, 'getUnitStatus', unitId);
 
-    try {
-      const message = new ExtendedObjectStatusRequest({
-        objectType: ObjectTypes.Unit,
-        startId: unitId,
-        endId: unitId,
-      });
-  
-      const response = await this.session.sendApplicationDataMessage(message);
-  
-      if (response instanceof ExtendedUnitStatusResponse) {
-        return response.units.get(unitId);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-      throw error;  
+    const status = <UnitStatus | undefined>this._statusCache.get(UnitStatus.getKey(unitId));
+    if (status !== undefined) {
+      return status;
+    }
+
+    const response = await this.getObjectStatus(ObjectTypes.Unit, unitId, unitId);
+    if (response instanceof ExtendedUnitStatusResponse) {
+      const status = response.units.get(unitId);
+      this._statusCache.set(status!.getKey(unitId), status);
+      return status;
     }
   }
 
   async getThermostatStatus(thermostatId: number): Promise<ThermostatStatus | undefined> {
     this.platform.log.debug(this.constructor.name, 'getThermostatStatus', thermostatId);
 
-    try {
-      const message = new ExtendedObjectStatusRequest({
-        objectType: ObjectTypes.Thermostat,
-        startId: thermostatId,
-        endId: thermostatId,
-      });
-  
-      const response = await this.session.sendApplicationDataMessage(message);
-  
-      if (response instanceof ExtendedThermostatStatusResponse) {
-        return response.thermostats.get(thermostatId);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-      throw error;  
+    const status = <ThermostatStatus | undefined>this._statusCache.get(ThermostatStatus.getKey(thermostatId));
+    if (status !== undefined) {
+      return status;
+    }
+
+    const response = await this.getObjectStatus(ObjectTypes.Thermostat, thermostatId, thermostatId);
+    if (response instanceof ExtendedThermostatStatusResponse) {
+      const status = response.thermostats.get(thermostatId);
+      this._statusCache.set(status!.getKey(thermostatId), status);
+      return status;
     }
   }
 
   async getLockStatus(lockId: number): Promise<AccessControlLockStatus | undefined> {
     this.platform.log.debug(this.constructor.name, 'getLockStatus', lockId);
 
-    try {
-      const message = new ExtendedObjectStatusRequest({
-        objectType: ObjectTypes.AccessControlLock,
-        startId: lockId,
-        endId: lockId,
-      });
-  
-      const response = await this.session.sendApplicationDataMessage(message);
-  
-      if (response instanceof ExtendedAccessControlLockStatusResponse) {
-        return response.locks.get(lockId);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-      throw error;  
+    const status = <AccessControlLockStatus | undefined>this._statusCache.get(AccessControlLockStatus.getKey(lockId));
+    if (status !== undefined) {
+      return status;
+    }
+
+    const response = await this.getObjectStatus(ObjectTypes.AccessControlLock, lockId, lockId);
+    if (response instanceof ExtendedAccessControlLockStatusResponse) {
+      const status = response.locks.get(lockId);
+      this._statusCache.set(status!.getKey(lockId), status);
+      return status;
     }
   }
 
   async getAuxiliarySensorStatus(auxiliarySensorId: number): Promise<AuxiliarySensorStatus | undefined> {
     this.platform.log.debug(this.constructor.name, 'getAuxiliarySensorStatus', auxiliarySensorId);
 
-    try {
-      const message = new ExtendedObjectStatusRequest({
-        objectType: ObjectTypes.AuxiliarySensor,
-        startId: auxiliarySensorId,
-        endId: auxiliarySensorId,
-      });
-  
-      const response = await this.session.sendApplicationDataMessage(message);
-  
-      if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
-        return response.sensors.get(auxiliarySensorId);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-      throw error;  
+    const status = <AuxiliarySensorStatus | undefined>this._statusCache.get(AuxiliarySensorStatus.getKey(auxiliarySensorId));
+    if (status !== undefined) {
+      return status;
+    }
+
+    const response = await this.getObjectStatus(ObjectTypes.AuxiliarySensor, auxiliarySensorId, auxiliarySensorId);
+    if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
+      const status = response.sensors.get(auxiliarySensorId);
+      this._statusCache.set(status!.getKey(auxiliarySensorId), status);
+      return status;
     }
   }
 
-  async setAreaAlarmMode(area: number, mode: ArmedModes | ExtendedArmedModes): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'setAlarmState', area, mode);
+  async setAreaAlarmMode(areaId: number, mode: ArmedModes | ExtendedArmedModes): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAlarmState', areaId, mode);
 
     try {
-      const codeId = await this.getCodeId(area);
+      const codeId = await this.getCodeId(areaId);
       if (codeId === undefined) {
         return;
       }
 
       const command: Commands = this.getAreaArmCommand(mode);
 
-      this.platform.log.info(`${this.areas.get(area)!.name}: Set Mode ${Commands[command]} [${this.codes.get(codeId)?.name}]`);
+      if (this.platform.settings.showOmniEvents) {
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Area, areaId);
+        this.platform.log.info(`${prefix} Set Mode ${Commands[command]} [${this.codes.get(codeId)?.name}]`);
+      }
 
       const message = new ControllerCommandRequest({
         command: command,
         parameter1: codeId,
-        parameter2: area,
+        parameter2: areaId,
       });
   
       const response = await this.session.sendApplicationDataMessage(message);
@@ -1113,7 +1236,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.areas.get(area)!.name}: Set Mode failed: ${error.message}`);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Area, areaId);
+      this.platform.log.warn(`${prefix} Set Mode failed [${error.message}]`);
     }
   }
 
@@ -1159,7 +1283,7 @@ export class OmniService extends events.EventEmitter {
       return response.codeId;
 
     } catch(error) {
-      this.platform.log.warn(`Get Code Id failed: ${error.message}`);
+      this.platform.log.warn(`Get Code Id failed [${error.message}]`);
     }
   }
 
@@ -1183,18 +1307,21 @@ export class OmniService extends events.EventEmitter {
 
       this._troubles = [...response.troubles];
     } catch(error) {
-      this.platform.log.warn(`Report System Troubles failed: ${error.message}`);
+      this.platform.log.warn(`Report System Troubles failed [${error.message}]`);
     }
   }
 
-  async setEmergencyAlarm(area: number, emergencyType: EmergencyTypes): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'setEmergencyAlarm', area, emergencyType);
+  async setEmergencyAlarm(areaId: number, emergencyType: EmergencyTypes): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setEmergencyAlarm', areaId, emergencyType);
 
     try {
-      this.platform.log.info(`${this.areas.get(area)!.name}: Set Emergency Alarm [${EmergencyTypes[emergencyType]}]`);
+      if (this.platform.settings.showOmniEvents) {
+        const prefix = this.getLogMessagePrefix(ObjectTypes.Area, areaId);
+        this.platform.log.info(`${prefix} Set Emergency Alarm [${EmergencyTypes[emergencyType]}]`);
+      }
 
       const message = new KeypadEmergencyRequest({
-        areaId: area,
+        areaId: areaId,
         emergencyType: emergencyType,
       });
   
@@ -1204,121 +1331,8 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.areas.get(area)!.name}: Set Emergency Alarm failed: ${error.message}`);
-    }
-  }
-
-  // Event Handlers
-  areaStatusHandler(areas: Map<number, AreaStatus>): void {
-    this.platform.log.debug(this.constructor.name, 'areaStatusHandler', areas);
-
-    try {
-      for(const [areaId, areaStatus] of areas.entries()) {
-        if (this.platform.settings.showOmniEvents) {
-          this.platform.log.info(this.areaStatusMessage(areaId, areaStatus));
-        }
-        this.emit(`area-${areaId}`, areaStatus);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-    }
-  }
-
-  private areaStatusMessage(areaId: number, areaStatus: AreaStatus): string {
-    const areaName = this.areas.get(areaId)!.name;
-    const mode = SecurityModes[areaStatus.securityMode];
-    let triggered = '';
-
-    if (areaStatus.alarmsTriggered.length > 0) {
-      const alarms = areaStatus.alarmsTriggered.map((alarm) => Alarms[alarm]);
-      triggered = `; Alarm(s) triggered: ${alarms.join()}`;
-    }
-
-    return `${areaName}: ${mode}${triggered}`;
-  }
-
-  zoneStatusHandler(zones: Map<number, ZoneStatus>): void {
-    this.platform.log.debug(this.constructor.name, 'zoneStatusHandler', zones);
-
-    try {
-      for(const [zoneId, zoneStatus] of zones.entries()) {
-        if (this.platform.settings.showOmniEvents) {
-          const name = this.zones.get(zoneId)!.name;
-          this.platform.log.info(`${name}: ${ZoneStates[zoneStatus.currentState]}`);
-        }
-        this.emit(`zone-${zoneId}`, zoneStatus);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-    }
-  }
-
-  unitStatusHandler(units: Map<number, UnitStatus>): void {
-    this.platform.log.debug(this.constructor.name, 'unitStatusHandler', units);
-
-    try {
-      for(const [unitId, unitStatus] of units.entries()) {
-        if (this.platform.settings.showOmniEvents) {
-          const name = this.units.get(unitId)!.name;
-          this.platform.log.info(`${name}: ${UnitStates[unitStatus.state]}`);
-        }
-        this.emit(`unit-${unitId}`, unitStatus);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-    }
-  }
-
-  thermostatStatusHandler(thermostats: Map<number, ThermostatStatus>): void {
-    this.platform.log.debug(this.constructor.name, 'thermostatStatusHandler', thermostats);
-
-    try {
-      for(const [thermostatId, thermostatStatus] of thermostats.entries()) {
-        if (this.platform.settings.showOmniEvents) {
-          const name = this.thermostats.get(thermostatId)!.name;
-          const message = this.formatTemperature(thermostatStatus.currentTemperature) + '; ' +
-            ThermostatModes[thermostatStatus.mode];
-          this.platform.log.info(`${name}: ${message}`);
-        }
-        this.emit(`thermostat-${thermostatId}`, thermostatStatus);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-    }
-  }
-
-  lockStatusHandler(locks: Map<number, AccessControlLockStatus>): void {
-    this.platform.log.debug(this.constructor.name, 'lockStatusHandler', locks);
-
-    try {
-      for(const [lockId, lockStatus] of locks.entries()) {
-        if (this.platform.settings.showOmniEvents) {
-          const name = this.accessControls.get(lockId)!.name;
-          this.platform.log.info(`${name}: ${lockStatus.locked ? 'Locked' : 'Unlocked'}`);
-        }
-        this.emit(`lock-${lockId}`, lockStatus);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
-    }
-  }
-
-  auxiliarySensorStatusHandler(sensors: Map<number, AuxiliarySensorStatus>): void {
-    this.platform.log.debug(this.constructor.name, 'auxiliarySensorStatusHandler', sensors);
-
-    try {
-      for(const [sensorId, sensorStatus] of sensors.entries()) {
-        if (this.platform.settings.showOmniEvents) {
-          const name = this.auxiliarySensors.get(sensorId)!.name;
-          const message = this.auxiliarySensors.get(sensorId)!.sensorType === SensorTypes.Temperature
-            ? `${this.formatTemperature(sensorStatus.temperature)}`
-            : `${sensorStatus.humidity}%`;
-          this.platform.log.info(`${name}: ${message}`);
-        }
-        this.emit(`sensor-${sensorId}`, sensorStatus);
-      }
-    } catch(error) {
-      this.platform.log.error(error);
+      const prefix = this.getLogMessagePrefix(ObjectTypes.Area, areaId);
+      this.platform.log.warn(`${prefix} Set Emergency Alarm failed [${error.message}]`);
     }
   }
 
@@ -1341,6 +1355,26 @@ export class OmniService extends events.EventEmitter {
     return [...Array(capacity).keys()].map(i => ++i);
   }
 
+  private convertToOmniTemperature(temperature: number): number {
+    let omniTemperature = (40 + temperature) * 2;
+    if (omniTemperature < 44) {
+      omniTemperature = 44;
+    } else if (omniTemperature > 180) {
+      omniTemperature = 180;
+    }
+    return omniTemperature;
+  }
+
+  private convertToOmniHumidity(humidity: number): number {
+    if (humidity <= 0) {
+      return 44;
+    } else if (humidity >= 100) {
+      return 156;
+    } else {
+      return 44 + Math.round(humidity / 100.0 * 112.0);
+    }
+  }
+
   private formatTemperature(celcius: number): string {
     if (this.temperatureFormat === TemperatureFormats.Celsius) {
       return `${celcius.toFixed(1)}C`;
@@ -1348,5 +1382,9 @@ export class OmniService extends events.EventEmitter {
       const fahrenheit = (celcius * 9.0 / 5.0) + 32.0;
       return `${fahrenheit.toFixed(1)}F`;
     }
+  }
+
+  private getLogMessagePrefix(objectType: ObjectTypes, id: number): string {
+    return `${ObjectTypes[objectType]} ${id} [${this._omniObjects[objectType].get(id)!.name}]:`;
   }
 }

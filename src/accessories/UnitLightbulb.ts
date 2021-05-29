@@ -37,7 +37,7 @@ export class UnitLightbulb extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getUnitLightbulbBrightness.bind(this), 'Brightness'))
       .on('set', this.setCharacteristicValue.bind(this, this.setUnitLightbulbBrightness.bind(this), 'Brightness'));
 
-    this.platform.omniService.on(`unit-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(UnitStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   async getUnitLightbulbOn(): Promise<boolean> {

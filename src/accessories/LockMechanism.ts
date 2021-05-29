@@ -38,7 +38,7 @@ export class LockMechanism extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getLockTargetState.bind(this), 'LockTargetState'))
       .on('set', this.setCharacteristicValue.bind(this, this.setLockTargetState.bind(this), 'LockTargetState'));  
 
-    this.platform.omniService.on(`lock-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(AccessControlLockStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   async getLockCurrentState(): Promise<number> {

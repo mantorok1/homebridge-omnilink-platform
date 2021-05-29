@@ -1,3 +1,4 @@
+import { IStatus } from './IStatus';
 import { SecurityModes, Alarms } from '../omni/messages/enums';
 
 export { SecurityModes, Alarms };
@@ -19,11 +20,12 @@ export enum ExtendedArmedModes {
   ArmedNightDelayed = 6
 }
 
-export class AreaStatus {
+export class AreaStatus implements IStatus {
+  public readonly statusBuffer: Buffer;
   private readonly _alarmsTriggered: Alarms[] = [];
 
-  constructor(private mode: SecurityModes, alarms: number) {
-
+  constructor(private mode: number, alarms: number) {
+    this.statusBuffer = Buffer.from([mode, alarms]);
     this._alarmsTriggered = [];
     for(const alarm in Alarms) {
       const alarmMode = Number(alarm);
@@ -35,6 +37,20 @@ export class AreaStatus {
         this._alarmsTriggered.push(alarmMode);
       }
     }
+  }
+
+  static getKey(areaId: number): string {
+    return `area-${areaId}`;
+  }
+
+  equals(status: AreaStatus | undefined): boolean {
+    return status === undefined
+      ? false
+      : (this.statusBuffer.equals(status.statusBuffer));
+  }
+
+  getKey(id: number): string {
+    return AreaStatus.getKey(id);
   }
 
   get securityMode(): SecurityModes {

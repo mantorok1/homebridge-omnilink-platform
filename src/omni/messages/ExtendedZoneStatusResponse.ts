@@ -13,10 +13,11 @@ export class ExtendedZoneStatusResponse extends ApplicationDataResponse {
     super.deserialize(message);
 
     this._zones = new Map<number, ZoneStatus>();
-    const zoneCount = (message[1] - 3) / 4;
+    const recordLength = message[4];
+    const zoneCount = (message[1] - 3) / recordLength;
 
     for(let i = 1; i <= zoneCount; i++) {
-      const startPos = (i - 1) * 4 + 5;
+      const startPos = (i - 1) * recordLength + 5;
       const zoneId = message[startPos] * 256 + message[startPos + 1];
       const status = new ZoneStatus(message[startPos + 2]);
       this._zones.set(zoneId, status);

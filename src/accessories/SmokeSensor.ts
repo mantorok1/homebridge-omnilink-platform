@@ -27,7 +27,7 @@ export class SmokeSensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.SmokeDetected)
       .on('get', this.getCharacteristicValue.bind(this, this.getSmokeDetected.bind(this), 'SmokeDetected'));
 
-    this.platform.omniService.on(`zone-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   private async getSmokeDetected(): Promise<number> {

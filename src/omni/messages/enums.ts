@@ -168,3 +168,23 @@ export enum UnitTypes {
   AudioZone = 14,
   AudioSource = 15
 }
+
+export enum ThermostatTypes {
+  NotUsed = 0,
+  AutoHeatCool = 1,
+  HeatCool = 2,
+  Heat = 3,
+  Cool = 4,
+  SetPoint = 5
+}
+
+export enum AuxiliarySensorTypes {
+  ProgrammableEnergySaverModule = 80,
+  OutdoorTemperature = 81,
+  Temperature = 82,
+  TemperatureAlarm = 83,
+  Humidity = 84,
+  ExtendedRangeOutdoorTemperature = 85,
+  ExtendedRangeTemperature = 86,
+  ExtendedRangeTemperatureAlarm = 87
+}

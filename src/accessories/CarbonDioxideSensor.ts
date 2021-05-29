@@ -27,7 +27,7 @@ export class CarbonDioxideSensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.CarbonDioxideDetected)
       .on('get', this.getCharacteristicValue.bind(this, this.getCarbonDioxideDetected.bind(this), 'CarbonDioxideDetected'));
 
-    this.platform.omniService.on(`zone-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   private async getCarbonDioxideDetected(): Promise<number> {

@@ -26,7 +26,7 @@ export class BypassZoneSwitch extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getBypassZoneSwitchOn.bind(this), 'On'))
       .on('set', this.setCharacteristicValue.bind(this, this.setBypassZoneSwitchOn.bind(this), 'On'));
 
-    this.platform.omniService.on(`zone-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   async getBypassZoneSwitchOn(): Promise<boolean> {

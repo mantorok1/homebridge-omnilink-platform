@@ -1,3 +1,4 @@
+import { IStatus } from './IStatus';
 import { util } from './util';
 
 export enum ThermostatModes {
@@ -14,8 +15,10 @@ export enum ThermostatStates {
   Cooling = 2
 }
 
-export class ThermostatStatus {
+export class ThermostatStatus implements IStatus {
+  public readonly statusBuffer: Buffer;
   private readonly _currentTemperature: number;
+  private readonly _currentTemperatureF: number;
   private readonly _heatSetPoint: number;
   private readonly _coolSetPoint: number;
   private readonly _mode: ThermostatModes;
@@ -26,8 +29,10 @@ export class ThermostatStatus {
 
   constructor(currentTemperature: number, heatSetPoint: number, coolSetPoint: number, mode: number, currentState: number,
     currentHumidity: number, humidifySetPoint: number, dehumidifySetPoint: number) {
-
+    this.statusBuffer = Buffer.from(
+      [currentTemperature, heatSetPoint, coolSetPoint, mode, currentState, currentHumidity, humidifySetPoint, dehumidifySetPoint]);
     this._currentTemperature = util.convertToCelcius(currentTemperature);
+    this._currentTemperatureF = util.convertToFahrenheit(currentTemperature);
     this._heatSetPoint = util.convertToCelcius(heatSetPoint);
     this._coolSetPoint = util.convertToCelcius(coolSetPoint);
     this._mode = mode;
@@ -41,6 +46,20 @@ export class ThermostatStatus {
     this._currentHumidity = util.convertToHumidity(currentHumidity);
     this._humidifySetPoint = util.convertToHumidity(humidifySetPoint);
     this._dehumidifySetPoint = util.convertToHumidity(dehumidifySetPoint);
+  }
+
+  static getKey(thermostatId: number): string {
+    return `thermostat-${thermostatId}`;
+  }
+
+  equals(status: ThermostatStatus | undefined): boolean {
+    return status === undefined
+      ? false
+      : (this.statusBuffer.equals(status.statusBuffer));
+  }
+
+  getKey(id: number): string {
+    return ThermostatStatus.getKey(id);
   }
 
   get currentTemperature(): number {

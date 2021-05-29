@@ -13,10 +13,11 @@ export class ExtendedAreaStatusResponse extends ApplicationDataResponse {
     super.deserialize(message);
 
     this._areas = new Map<number, AreaStatus>();
-    const areaCount = (message[1] - 3) / 6;
+    const recordLength = message[4];
+    const areaCount = (message[1] - 3) / recordLength;
 
     for(let i = 1; i <= areaCount; i++) {
-      const startPos = (i - 1) * 6 + 5;
+      const startPos = (i - 1) * recordLength + 5;
       const areaId = message[startPos] * 256 + message[startPos + 1];
       const status = new AreaStatus(message[startPos + 2], message[startPos + 3]);
       this._areas.set(areaId, status);

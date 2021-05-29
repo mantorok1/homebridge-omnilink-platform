@@ -29,7 +29,6 @@ import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusRespons
 import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatStatusResponse';
 import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
 import { AccessControlPropertiesResponse } from './messages/AccessControlPropertiesResponse';
-import { ExtendedAccessControlReaderStatusResponse } from './messages/ExtendedAccessControlReaderStatusResponse';
 import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAccessControlLockStatusResponse';
 import { AuxiliarySensorPropertiesResponse } from './messages/AuxiliarySensorPropertiesResponse';
 import { ExtendedAuxiliarySensorStatusResponse } from './messages/ExtendedAuxiliarySensorStatusResponse';
@@ -376,9 +375,6 @@ export class OmniSession extends events.EventEmitter {
           case ObjectTypes.AuxiliarySensor:
             response = new ExtendedAuxiliarySensorStatusResponse(message);
             break;
-          case ObjectTypes.AccessControlReader:
-            response = new ExtendedAccessControlReaderStatusResponse(message);
-            break;
           case ObjectTypes.AccessControlLock:
             response = new ExtendedAccessControlLockStatusResponse(message);
             break;
@@ -413,8 +409,6 @@ export class OmniSession extends events.EventEmitter {
       this.emit('units', response.units);
     } else if (response instanceof ExtendedThermostatStatusResponse) {
       this.emit('thermostats', response.thermostats);
-    } else if (response instanceof ExtendedAccessControlReaderStatusResponse) {
-      this.emit('readers', response.readers);
     } else if (response instanceof ExtendedAccessControlLockStatusResponse) {
       this.emit('locks', response.locks);
     } else if (response instanceof ExtendedAuxiliarySensorStatusResponse) {

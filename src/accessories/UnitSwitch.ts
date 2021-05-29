@@ -32,7 +32,7 @@ export class UnitSwitch extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getUnitSwitchOn.bind(this), 'On'))
       .on('set', this.setCharacteristicValue.bind(this, this.setUnitSwitchOn.bind(this), 'On'));
 
-    this.platform.omniService.on(`unit-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(UnitStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
   }
 
   async getUnitSwitchOn(): Promise<boolean> {
