@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## NEXT
+## 1.4.2 (2021-05-30)
 
 * Reduce calls to Omni controller when HomeKit/Homebridge requests accessory status updates
 * Miscellaneous minor improvements
