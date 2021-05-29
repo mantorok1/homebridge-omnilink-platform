@@ -1,7 +1,7 @@
 {
   "displayName": "Omni-Link Platform",
   "name": "homebridge-omnilink-platform",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Homebridge Plugin for HAI/Leviton OmniLink Security & Home Automation Systems",
   "license": "Apache-2.0",
   "repository": {
@@ -47,7 +47,7 @@
     "pushover-notifications": "^1.2.2"
   },
   "devDependencies": {
-    "@types/node": "^14.17.1",
+    "@types/node": "^15.6.1",
     "@types/node-fetch": "^2.5.10",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
