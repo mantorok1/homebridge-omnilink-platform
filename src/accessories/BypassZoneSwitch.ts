@@ -1,7 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
-import { ZoneStatus } from '../models/ZoneStatus';
+import { ZoneStatus } from '../models/Zone';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class BypassZoneSwitch extends AccessoryBase {
   constructor(
@@ -26,21 +27,22 @@ export class BypassZoneSwitch extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getBypassZoneSwitchOn.bind(this), 'On'))
       .on('set', this.setCharacteristicValue.bind(this, this.setBypassZoneSwitchOn.bind(this), 'On'));
 
-    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
+      this.updateValues.bind(this));
   }
 
-  async getBypassZoneSwitchOn(): Promise<boolean> {
+  private getBypassZoneSwitchOn(): boolean {
     this.platform.log.debug(this.constructor.name, 'getBypassZoneSwitchOn');
 
-    const zoneStatus = await this.platform.omniService.getZoneStatus(this.platformAccessory.context.index);
+    const zoneStatus = this.platform.omniService.omni.zones[this.platformAccessory.context.index].status;
 
     return zoneStatus!.bypassed;
   }
 
-  async setBypassZoneSwitchOn(value: boolean): Promise<void> {
+  private async setBypassZoneSwitchOn(value: boolean): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setBypassZoneSwitchOn', value);
 
-    if (await this.getBypassZoneSwitchOn() === value) {
+    if (this.getBypassZoneSwitchOn() === value) {
       return;
     }
 

@@ -5,7 +5,10 @@ import { OmniService, Devices } from './omni/OmniService';
 import { AccessoryService } from './accessories/AccessoryService';
 import { PushoverService } from './services/PushoverService';
 import { MqttService } from './services/MqttService';
-import { ZoneTypes, UnitTypes, ThermostatTypes, AuxiliarySensorTypes } from './omni/messages/enums';
+import { ZoneTypes } from './models/Zone';
+import { UnitTypes } from './models/Unit';
+import { ThermostatTypes } from './models/Thermostat';
+import { AuxiliarySensorTypes } from './models/AuxiliarySensor';
 import fs = require('fs');
 import path = require('path');
 
@@ -70,20 +73,27 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     this.log.debug(this.constructor.name, 'initService');
 
     return new Promise((resolve) => {
-      if (this._serviceInitialised) {
-        resolve();
-      }
-
-      this.omniService.once('initialised', () => {
-        this._serviceInitialised = true;
-        this._serviceInitialising = false;
-        resolve();
-      });
-
-      if (!this._serviceInitialising) {
-        this._serviceInitialising = true;
-        this.omniService.init();
-      }
+      (async() => {
+        if (this._serviceInitialised) {
+          resolve();
+        }
+  
+        this.omniService.once('initialised', () => {
+          this._serviceInitialised = true;
+          this._serviceInitialising = false;
+          resolve();
+        });
+  
+        if (!this._serviceInitialising) {
+          this._serviceInitialising = true;
+          await this.omniService.init(); 
+          const devices = await this.readCache();
+          await this.omniService.discover(devices);
+          await this.writeCache(devices);
+          await this.omniService.refreshAllStatuses();
+          this.omniService.initialised();
+        }
+      })();
     });
   }
 
@@ -104,12 +114,6 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       }
 
       await this.initOmniService();
-
-      const devices = await this.readCache();
-      await this.omniService.discover(devices);
-      await this.writeCache(devices);
-      await this.omniService.refreshAllStatuses();
-
       this.displayDevices();
 
       // Add/Remove accessories
@@ -129,42 +133,44 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
   private displayDevices(): void {
     this.log.debug(this.constructor.name, 'displayDevices');
 
-    this.log.info(`Found: ${this.omniService.model} [Firmware version: ${this.omniService.version}]`);
+    const omni = this.omniService.omni;
+
+    this.log.info(`Found: ${omni.information.model} [Firmware version: ${omni.information.version}]`);
 
     // Display found devices
-    this.log.info('Areas found:', this.omniService.areas.size);
-    for (const [index, area] of this.omniService.areas) {
+    this.log.info('Areas found:', omni.areas.length);
+    for (const [index, area] of omni.areas.entries()) {
       this.log.info(`  ${String(index).padStart(3)}: ${area.name}`);
     }
 
-    this.log.info('Zones found:', this.omniService.zones.size);
-    for (const [index, zone] of this.omniService.zones) {
-      this.log.info(`  ${String(index).padStart(3)}: ${zone.name.padEnd(17)} [${ZoneTypes[zone.zoneType]}]`);
+    this.log.info('Zones found:', omni.zones.length);
+    for (const [index, zone] of omni.zones.entries()) {
+      this.log.info(`  ${String(index).padStart(3)}: ${zone.name.padEnd(17)} [${ZoneTypes[zone.type]}]`);
     }
 
-    this.log.info('Units found:', this.omniService.units.size);
-    for (const [index, unit] of this.omniService.units) {
-      this.log.info(`  ${String(index).padStart(3)}: ${unit.name.padEnd(17)} [${UnitTypes[unit.unitType]}]`);
+    this.log.info('Units found:', omni.units.length);
+    for (const [index, unit] of omni.units.entries()) {
+      this.log.info(`  ${String(index).padStart(3)}: ${unit.name.padEnd(17)} [${UnitTypes[unit.type]}]`);
     }
 
-    this.log.info('Buttons found:', this.omniService.buttons.size);
-    for (const [index, button] of this.omniService.buttons) {
+    this.log.info('Buttons found:', omni.buttons.length);
+    for (const [index, button] of omni.buttons.entries()) {
       this.log.info(`  ${String(index).padStart(3)}: ${button.name}`);
     }
 
-    this.log.info('Thermostats found:', this.omniService.thermostats.size);
-    for (const [index, thermostat] of this.omniService.thermostats) {
-      this.log.info(`  ${String(index).padStart(3)}: ${thermostat.name.padEnd(17)} [${ThermostatTypes[thermostat.thermostatType]}]`);
+    this.log.info('Thermostats found:', this.omniService.omni.thermostats.length);
+    for (const [index, thermostat] of this.omniService.omni.thermostats.entries()) {
+      this.log.info(`  ${String(index).padStart(3)}: ${thermostat.name.padEnd(17)} [${ThermostatTypes[thermostat.type]}]`);
     }
 
-    this.log.info('Access Controls found:', this.omniService.accessControls.size);
-    for (const [index, accessControl] of this.omniService.accessControls) {
+    this.log.info('Access Controls found:', this.omniService.omni.accessControls.length);
+    for (const [index, accessControl] of this.omniService.omni.accessControls.entries()) {
       this.log.info(`  ${String(index).padStart(3)}: ${accessControl.name}`);
     }
 
-    this.log.info('Auxiliary Sensors found:', this.omniService.auxiliarySensors.size);
-    for (const [index, sensor] of this.omniService.auxiliarySensors) {
-      this.log.info(`  ${String(index).padStart(3)}: ${sensor.name.padEnd(17)} [${AuxiliarySensorTypes[sensor.sensorType]}]`);
+    this.log.info('Auxiliary Sensors found:', omni.sensors.length);
+    for (const [index, sensor] of omni.sensors.entries()) {
+      this.log.info(`  ${String(index).padStart(3)}: ${sensor.name.padEnd(17)} [${AuxiliarySensorTypes[sensor.type]}]`);
     }
   }
 
@@ -198,13 +204,13 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     }
 
     devices = {
-      areas: [...this.omniService.areas.keys()],
-      zones: [...this.omniService.zones.keys()],
-      units: [...this.omniService.units.keys()],
-      buttons: [...this.omniService.buttons.keys()],
-      thermostats: [...this.omniService.thermostats.keys()],
-      codes: [...this.omniService.codes.keys()],
-      accessControls: [...this.omniService.accessControls.keys()],
+      areas: [...this.omniService.omni.areas.keys()],
+      zones: [...this.omniService.omni.zones.keys()],
+      units: [...this.omniService.omni.units.keys()],
+      buttons: [...this.omniService.omni.buttons.keys()],
+      thermostats: [...this.omniService.omni.thermostats.keys()],
+      codes: [...this.omniService.omni.codes.keys()],
+      accessControls: [...this.omniService.omni.accessControls.keys()],
     };
 
     try {

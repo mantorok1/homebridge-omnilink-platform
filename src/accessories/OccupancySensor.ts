@@ -1,7 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
-import { ZoneStatus } from '../models/ZoneStatus';
+import { ZoneStatus } from '../models/Zone';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class OccupancySensor extends SensorBase {
   constructor(
@@ -27,13 +28,14 @@ export class OccupancySensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.OccupancyDetected)
       .on('get', this.getCharacteristicValue.bind(this, this.getOccupancyDetected.bind(this), 'OccupancyDetected'));
 
-    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
+      this.updateValues.bind(this));
   }
 
-  private async getOccupancyDetected(): Promise<number> {
+  private getOccupancyDetected(): number {
     this.platform.log.debug(this.constructor.name, 'getOccupancyDetected');
 
-    const zoneStatus = await this.platform.omniService.getZoneStatus(this.platformAccessory.context.index);
+    const zoneStatus = this.platform.omniService.omni.zones[this.platformAccessory.context.index].status;
 
     return zoneStatus!.ready
       ? this.platform.Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED

@@ -1,24 +1,50 @@
 import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
-import { AreaStatus } from '../../models/AreaStatus';
 
 export class AreaPropertiesResponse extends ObjectPropertiesResponse {
+  private _mode: number;
+  private _alarms: number;
+  private _entryTimer: number;
+  private _exitTimer: number;
+  private _enabled: number;
+  private _exitDelay: number;
+  private _entryDelay: number;
 
-  private _status?: AreaStatus;
-  private _enabled?: boolean;
-  
-  get status(): AreaStatus {
-    return this._status!;
+  constructor(message: Buffer) {
+    super(message, 13, 25);
+    this._mode = message[6];
+    this._alarms = message[7];
+    this._entryTimer = message[8];
+    this._exitTimer = message[9];
+    this._enabled = message[10];
+    this._exitDelay = message[11];
+    this._entryDelay = message[12];
   }
 
-  get enabled(): boolean {
-    return this._enabled ?? false;
+  get mode(): number {
+    return this._mode;
   }
 
-  deserialize(message: Buffer): void {
-    super.deserialize(message);
+  get alarms(): number {
+    return this._alarms;
+  }
 
-    this._status = new AreaStatus(message[6], message[7]);
-    this._enabled = message[10] !== 0;
-    this._name = this.getName(message.subarray(13, 25), 'Area');
+  get entryTimer(): number {
+    return this._entryTimer;
+  }
+
+  get exitTimer(): number {
+    return this._exitTimer;
+  }
+
+  get enabled(): number {
+    return this._enabled;
+  }
+
+  get exitDelay(): number {
+    return this._exitDelay;
+  }
+
+  get entryDelay(): number {
+    return this._entryDelay;
   }
 }

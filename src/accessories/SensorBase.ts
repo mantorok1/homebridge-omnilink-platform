@@ -1,5 +1,5 @@
 import { AccessoryBase } from './AccessoryBase';
-import { ZoneStatus } from '../models/ZoneStatus';
+import { ZoneStatus } from '../models/Zone';
 
 export abstract class SensorBase extends AccessoryBase {
 
@@ -11,10 +11,10 @@ export abstract class SensorBase extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getStatusFault.bind(this), 'StatusFault'));
   }
 
-  private async getStatusFault(): Promise<number> {
+  private getStatusFault(): number {
     this.platform.log.debug('SensorBase', 'getStatusFault');
 
-    const zoneStatus = await this.platform.omniService.getZoneStatus(this.platformAccessory.context.index);
+    const zoneStatus = this.platform.omniService.omni.zones[this.platformAccessory.context.index].status;
 
     return zoneStatus!.trouble
       ? this.platform.Characteristic.StatusFault.GENERAL_FAULT

@@ -5,7 +5,7 @@ import NodeCache = require('node-cache');
 
 import { OmniLinkPlatform } from '../platform';
 import { PacketTypes, OmniPacket, OmniPacketRequest, OmniPacketResponse } from './OmniPacket';
-import { MessageTypes, ObjectTypes } from './messages/enums';
+import { MessageTypes, ObjectStatusTypes, ObjectTypes } from './messages/enums';
 import { AcknowledgeResponse } from './messages/AcknowledgeResponse';
 import { SessionResponse } from './messages/SessionResponse';
 import { SecureConnectionRequest } from './messages/SecureConnectionRequest';
@@ -350,7 +350,7 @@ export class OmniSession extends events.EventEmitter {
           case ObjectTypes.AuxiliarySensor:
             response = new AuxiliarySensorPropertiesResponse(message);
             break;
-          case ObjectTypes.AccessControlReader:
+          case ObjectTypes.AccessControl:
             response = new AccessControlPropertiesResponse(message);
             break;
           default:
@@ -359,23 +359,26 @@ export class OmniSession extends events.EventEmitter {
         }
         break;
       case MessageTypes.ExtendedObjectStatusResponse:
-        switch (<ObjectTypes>message[3]) {
-          case ObjectTypes.Zone:
+        switch (<ObjectStatusTypes>message[3]) {
+          case ObjectStatusTypes.Zone:
             response = new ExtendedZoneStatusResponse(message);
             break;
-          case ObjectTypes.Unit:
+          case ObjectStatusTypes.Unit:
             response = new ExtendedUnitStatusResponse(message);
             break;
-          case ObjectTypes.Area:
+          case ObjectStatusTypes.Area:
             response = new ExtendedAreaStatusResponse(message);
             break;
-          case ObjectTypes.Thermostat:
+          case ObjectStatusTypes.Thermostat:
             response = new ExtendedThermostatStatusResponse(message);
             break;
-          case ObjectTypes.AuxiliarySensor:
+          case ObjectStatusTypes.AuxiliarySensor:
             response = new ExtendedAuxiliarySensorStatusResponse(message);
             break;
-          case ObjectTypes.AccessControlLock:
+          case ObjectStatusTypes.AccessControlReader:
+            // response = new ExtendedAccessControlReaderStatusResponse(message);
+            break;
+          case ObjectStatusTypes.AccessControlLock:
             response = new ExtendedAccessControlLockStatusResponse(message);
             break;
           default:
@@ -386,7 +389,7 @@ export class OmniSession extends events.EventEmitter {
     }
 
     if (this.platform.settings.showRequestResponse) {
-      this.platform.log.info(`Response: ${[...message.values()]} (${response?.constructor.name ?? 'unsupported'})`);
+      this.platform.log.info(`Response: ${response ?? [...message.values()]}`);
     }
 
     return response;
@@ -402,17 +405,17 @@ export class OmniSession extends events.EventEmitter {
     const response = this.processMessage(packet.message);
 
     if (response instanceof ExtendedAreaStatusResponse) {
-      this.emit('areas', response.areas);
+      this.emit('areas', response);
     } else if (response instanceof ExtendedZoneStatusResponse) {
-      this.emit('zones', response.zones);
+      this.emit('zones', response);
     } else if (response instanceof ExtendedUnitStatusResponse) {
-      this.emit('units', response.units);
+      this.emit('units', response);
     } else if (response instanceof ExtendedThermostatStatusResponse) {
-      this.emit('thermostats', response.thermostats);
+      this.emit('thermostats', response);
     } else if (response instanceof ExtendedAccessControlLockStatusResponse) {
-      this.emit('locks', response.locks);
+      this.emit('locks', response);
     } else if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
-      this.emit('sensors', response.sensors);
+      this.emit('sensors', response);
     }
   }
 }

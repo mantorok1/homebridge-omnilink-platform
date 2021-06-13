@@ -2,8 +2,9 @@ import Pushover = require('pushover-notifications');
 import fetch = require('node-fetch');
 
 import { OmniLinkPlatform } from '../platform';
-import { AreaStatus, Alarms } from '../models/AreaStatus';
-import { SystemTroubles } from '../omni/messages/enums';
+import { AreaStatus, Alarms } from '../models/Area';
+import { SystemTroubles } from '../models/OmniObjectModel';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class PushoverService {
   private pushover;
@@ -43,8 +44,9 @@ export class PushoverService {
       token: this.token,
     });
 
-    for(const [areaId, area] of this.platform.omniService.areas.entries()) {
-      this.platform.omniService.on(AreaStatus.getKey(areaId), this.sendAlarmMessage.bind(this, area.name));
+    for(const [areaId, area] of this.platform.omniService.omni.areas.entries()) {
+      this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Area, areaId),
+        this.sendAlarmMessage.bind(this, area.name));
     }
 
     this.platform.omniService.on('system-trouble', this.sendSystemTroubleMessage.bind(this));

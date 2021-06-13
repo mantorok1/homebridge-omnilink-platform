@@ -174,7 +174,7 @@ export class OmniPacketResponse extends OmniPacket {
 
     let message: Buffer;
 
-    this._sequence = args.response[0] * 256 + args.response[1];
+    this._sequence = args.response.readUInt16BE(0);
     this._type = <PacketTypes>args.response[2];
 
     switch(this.type) {

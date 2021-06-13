@@ -1,44 +1,27 @@
 import { ApplicationDataResponse } from './ApplicationDataResponse';
 
-export enum TemperatureFormats {
-  Fahrenheit = 1,
-  Celsius = 2,
-}
-
-export enum TimeFormats {
-  TwelveHour = 1,
-  TwentyFourHour = 2,
-}
-
-export enum DateFormats {
-  MonthDay = 1,
-  DayMonth = 2,
-}
-
 export class SystemFormatsResponse extends ApplicationDataResponse {
 
-  private _temperatureFormat?: TemperatureFormats;
-  private _timeFormat?: TimeFormats;
-  private _dateFormat?: DateFormats;
+  private readonly _temperature: number;
+  private readonly _time: number;
+  private readonly _date: number;
 
-
-  get temperatureFormat(): TemperatureFormats {
-    return this._temperatureFormat!;
+  constructor(message: Buffer) {
+    super(message);
+    this._temperature = message[3];
+    this._time = message[4];
+    this._date = message[5];
   }
 
-  get timeFormat(): TimeFormats {
-    return this._timeFormat!;
+  get temperature(): number {
+    return this._temperature;
   }
 
-  get dateFormat(): DateFormats {
-    return this._dateFormat!;
+  get time(): number {
+    return this._time;
   }
 
-  deserialize(message: Buffer): void {
-    super.deserialize(message);
-
-    this._temperatureFormat = message[3];
-    this._timeFormat = message[4];
-    this._dateFormat = message[5];
+  get date(): number {
+    return this._date;
   }
 }

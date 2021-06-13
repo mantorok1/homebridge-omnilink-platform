@@ -1,26 +1,34 @@
 import { ApplicationDataResponse } from './ApplicationDataResponse';
-import { ZoneStatus } from '../../models/ZoneStatus';
 
 export class ExtendedZoneStatusResponse extends ApplicationDataResponse {
 
-  private _zones!: Map<number, ZoneStatus>;
+  private readonly _id: number[] = [];
+  private readonly _state: number[] = [];
+  private readonly _loopReading: number[] = [];
 
-  get zones(): Map<number, ZoneStatus> {
-    return this._zones;
-  }
+  constructor(message: Buffer) {
+    super(message);
 
-  deserialize(message: Buffer): void {
-    super.deserialize(message);
-
-    this._zones = new Map<number, ZoneStatus>();
     const recordLength = message[4];
     const zoneCount = (message[1] - 3) / recordLength;
-
+    let offset = 5;
     for(let i = 1; i <= zoneCount; i++) {
-      const startPos = (i - 1) * recordLength + 5;
-      const zoneId = message[startPos] * 256 + message[startPos + 1];
-      const status = new ZoneStatus(message[startPos + 2]);
-      this._zones.set(zoneId, status);
+      this._id.push(message.readUInt16BE(offset));
+      this._state.push(message[offset + 2]);
+      this._loopReading.push(message[offset + 3]);
+      offset += recordLength;
     }
+  }
+
+  get id(): number[] {
+    return this._id;
+  }
+
+  get state(): number[] {
+    return this._state;
+  }
+
+  get loopReading(): number[] {
+    return this._loopReading;
   }
 }

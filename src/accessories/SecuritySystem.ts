@@ -1,7 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
-import { AreaStatus, Alarms, ArmedModes } from '../models/AreaStatus';
+import { AreaStatus, Alarms, ArmedModes } from '../models/Area';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class SecuritySystem extends AccessoryBase {
   private faultDetected: boolean;
@@ -38,15 +39,16 @@ export class SecuritySystem extends AccessoryBase {
       .getCharacteristic(this.platform.Characteristic.StatusFault)
       .on('get', this.getCharacteristicValue.bind(this, this.getStatusFault.bind(this), 'StatusFault'));
     
-    this.platform.omniService.on(AreaStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Area, this.platformAccessory.context.index),
+      this.updateValues.bind(this));
 
     this.platform.omniService.on('system-troubles', this.updateStatusFault.bind(this));
   }
 
-  private async getSecuritySystemCurrentState(): Promise<number> {
+  private getSecuritySystemCurrentState(): number {
     this.platform.log.debug(this.constructor.name, 'getSecuritySystemCurrentState');
 
-    const areaStatus = await this.platform.omniService.getAreaStatus(this.platformAccessory.context.index);
+    const areaStatus = this.platform.omniService.omni.areas[this.platformAccessory.context.index].status;
 
     return this.getCurrentState(areaStatus!);
   }
@@ -70,10 +72,10 @@ export class SecuritySystem extends AccessoryBase {
     }
   }
 
-  private async getSecuritySystemTargetState(): Promise<number> {
+  private getSecuritySystemTargetState(): number {
     this.platform.log.debug(this.constructor.name, 'getSecuritySystemTargetState');
 
-    const areaStatus = await this.platform.omniService.getAreaStatus(this.platformAccessory.context.index);
+    const areaStatus = this.platform.omniService.omni.areas[this.platformAccessory.context.index].status;
 
     return this.getTargetState(areaStatus!);
   }
@@ -118,7 +120,7 @@ export class SecuritySystem extends AccessoryBase {
     await this.platform.omniService.setAreaAlarmMode(this.platformAccessory.context.index, alarmMode);
   }
 
-  private async getStatusFault(): Promise<number> {
+  private getStatusFault(): number {
     this.platform.log.debug(this.constructor.name, 'getStatusFault');
 
     return this.faultDetected
@@ -126,7 +128,7 @@ export class SecuritySystem extends AccessoryBase {
       : this.platform.Characteristic.StatusFault.NO_FAULT;
   }
 
-  private async updateValues(areaStatus: AreaStatus): Promise<void> {
+  private updateValues(areaStatus: AreaStatus): void {
     this.platform.log.debug(this.constructor.name, 'updateValues', areaStatus);
 
     if (this.platform.settings.setHomeToAway && areaStatus.armedMode === ArmedModes.ArmedDay) {
@@ -148,7 +150,7 @@ export class SecuritySystem extends AccessoryBase {
       .updateValue(this.getTargetState(areaStatus));
   }
 
-  private async updateStatusFault(troubles: number[]): Promise<void> {
+  private updateStatusFault(troubles: number[]): void {
     this.platform.log.debug(this.constructor.name, 'updateStatusFault', troubles);
 
     this.faultDetected = troubles.length > 0;

@@ -1,29 +1,40 @@
 import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
-import { AuxiliarySensorTypes } from './enums';
-import { AuxiliarySensorStatus } from '../../models/AuxiliarySensorStatus';
 
 export class AuxiliarySensorPropertiesResponse extends ObjectPropertiesResponse {
 
-  private _status?: AuxiliarySensorStatus;
-  private _sensorType?: AuxiliarySensorTypes;
+  private readonly _state: number;
+  private readonly _temperature: number;
+  private readonly _lowSetPoint: number;
+  private readonly _highSetPoint: number;
+  private readonly _type: number;
 
-  get status(): AuxiliarySensorStatus {
-    return this._status!;
+  constructor(message: Buffer) {
+    super(message, 11, 26);
+
+    this._state = message[6];
+    this._temperature = message[7];
+    this._lowSetPoint = message[8];
+    this._highSetPoint = message[9];
+    this._type = message[10];
   }
 
-  get sensorType(): AuxiliarySensorTypes {
-    return this._sensorType!;
+  get state(): number {
+    return this._state;
   }
 
-  get isTemperatureSensor(): boolean {
-    return this.sensorType! !== AuxiliarySensorTypes.Humidity;
+  get temperature(): number {
+    return this._temperature;
   }
 
-  deserialize(message: Buffer): void {
-    super.deserialize(message);
+  get lowSetPoint(): number {
+    return this._lowSetPoint;
+  }
 
-    this._status = new AuxiliarySensorStatus(message[7]);
-    this._sensorType = message[10];
-    this._name = this.getName(message.subarray(11, 26), 'Auxiliary');
+  get highSetPoint(): number {
+    return this._highSetPoint;
+  }
+
+  get type(): number {
+    return this._type;
   }
 }

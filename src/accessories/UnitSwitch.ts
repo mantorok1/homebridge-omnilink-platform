@@ -1,7 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
-import { UnitStatus, UnitStates } from '../models/UnitStatus';
+import { UnitStatus, UnitStates } from '../models/Unit';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class UnitSwitch extends AccessoryBase {
   constructor(
@@ -17,7 +18,7 @@ export class UnitSwitch extends AccessoryBase {
   }
 
   protected async identifyHandler(): Promise<void> {
-    const state = await this.getUnitSwitchOn();
+    const state = this.getUnitSwitchOn();
     await this.setUnitSwitchOn(!state);
     super.identifyHandler();
   }
@@ -32,34 +33,31 @@ export class UnitSwitch extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getUnitSwitchOn.bind(this), 'On'))
       .on('set', this.setCharacteristicValue.bind(this, this.setUnitSwitchOn.bind(this), 'On'));
 
-    this.platform.omniService.on(UnitStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Unit, this.platformAccessory.context.index),
+      this.updateValues.bind(this));
   }
 
-  async getUnitSwitchOn(): Promise<boolean> {
+  private getUnitSwitchOn(): boolean {
     this.platform.log.debug(this.constructor.name, 'getUnitSwitchOn');
 
-    const unitStatus = await this.platform.omniService.getUnitStatus(this.platformAccessory.context.index);
-
-    return unitStatus!.state === UnitStates.On;
+    return this.platform.omniService.omni.units[this.platformAccessory.context.index].status.state === UnitStates.On;
   }
 
-  async setUnitSwitchOn(value: boolean): Promise<void> {
+  private async setUnitSwitchOn(value: boolean): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setUnitSwitchOn', value);
 
-    if (await this.getUnitSwitchOn() === value) {
+    if (this.getUnitSwitchOn() === value) {
       return;
     }
 
     await this.platform.omniService.setUnitState(this.platformAccessory.context.index, value);
   }
 
-  updateValues(unitStatus: UnitStatus): void {
-    this.platform.log.debug(this.constructor.name, 'updateValues', unitStatus);
+  updateValues(status: UnitStatus): void {
+    this.platform.log.debug(this.constructor.name, 'updateValues', status);
 
-    if (unitStatus.state === 0 || unitStatus.state === 1) {
-      this.service
-        .getCharacteristic(this.platform.Characteristic.On)
-        .updateValue(unitStatus.state === UnitStates.On);
-    }
+    this.service
+      .getCharacteristic(this.platform.Characteristic.On)
+      .updateValue(status.state === UnitStates.On);
   }
 }

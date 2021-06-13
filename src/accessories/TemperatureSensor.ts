@@ -1,8 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
-import { AuxiliarySensorStatus } from '../models/AuxiliarySensorStatus';
-import { ZoneStatus } from '../models/ZoneStatus';
+import { AuxiliarySensorStatus } from '../models/AuxiliarySensor';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class TemperatureSensor extends SensorBase {
 
@@ -27,23 +27,25 @@ export class TemperatureSensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.CurrentTemperature)
       .on('get', this.getCharacteristicValue.bind(this, this.getCurrentTemperature.bind(this), 'CurrentTemperature'));
 
-    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), super.updateValues.bind(this));
-    this.platform.omniService.on(AuxiliarySensorStatus.getKey(this.platformAccessory.context.index), this.updateSensorValues.bind(this));
+    this.platform.omniService.on(
+      this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
+      super.updateValues.bind(this));
+    this.platform.omniService.on(
+      this.platform.omniService.getEventKey(OmniObjectStatusTypes.AuxiliarySensor, this.platformAccessory.context.index),
+      this.updateSensorValues.bind(this));
   }
 
-  private async getCurrentTemperature(): Promise<number> {
+  private getCurrentTemperature(): number {
     this.platform.log.debug(this.constructor.name, 'getCurrentTemperature');
 
-    const auxiliarySensorStatus = await this.platform.omniService.getAuxiliarySensorStatus(this.platformAccessory.context.index);
-
-    return auxiliarySensorStatus!.temperature;
+    return this.platform.omniService.omni.sensors[this.platformAccessory.context.index].status.temperature.toCelcius();
   }
 
-  updateSensorValues(sensorStatus: AuxiliarySensorStatus): void {
-    this.platform.log.debug(this.constructor.name, 'updateSensorValues', sensorStatus);
+  updateSensorValues(status: AuxiliarySensorStatus): void {
+    this.platform.log.debug(this.constructor.name, 'updateSensorValues', status);
 
     this.service
       .getCharacteristic(this.platform.Characteristic.CurrentTemperature)
-      .updateValue(sensorStatus.temperature);
+      .updateValue(status.temperature.toCelcius());
   }
 }

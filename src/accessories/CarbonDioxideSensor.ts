@@ -1,7 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
-import { ZoneStatus } from '../models/ZoneStatus';
+import { ZoneStatus } from '../models/Zone';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class CarbonDioxideSensor extends SensorBase {
   constructor(
@@ -27,13 +28,14 @@ export class CarbonDioxideSensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.CarbonDioxideDetected)
       .on('get', this.getCharacteristicValue.bind(this, this.getCarbonDioxideDetected.bind(this), 'CarbonDioxideDetected'));
 
-    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
+      this.updateValues.bind(this));
   }
 
-  private async getCarbonDioxideDetected(): Promise<number> {
+  private getCarbonDioxideDetected(): number {
     this.platform.log.debug(this.constructor.name, 'getCarbonDioxideDetected');
 
-    const zoneStatus = await this.platform.omniService.getZoneStatus(this.platformAccessory.context.index);
+    const zoneStatus = this.platform.omniService.omni.zones[this.platformAccessory.context.index].status;
 
     return zoneStatus!.ready
       ? this.platform.Characteristic.CarbonDioxideDetected.CO2_LEVELS_NORMAL

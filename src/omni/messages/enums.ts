@@ -40,6 +40,15 @@ export enum ObjectTypes {
   Area = 5,
   Thermostat = 6,
   AuxiliarySensor = 8,
+  AccessControl = 14,
+}
+
+export enum ObjectStatusTypes {
+  Zone = 1,
+  Unit = 2,
+  Area = 5,
+  Thermostat = 6,
+  AuxiliarySensor = 8,
   AccessControlReader = 14,
   AccessControlLock = 15,
 }
@@ -101,90 +110,8 @@ export enum AuthorityLevels {
   User = 3
 }
 
-export enum SystemTroubles {
-  Freeze = 1,
-  BatteryLow = 2,
-  ACPower = 3,
-  PhoneLine = 4,
-  DigitalCommunicator = 5,
-  Fuse = 6
-}
-
 export enum EmergencyTypes {
   Burglary = 1,
   Fire = 2,
   Auxiliary = 3
-}
-
-export enum ZoneTypes {
-  EntryExit = 0,
-  Perimeter = 1,
-  NightInterior = 2,
-  AwayInterior = 3,
-  DoubleEntryDelay = 4,
-  QuadrupleEntryDelay = 5,
-  LatchingPerimeter = 6,
-  LatchingNightInterior = 7,
-  LatchingAwayInterior = 8,
-  Panic = 16,
-  PoliceEmergency = 17,
-  Duress = 18,
-  Tamper = 19,
-  LatchingTamper = 20,
-  Fire = 32,
-  FireEmergency = 33,
-  GasAlarm = 34,
-  AuxiliaryEmergency = 48,
-  Trouble = 49,
-  Freeze = 54,
-  Water = 55,
-  FireTamper = 56,
-  Auxiliary = 64,
-  KeyswitchInput = 65,
-  ProgrammableEnergySaverModule = 80,
-  OutdoorTemperature = 81,
-  Temperature = 82,
-  TemperatureAlarm = 83,
-  Humidity = 84,
-  ExtendedRangeOutdoorTemperature = 85,
-  ExtendedRangeTemperature = 86,
-  ExtendedRangeTemperatureAlarm = 87
-}
-
-export enum UnitTypes {
-  Standard = 1,
-  Extended = 2,
-  Compose = 3,
-  UPB = 4,
-  HLCRoom = 5,
-  HLCLoad = 6,
-  LuminaMode = 7,
-  RadioRA = 8,
-  CentraLite = 9,
-  ViziaRFRoom = 10,
-  ViziaRFLoad = 11,
-  Flag = 12,
-  Output = 13,
-  AudioZone = 14,
-  AudioSource = 15
-}
-
-export enum ThermostatTypes {
-  NotUsed = 0,
-  AutoHeatCool = 1,
-  HeatCool = 2,
-  Heat = 3,
-  Cool = 4,
-  SetPoint = 5
-}
-
-export enum AuxiliarySensorTypes {
-  ProgrammableEnergySaverModule = 80,
-  OutdoorTemperature = 81,
-  Temperature = 82,
-  TemperatureAlarm = 83,
-  Humidity = 84,
-  ExtendedRangeOutdoorTemperature = 85,
-  ExtendedRangeTemperature = 86,
-  ExtendedRangeTemperatureAlarm = 87
 }

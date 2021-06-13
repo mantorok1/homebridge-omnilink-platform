@@ -1,7 +1,8 @@
 export abstract class Response {
-  constructor(message: Buffer) {
-    this.deserialize(message);
+  constructor(private message: Buffer) {
   }
 
-  abstract deserialize(message: Buffer): void;
+  toString(): string {
+    return `${[...this.message.values()]} [${this.constructor.name}]`;
+  }
 }

@@ -1,7 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
-import { ZoneStatus } from '../models/ZoneStatus';
+import { ZoneStatus } from '../models/Zone';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class LeakSensor extends SensorBase {
   constructor(
@@ -27,13 +28,14 @@ export class LeakSensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.LeakDetected)
       .on('get', this.getCharacteristicValue.bind(this, this.getLeakDetected.bind(this), 'LeakDetected'));
 
-    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
+      this.updateValues.bind(this));
   }
 
-  private async getLeakDetected(): Promise<number> {
+  private getLeakDetected(): number {
     this.platform.log.debug(this.constructor.name, 'getLeakDetected');
 
-    const zoneStatus = await this.platform.omniService.getZoneStatus(this.platformAccessory.context.index);
+    const zoneStatus = this.platform.omniService.omni.zones[this.platformAccessory.context.index].status;
 
     return zoneStatus!.ready
       ? this.platform.Characteristic.LeakDetected.LEAK_NOT_DETECTED

@@ -1,7 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
-import { UnitStatus, UnitStates } from '../models/UnitStatus';
+import { UnitStatus, UnitStates } from '../models/Unit';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class UnitLightbulb extends AccessoryBase {
   constructor(
@@ -17,7 +18,7 @@ export class UnitLightbulb extends AccessoryBase {
   }
 
   protected async identifyHandler(): Promise<void> {
-    const state = await this.getUnitLightbulbOn();
+    const state = this.getUnitLightbulbOn();
     await this.setUnitLightbulbOn(!state);
     super.identifyHandler();
   }
@@ -37,56 +38,51 @@ export class UnitLightbulb extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getUnitLightbulbBrightness.bind(this), 'Brightness'))
       .on('set', this.setCharacteristicValue.bind(this, this.setUnitLightbulbBrightness.bind(this), 'Brightness'));
 
-    this.platform.omniService.on(UnitStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Unit, this.platformAccessory.context.index),
+      this.updateValues.bind(this));
   }
 
-  async getUnitLightbulbOn(): Promise<boolean> {
+  private getUnitLightbulbOn(): boolean {
     this.platform.log.debug(this.constructor.name, 'getUnitLightbulbOn');
 
-    const unitStatus = await this.platform.omniService.getUnitStatus(this.platformAccessory.context.index);
-
-    return unitStatus!.state === UnitStates.On;
+    return this.platform.omniService.omni.units[this.platformAccessory.context.index].status.state === UnitStates.On;
   }
 
-  async setUnitLightbulbOn(value: boolean): Promise<void> {
+  private async setUnitLightbulbOn(value: boolean): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setUnitLightbulbOn', value);
 
-    if (await this.getUnitLightbulbOn() === value) {
+    if (this.getUnitLightbulbOn() === value) {
       return;
     }
 
     await this.platform.omniService.setUnitState(this.platformAccessory.context.index, value);
   }
 
-  async getUnitLightbulbBrightness(): Promise<number> {
+  private getUnitLightbulbBrightness(): number {
     this.platform.log.debug(this.constructor.name, 'getUnitLightbulbBrightness');
 
-    const unitStatus = await this.platform.omniService.getUnitStatus(this.platformAccessory.context.index);
-
-    return unitStatus!.brightness;
+    return this.platform.omniService.omni.units[this.platformAccessory.context.index].status.brightness;
   }
 
-  async setUnitLightbulbBrightness(value: number): Promise<void> {
+  private async setUnitLightbulbBrightness(value: number): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setUnitLightbulbBrightness', value);
 
-    if (await this.getUnitLightbulbBrightness() === value) {
+    if (this.getUnitLightbulbBrightness() === value) {
       return;
     }
 
     await this.platform.omniService.setUnitBrightness(this.platformAccessory.context.index, value);
   }
 
-  updateValues(unitStatus: UnitStatus): void {
-    this.platform.log.debug(this.constructor.name, 'updateValues', unitStatus);
+  updateValues(status: UnitStatus): void {
+    this.platform.log.debug(this.constructor.name, 'updateValues', status);
 
     this.service
       .getCharacteristic(this.platform.Characteristic.On)
-      .updateValue(unitStatus.state === UnitStates.On);
+      .updateValue(status.state === UnitStates.On);
 
-    if (unitStatus.brightness !== undefined) {
-      this.service
-        .getCharacteristic(this.platform.Characteristic.Brightness)
-        .updateValue(unitStatus.brightness);
-    }
+    this.service
+      .getCharacteristic(this.platform.Characteristic.Brightness)
+      .updateValue(status.brightness);
   }
 }

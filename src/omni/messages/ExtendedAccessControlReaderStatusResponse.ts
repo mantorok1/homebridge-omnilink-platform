@@ -1,10 +1,10 @@
 import { ApplicationDataResponse } from './ApplicationDataResponse';
 
-export class ExtendedAccessControlLockStatusResponse extends ApplicationDataResponse {
+export class ExtendedAccessControlReaderStatusResponse extends ApplicationDataResponse {
 
   private _id: number[] = [];
-  private _lockState: number[] = [];
-  private _unlockTimer: number[] = [];
+  private _accessState: number[] = [];
+  private _lastUser: number[] = [];
 
   constructor(message: Buffer) {
     super(message);
@@ -14,8 +14,8 @@ export class ExtendedAccessControlLockStatusResponse extends ApplicationDataResp
     let offset = 5;
     for(let i = 1; i <= lockCount; i++) {
       this._id.push(message.readUInt16BE(offset));
-      this._lockState.push(message[offset + 2]);
-      this._unlockTimer.push(message.readUInt16BE(offset + 3));
+      this._accessState.push(message[offset + 2]);
+      this._lastUser.push(message[offset + 3]);
       offset += recordLength;
     }
   }
@@ -24,11 +24,11 @@ export class ExtendedAccessControlLockStatusResponse extends ApplicationDataResp
     return this._id;
   }
 
-  get lockState(): number[] {
-    return this._lockState;
+  get accessState(): number[] {
+    return this._accessState;
   }
 
-  get unlockTimer(): number[] {
-    return this._unlockTimer;
+  get lastUser(): number[] {
+    return this._lastUser;
   }
 }

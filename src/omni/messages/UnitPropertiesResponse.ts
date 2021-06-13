@@ -1,25 +1,27 @@
 import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
-import { UnitTypes } from './enums';
-import { UnitStatus } from '../../models/UnitStatus';
 
 export class UnitPropertiesResponse extends ObjectPropertiesResponse {
+  private _state: number;
+  private _timeRemaining: number;
+  private _type: number;
 
-  private _status?: UnitStatus;
-  private _unitType?: UnitTypes;
-  
-  get status(): UnitStatus {
-    return this._status!;
+  constructor(message: Buffer) {
+    super(message, 10, 22);
+
+    this._state = message[6];
+    this._timeRemaining = message.readUInt16BE(7);
+    this._type = message[9];
   }
   
-  get unitType(): UnitTypes {
-    return this._unitType!;
+  get state(): number {
+    return this._state;
   }
 
-  deserialize(message: Buffer): void {
-    super.deserialize(message);
+  get timeRemaining(): number {
+    return this._timeRemaining;
+  }
 
-    this._status = new UnitStatus(message[6]);
-    this._unitType = message[9];
-    this._name = this.getName(message.subarray(10, 22), 'Unit');
+  get type(): number {
+    return this._type;
   }
 }

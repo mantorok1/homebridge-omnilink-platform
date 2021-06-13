@@ -1,7 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
-import { ZoneStatus } from '../models/ZoneStatus';
+import { ZoneStatus } from '../models/Zone';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class SmokeSensor extends SensorBase {
   constructor(
@@ -27,13 +28,14 @@ export class SmokeSensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.SmokeDetected)
       .on('get', this.getCharacteristicValue.bind(this, this.getSmokeDetected.bind(this), 'SmokeDetected'));
 
-    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
+      this.updateValues.bind(this));
   }
 
-  private async getSmokeDetected(): Promise<number> {
+  private getSmokeDetected(): number {
     this.platform.log.debug(this.constructor.name, 'getSmokeDetected');
 
-    const zoneStatus = await this.platform.omniService.getZoneStatus(this.platformAccessory.context.index);
+    const zoneStatus = this.platform.omniService.omni.zones[this.platformAccessory.context.index].status;
 
     return zoneStatus!.ready
       ? this.platform.Characteristic.SmokeDetected.SMOKE_NOT_DETECTED

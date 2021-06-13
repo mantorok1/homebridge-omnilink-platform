@@ -1,31 +1,38 @@
 import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
-import { ZoneTypes } from './enums';
-import { ZoneStatus } from '../../models/ZoneStatus';
 
 export class ZonePropertiesResponse extends ObjectPropertiesResponse {
+  private _state: number;
+  private _loopReading: number;
+  private _type: number;
+  private _areaId: number;
+  private _options: number;
 
-  private _status?: ZoneStatus;
-  private _zoneType?: ZoneTypes;
-  private _areaId?: number;
-  
-  get status(): ZoneStatus {
-    return this._status!;
+  constructor(message: Buffer) {
+    super(message, 11, 26);
+    this._state = message[6];
+    this._loopReading = message[7];
+    this._type = message[8];
+    this._areaId = message[9];
+    this._options = message[10];
   }
 
-  get zoneType(): ZoneTypes {
-    return this._zoneType!;
+  get state(): number {
+    return this._state;
+  }
+
+  get loopReading(): number {
+    return this._loopReading;
+  }
+  
+  get type(): number {
+    return this._type;
   }
 
   get areaId(): number {
-    return this._areaId!;
+    return this._areaId;
   }
 
-  deserialize(message: Buffer): void {
-    super.deserialize(message);
-
-    this._status = new ZoneStatus(message[6]);
-    this._zoneType = message[8];
-    this._areaId = message[9];
-    this._name = this.getName(message.subarray(11, 26), 'Zone');
+  get options(): number {
+    return this._options;
   }
 }

@@ -1,7 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
-import { ZoneStatus } from '../models/ZoneStatus';
+import { ZoneStatus } from '../models/Zone';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class GarageDoorOpener extends AccessoryBase { 
   private zoneId?: number;
@@ -52,42 +53,43 @@ export class GarageDoorOpener extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getObstructionDetected.bind(this), 'ObstructionDetected'));
 
     if (this.zoneId !== undefined) {
-      this.platform.omniService.on(ZoneStatus.getKey(this.zoneId), this.updateValues.bind(this));
+      this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.zoneId),
+        this.updateValues.bind(this));
     }
   }
 
-  async getCurrentDoorState(): Promise<number> {
+  private getCurrentDoorState(): number {
     this.platform.log.debug(this.constructor.name, 'getCurrentDoorState');
 
     if (this.zoneId === undefined) {
       return this.platform.Characteristic.CurrentDoorState.CLOSED;
     }
 
-    const zoneStatus = await this.platform.omniService.getZoneStatus(this.zoneId);
+    const zoneStatus = this.platform.omniService.omni.zones[this.zoneId].status;
 
     return zoneStatus!.ready
       ? this.platform.Characteristic.CurrentDoorState.CLOSED
       : this.platform.Characteristic.CurrentDoorState.OPEN;
   }
 
-  async getTargetDoorState(): Promise<number> {
+  private getTargetDoorState(): number {
     this.platform.log.debug(this.constructor.name, 'getTargetDoorState');
 
     if (this.zoneId === undefined) {
       return this.platform.Characteristic.TargetDoorState.CLOSED;
     }
 
-    const zoneStatus = await this.platform.omniService.getZoneStatus(this.zoneId);
+    const zoneStatus = this.platform.omniService.omni.zones[this.zoneId].status;
 
     return zoneStatus!.ready
       ? this.platform.Characteristic.TargetDoorState.CLOSED
       : this.platform.Characteristic.TargetDoorState.OPEN;
   }
 
-  async setTargetDoorState(value: number): Promise<void> {
+  private async setTargetDoorState(value: number): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setTargetDoorState', value);
 
-    const targetDoorState = await this.getTargetDoorState();
+    const targetDoorState = this.getTargetDoorState();
 
     if (targetDoorState === value || this.moving) {
       return;
@@ -102,7 +104,7 @@ export class GarageDoorOpener extends AccessoryBase {
     }, this.openTime);
   }
 
-  async getObstructionDetected(): Promise<boolean> {
+  private getObstructionDetected(): boolean {
     this.platform.log.debug(this.constructor.name, 'getObstructionDetected');
 
     return false;

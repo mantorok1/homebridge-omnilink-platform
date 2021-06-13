@@ -32,11 +32,11 @@ export abstract class AccessoryBase {
 
   abstract setEventHandlers(): void
 
-  async getCharacteristicValue(
-    getValue: () => Promise<CharacteristicValue>,
+  getCharacteristicValue(
+    getValue: () => CharacteristicValue,
     characteristic: string,
     callback: CharacteristicGetCallback,
-  ): Promise<void> {
+  ): void {
     this.platform.log.debug('AccessoryBase', 'getCharacteristicValue', 'getValue', characteristic, 'callback');
 
     if (this.platform.settings.showHomebridgeEvents) {
@@ -44,7 +44,7 @@ export abstract class AccessoryBase {
     }
 
     try {
-      const value = await getValue();
+      const value = getValue();
 
       callback(null, value);
     } catch (error) {

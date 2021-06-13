@@ -3,13 +3,14 @@ import { Response } from './Response';
 
 export abstract class ApplicationDataResponse extends Response {
 
-  private _type?: number;
+  private _messageType: number;
 
-  get type(): MessageTypes {
-    return this._type!;
+  constructor(message: Buffer) {
+    super(message);
+    this._messageType = message[2];
   }
 
-  deserialize(message: Buffer): void {
-    this._type = message[2];
+  get messageType(): MessageTypes {
+    return this._messageType!;
   }
 }

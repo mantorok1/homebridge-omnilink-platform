@@ -1,27 +1,46 @@
 import { ApplicationDataResponse } from './ApplicationDataResponse';
-import { AuxiliarySensorStatus } from '../../models/AuxiliarySensorStatus';
 
 export class ExtendedAuxiliarySensorStatusResponse extends ApplicationDataResponse {
 
-  private _sensors!: Map<number, AuxiliarySensorStatus>;
+  private readonly _id: number[] = [];
+  private readonly _state: number[] = [];
+  private readonly _temperature: number[] = [];
+  private readonly _lowSetPoint: number[] = [];
+  private readonly _highSetPoint: number[] = [];
 
-  get sensors(): Map<number, AuxiliarySensorStatus> {
-    return this._sensors;
-  }
+  constructor(message: Buffer) {
+    super(message);
 
-  deserialize(message: Buffer): void {
-    super.deserialize(message);
-
-    this._sensors = new Map<number, AuxiliarySensorStatus>();
     const recordLength = message[4];
     const sensorCount = (message[1] - 3) / recordLength;
-
+    let offset = 5;
     for(let i = 1; i <= sensorCount; i++) {
-      const startPos = (i - 1) * recordLength + 5;
-      const sensorId = message[startPos] * 256 + message[startPos + 1];
-      const temperatureHumidity = message[startPos + 3];
-      const sensor = new AuxiliarySensorStatus(temperatureHumidity);
-      this._sensors.set(sensorId, sensor);
+      this._id.push(message.readUInt16BE(offset));
+      this._state.push(message[offset + 2]);
+      this._temperature.push(message[offset + 3]);
+      this._lowSetPoint.push(message[offset + 4]);
+      this._highSetPoint.push(message[offset + 5]);
+      offset += recordLength;
     }
+  }
+
+  get id(): number[] {
+    return this._id;
+  }
+
+  get state(): number[] {
+    return this._state;
+  }
+
+  get temperature(): number[] {
+    return this._temperature;
+  }
+
+  get lowSetPoint(): number[] {
+    return this._lowSetPoint;
+  }
+
+  get highSetPoint(): number[] {
+    return this._highSetPoint;
   }
 }

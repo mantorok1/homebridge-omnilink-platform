@@ -1,26 +1,34 @@
 import { ApplicationDataResponse } from './ApplicationDataResponse';
-import { UnitStatus } from '../../models/UnitStatus';
 
 export class ExtendedUnitStatusResponse extends ApplicationDataResponse {
 
-  private _units!: Map<number, UnitStatus>;
+  private readonly _id: number[] = [];
+  private readonly _state: number[] = [];
+  private readonly _timeRemaining: number[] = [];
 
-  get units(): Map<number, UnitStatus> {
-    return this._units;
-  }
+  constructor(message: Buffer) {
+    super(message);
 
-  deserialize(message: Buffer): void {
-    super.deserialize(message);
-
-    this._units = new Map<number, UnitStatus>();
     const recordLength = message[4];
     const unitCount = (message[1] - 3) / recordLength;
-
+    let offset = 5;
     for(let i = 1; i <= unitCount; i++) {
-      const startPos = (i - 1) * recordLength + 5;
-      const unitId = message[startPos] * 256 + message[startPos + 1];
-      const status = new UnitStatus(message[startPos + 2]);
-      this._units.set(unitId, status);
+      this._id.push(message.readUInt16BE(offset));
+      this._state.push(message[offset + 2]);
+      this._timeRemaining.push(message.readUInt16BE(offset + 3));
+      offset += recordLength;
     }
+  }
+
+  get id(): number[] {
+    return this._id;
+  }
+
+  get state(): number[] {
+    return this._state;
+  }
+
+  get timeRemaining(): number[] {
+    return this._timeRemaining;
   }
 }

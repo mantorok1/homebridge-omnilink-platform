@@ -1,4 +1,5 @@
 import { PlatformAccessory } from 'homebridge';
+import { OmniObjectStatusTypes } from '../models/OmniObjectModel';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
 
@@ -30,16 +31,17 @@ export class ButtonSwitch extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getButtonSwitchOn.bind(this), 'On'))
       .on('set', this.setCharacteristicValue.bind(this, this.setButtonSwitchOn.bind(this), 'On'));
 
-    this.platform.omniService.on(`button-${this.platformAccessory.context.index}`, this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Button, this.platformAccessory.context.index),
+      this.updateValues.bind(this));
   }
 
-  async getButtonSwitchOn(): Promise<boolean> {
+  private getButtonSwitchOn(): boolean {
     this.platform.log.debug(this.constructor.name, 'getButtonSwitchOn');
 
     return false;
   }
 
-  async setButtonSwitchOn(value: boolean): Promise<void> {
+  private async setButtonSwitchOn(value: boolean): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setButtonSwitchOn', value);
 
     if (value) {

@@ -1,11 +1,9 @@
 import events = require('events');
-import NodeCache = require('node-cache');
 
 import { OmniLinkPlatform } from '../platform';
 import { OmniSession } from './OmniSession';
 
-import { MessageTypes, ObjectTypes, Commands, SecurityModes, Alarms, AuthorityLevels, SystemTroubles, EmergencyTypes, ZoneTypes }
-  from './messages/enums';
+import { MessageTypes, ObjectTypes, Commands, AuthorityLevels, EmergencyTypes, ObjectStatusTypes } from './messages/enums';
 import { ObjectTypeCapacitiesRequest } from './messages/ObjectTypeCapacitiesRequest';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
 import { ObjectPropertiesRequest } from './messages/ObjectPropertiesRequest';
@@ -27,7 +25,7 @@ import { SystemStatusResponse } from './messages/SystemStatusResponse';
 import { SystemTroublesRequest } from './messages/SystemTroublesRequest';
 import { SystemTroublesResponse } from './messages/SystemTroublesResponse';
 import { SystemFormatsRequest } from './messages/SystemFormatsRequest';
-import { SystemFormatsResponse, TemperatureFormats } from './messages/SystemFormatsResponse';
+import { SystemFormatsResponse } from './messages/SystemFormatsResponse';
 import { ExtendedObjectStatusRequest } from './messages/ExtendedObjectStatusRequest';
 import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse';
 import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse';
@@ -39,15 +37,20 @@ import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAcce
 import { ExtendedAuxiliarySensorStatusResponse } from './messages/ExtendedAuxiliarySensorStatusResponse';
 import { KeypadEmergencyRequest } from './messages/KeypadEmergencyRequest';
 import { ApplicationDataResponse } from './messages/ApplicationDataResponse';
-import { ObjectPropertiesResponse } from './messages/ObjectPropertiesResponse';
 
-import { IStatus } from '../models/IStatus';
-import { AreaStatus, ArmedModes, ExtendedArmedModes } from '../models/AreaStatus';
-import { ZoneStatus, ZoneStates } from '../models/ZoneStatus';
-import { UnitStatus, UnitStates } from '../models/UnitStatus';
-import { ThermostatStatus, ThermostatModes } from '../models/ThermostatStatus';
-import { AccessControlLockStatus } from '../models/AccessControlLockStatus';
-import { AuxiliarySensorStatus } from '../models/AuxiliarySensorStatus';
+import { OmniObjectModel, OmniObjectStatusTypes, SystemTroubles } from '../models/OmniObjectModel';
+import { Area, AreaStatus, ArmedModes, ExtendedArmedModes } from '../models/Area';
+import { Zone, ZoneStatus } from '../models/Zone';
+import { Button } from '../models/Button';
+import { Code } from '../models/Code';
+import { Unit, UnitStatus } from '../models/Unit';
+import { Thermostat, ThermostatStatus, ThermostatModes } from '../models/Thermostat';
+import { AuxiliarySensor, AuxiliarySensorStatus } from '../models/AuxiliarySensor';
+import { AccessControl, AccessControlLockStatus } from '../models/AccessControl';
+import { SystemInformation } from '../models/SystemInformation';
+import { SystemFormats, TemperatureFormats } from '../models/SystemFormats';
+import { SystemStatus } from '../models/SystemStatus';
+import { OmniTemperature } from '../models/OmniTemperature';
 
 export type Devices = {
   areas: number[],
@@ -61,66 +64,19 @@ export type Devices = {
 
 export class OmniService extends events.EventEmitter {
   private readonly session: OmniSession;
+  private readonly _omni: OmniObjectModel = new OmniObjectModel();
+
   private pingIntervalId?: NodeJS.Timeout;
   private syncTimeIntervalId?: NodeJS.Timeout;
-  private _model?: string;
-  private _version?: string;
-  private _temperatureFormat?: TemperatureFormats;
-  private _omniObjects: Record<number, Map<number, ObjectPropertiesResponse>>;
-  private _troubles: SystemTroubles[];
-  private _statusCache: NodeCache;
 
   constructor(private readonly platform: OmniLinkPlatform) {
     super();
     this.setMaxListeners(150);
     this.session = new OmniSession(platform);
-    this._omniObjects = {};
-    this._troubles = [];
-    this._statusCache = new NodeCache();
   }
 
-  get model(): string {
-    return this._model ?? '';
-  }
-
-  get version(): string {
-    return this._version ?? '';
-  }
-
-  get temperatureFormat(): TemperatureFormats {
-    return this._temperatureFormat ?? TemperatureFormats.Celsius;
-  }
-
-  get areas(): Map<number, AreaPropertiesResponse> {
-    return <Map<number, AreaPropertiesResponse>>this._omniObjects[ObjectTypes.Area];
-  }
-
-  get zones(): Map<number, ZonePropertiesResponse> {
-    return <Map<number, ZonePropertiesResponse>>this._omniObjects[ObjectTypes.Zone];
-  }
-
-  get units(): Map<number, UnitPropertiesResponse> {
-    return <Map<number, UnitPropertiesResponse>>this._omniObjects[ObjectTypes.Unit];
-  }
-
-  get buttons(): Map<number, ButtonPropertiesResponse> {
-    return <Map<number, ButtonPropertiesResponse>>this._omniObjects[ObjectTypes.Button];
-  }
-
-  get codes(): Map<number, CodePropertiesResponse> {
-    return <Map<number, CodePropertiesResponse>>this._omniObjects[ObjectTypes.Code];
-  }
-
-  get thermostats(): Map<number, ThermostatPropertiesResponse> {
-    return <Map<number, ThermostatPropertiesResponse>>this._omniObjects[ObjectTypes.Thermostat];
-  }
-
-  get accessControls(): Map<number, AccessControlPropertiesResponse> {
-    return <Map<number, AccessControlPropertiesResponse>>this._omniObjects[ObjectTypes.AccessControlLock];
-  }
-
-  get auxiliarySensors(): Map<number, AuxiliarySensorPropertiesResponse> {
-    return <Map<number, AuxiliarySensorPropertiesResponse>>this._omniObjects[ObjectTypes.AuxiliarySensor];
+  get omni(): OmniObjectModel {
+    return this._omni;
   }
 
   async init(): Promise<void> {
@@ -158,12 +114,14 @@ export class OmniService extends events.EventEmitter {
           await this.setTime();
         }, 3600000); // every hour
       }
-
-      this.emit('initialised');
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
+  }
+
+  initialised(): void {
+    this.emit('initialised');
   }
 
   private async handleTcpError(error: Error): Promise<void> {
@@ -193,56 +151,59 @@ export class OmniService extends events.EventEmitter {
   async discover(devices?: Devices): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'discover', devices);
 
-    const systemInformation = await this.getSystemInformation();
-    if (systemInformation) {
-      this._model = systemInformation.model;
-      this._version = systemInformation.version;
-    }
+    await this.setSystemInformation();
+    await this.setSystemFormats();
 
-    const systemFormats = await this.getSystemFormats();
-    if (systemFormats) {
-      this._temperatureFormat = systemFormats.temperatureFormat;
-    }
-
-    this._omniObjects[ObjectTypes.Area] = await this.getAreas(devices?.['areas']);
-    this._omniObjects[ObjectTypes.Zone] = await this.getZones(devices?.['zones']);
-    this._omniObjects[ObjectTypes.Unit] = await this.getUnits(devices?.['units']);
-    this._omniObjects[ObjectTypes.Button] = await this.getButtons(devices?.['buttons']);
-    this._omniObjects[ObjectTypes.Code] = await this.getCodes(devices?.['codes']);
-    this._omniObjects[ObjectTypes.Thermostat] = await this.getThermostats(devices?.['thermostats']);
-    this._omniObjects[ObjectTypes.AccessControlLock] = await this.getAccessControls(devices?.['accessControls']);
-    this._omniObjects[ObjectTypes.AuxiliarySensor] = await this.getAuxiliarySensors();
+    await this.setAreas(devices?.['areas']);
+    await this.setZones(devices?.['zones']);
+    await this.setButtons(devices?.['buttons']);
+    await this.setCodes(devices?.['codes']);
+    await this.setUnits(devices?.['units']);
+    await this.setThermostats(devices?.['thermostats']);
+    await this.setAuxiliarySensors();
+    await this.setAccessControls(devices?.['accessControls']);
 
     // Event Handlers
-    this.session.on('areas', this.processStatus.bind(this, ObjectTypes.Area));
-    this.session.on('zones', this.processStatus.bind(this, ObjectTypes.Zone));
-    this.session.on('units', this.processStatus.bind(this, ObjectTypes.Unit));
-    this.session.on('thermostats', this.processStatus.bind(this, ObjectTypes.Thermostat));
-    this.session.on('locks', this.processStatus.bind(this, ObjectTypes.AccessControlLock));
-    this.session.on('sensors', this.processStatus.bind(this, ObjectTypes.AuxiliarySensor));
+    this.session.on('areas', this.processAreaStatus.bind(this));
+    this.session.on('zones', this.processZoneStatus.bind(this));
+    this.session.on('units', this.processUnitStatus.bind(this));
+    this.session.on('thermostats', this.processThermostatStatus.bind(this));
+    this.session.on('locks', this.processAccessControlLockStatus.bind(this));
+    this.session.on('sensors', this.processAuxiliarySensorStatus.bind(this));
   }
 
-  async getAreas(areaIds?: number[]): Promise<Map<number, AreaPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getAreas', areaIds);
+  getEventKey(statusType: OmniObjectStatusTypes, id: number): string {
+    return `${OmniObjectStatusTypes[statusType].toLowerCase()}-${id}`;
+  }
 
-    const areas = new Map<number, AreaPropertiesResponse>();
+  private async setAreas(areaIds?: number[]): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAreas', areaIds);
+
     try {
       areaIds = areaIds ?? await this.getObjectIds(ObjectTypes.Area);
       for(const id of areaIds) {
         const properties = await this.getAreaProperties(id);
         if (properties !== undefined && properties.enabled) {
-          areas.set(id, properties);
+          this.omni.areas[id] = new Area({
+            id: id,
+            name: properties.name,
+            enabled: properties.enabled,
+            exitDelay: properties.exitDelay,
+            entryDelay: properties.entryDelay,
+            mode: properties.mode,
+            alarms: properties.alarms,
+            entryTimer: properties.exitTimer,
+            exitTimer: properties.exitTimer,
+          });
         }
       }
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
-
-    return areas;
   }
 
-  async getAreaProperties(id: number): Promise<AreaPropertiesResponse | undefined> {
+  private async getAreaProperties(id: number): Promise<AreaPropertiesResponse | undefined> {
     this.platform.log.debug(this.constructor.name, 'getAreaProperties', id);
 
     const message = new ObjectPropertiesRequest({
@@ -256,33 +217,37 @@ export class OmniService extends events.EventEmitter {
 
     const response = await this.session.sendApplicationDataMessage(message);
 
-    if (response.type === MessageTypes.ObjectPropertiesResponse) {
-      this._statusCache.set(AreaStatus.getKey(id), (<AreaPropertiesResponse>response).status);
-      return <AreaPropertiesResponse>response;
-    }
+    return response instanceof AreaPropertiesResponse
+      ? response
+      : undefined;
   }
 
-  async getZones(zoneIds?: number[]): Promise<Map<number, ZonePropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getZones', zoneIds);
+  private async setZones(zoneIds?: number[]): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setZones', zoneIds);
 
-    const zones = new Map<number, ZonePropertiesResponse>();
     try {
       zoneIds = zoneIds ?? await this.getObjectIds(ObjectTypes.Zone);
       for(const id of zoneIds) {
         const properties = await this.getZoneProperties(id);
         if (properties !== undefined) {
-          zones.set(id, properties);
+          this.omni.zones[id] = new Zone({
+            id: id,
+            name: properties.name,
+            type: properties.type,
+            areaId: properties.areaId,
+            options: properties.options,
+            state: properties.state,
+            loopReading: properties.loopReading,
+          });
         }
       }
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
-
-    return zones;
   }
 
-  async getZoneProperties(id: number): Promise<ZonePropertiesResponse | undefined> {
+  private async getZoneProperties(id: number): Promise<ZonePropertiesResponse | undefined> {
     this.platform.log.debug(this.constructor.name, 'getZoneProperties', id);
 
     const message = new ObjectPropertiesRequest({
@@ -296,30 +261,32 @@ export class OmniService extends events.EventEmitter {
 
     const response = await this.session.sendApplicationDataMessage(message);
 
-    if (response.type === MessageTypes.ObjectPropertiesResponse) {
-      this._statusCache.set(ZoneStatus.getKey(id), (<ZonePropertiesResponse>response).status);
-      return <ZonePropertiesResponse>response;
-    }
+    return response instanceof ZonePropertiesResponse
+      ? response
+      : undefined;
   }
 
-  async getUnits(unitIds?: number[]): Promise<Map<number, UnitPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getUnits', unitIds);
+  private async setUnits(unitIds?: number[]): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setUnits', unitIds);
 
-    const units = new Map<number, UnitPropertiesResponse>();
     try {
       unitIds = unitIds ?? await this.getObjectIds(ObjectTypes.Unit);
       for(const id of unitIds) {
         const properties = await this.getUnitProperties(id);
         if (properties !== undefined) {
-          units.set(id, properties);
+          this.omni.units[id] = new Unit({
+            id: id,
+            name: properties.name,
+            type: properties.type,
+            state: properties.state,
+            timeRemaining: properties.timeRemaining,
+          });
         }
       }
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
-
-    return units;
   }
 
   async getUnitProperties(id: number): Promise<UnitPropertiesResponse | undefined> {
@@ -336,30 +303,29 @@ export class OmniService extends events.EventEmitter {
 
     const response = await this.session.sendApplicationDataMessage(message);
 
-    if (response.type === MessageTypes.ObjectPropertiesResponse) {
-      this._statusCache.set(UnitStatus.getKey(id), (<UnitPropertiesResponse>response).status);
-      return <UnitPropertiesResponse>response;
-    }
+    return response instanceof UnitPropertiesResponse
+      ? response
+      : undefined;
   }
 
-  async getButtons(buttonIds?: number[]): Promise<Map<number, ButtonPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getButtons', buttonIds);
+  async setButtons(buttonIds?: number[]): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setButtons', buttonIds);
 
-    const buttons = new Map<number, ButtonPropertiesResponse>();
     try {
       buttonIds = buttonIds ?? await this.getObjectIds(ObjectTypes.Button);
       for(const id of buttonIds) {
         const properties = await this.getButtonProperties(id);
         if (properties !== undefined) {
-          buttons.set(id, properties);
+          this.omni.buttons[id] = new Button({
+            id: id,
+            name: properties.name,
+          });
         }
       }
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
-
-    return buttons;
   }
 
   async getButtonProperties(id: number): Promise<ButtonPropertiesResponse | undefined> {
@@ -376,29 +342,29 @@ export class OmniService extends events.EventEmitter {
 
     const response = await this.session.sendApplicationDataMessage(message);
 
-    if (response.type === MessageTypes.ObjectPropertiesResponse) {
-      return <ButtonPropertiesResponse>response;
-    }
+    return response instanceof ButtonPropertiesResponse
+      ? response
+      : undefined;
   }
 
-  async getCodes(codeIds?: number[]): Promise<Map<number, CodePropertiesResponse>> {
+  async setCodes(codeIds?: number[]): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'getCodes', codeIds);
 
-    const codes = new Map<number, CodePropertiesResponse>();
     try {
       codeIds = codeIds ?? await this.getObjectIds(ObjectTypes.Code);
       for(const id of codeIds) {
         const properties = await this.getCodeProperties(id);
         if (properties !== undefined) {
-          codes.set(id, properties);
+          this.omni.codes[id] = new Code({
+            id: id,
+            name: properties.name,
+          });
         }
       }
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
-
-    return codes;
   }
 
   async getCodeProperties(id: number): Promise<CodePropertiesResponse | undefined> {
@@ -415,29 +381,42 @@ export class OmniService extends events.EventEmitter {
 
     const response = await this.session.sendApplicationDataMessage(message);
 
-    if (response.type === MessageTypes.ObjectPropertiesResponse) {
-      return <CodePropertiesResponse>response;
-    }
+    return response instanceof CodePropertiesResponse
+      ? response
+      : undefined;
   }
 
-  async getThermostats(thermostatIds?: number[]): Promise<Map<number, ThermostatPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getThermostats', thermostatIds);
+  private async setThermostats(thermostatIds?: number[]): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostats');
 
-    const thermostats = new Map<number, ThermostatPropertiesResponse>();
     try {
       thermostatIds = thermostatIds ?? await this.getObjectIds(ObjectTypes.Thermostat);
       for(const id of thermostatIds) {
         const properties = await this.getThermostatProperties(id);
         if (properties !== undefined) {
-          thermostats.set(id, properties);
+          this.omni.thermostats[id] = new Thermostat({
+            id: id,
+            name: properties.name,
+            type: properties.type,
+            communicating: properties.communicating,
+            temperature: properties.temperature,
+            heatSetPoint: properties.heatSetPoint,
+            coolSetPoint: properties.coolSetPoint,
+            mode: properties.mode,
+            fan: properties.fan,
+            hold: properties.hold,
+            humidity: properties.humidity,
+            humidifySetPoint: properties.humidifySetPoint,
+            dehumidifySetPoint: properties.dehumidifySetPoint,
+            outdoorTemperature: properties.outdoorTemperature,
+            state: properties.state,
+          });
         }
       }
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
-
-    return thermostats;
   }
 
   async getThermostatProperties(id: number): Promise<ThermostatPropertiesResponse | undefined> {
@@ -454,37 +433,40 @@ export class OmniService extends events.EventEmitter {
 
     const response = await this.session.sendApplicationDataMessage(message);
 
-    if (response.type === MessageTypes.ObjectPropertiesResponse) {
-      this._statusCache.set(ThermostatStatus.getKey(id), (<ThermostatPropertiesResponse>response).status);
-      return <ThermostatPropertiesResponse>response;
-    }
+    return response instanceof ThermostatPropertiesResponse
+      ? response
+      : undefined;
   }
 
-  async getAccessControls(accessControlIds?: number[]): Promise<Map<number, AccessControlPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getAccessControls', accessControlIds);
+  private async setAccessControls(accessControlIds?: number[]): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAccessControls', accessControlIds);
 
-    const accessControls = new Map<number, AccessControlPropertiesResponse>();
     try {
-      accessControlIds = accessControlIds ?? await this.getObjectIds(ObjectTypes.AccessControlReader);
+      accessControlIds = accessControlIds ?? await this.getObjectIds(ObjectTypes.AccessControl);
       for(const id of accessControlIds) {
         const properties = await this.getAccessControlProperties(id);
         if (properties !== undefined) {
-          accessControls.set(id, properties);
+          this.omni.accessControls[id] = new AccessControl({
+            id: id,
+            name: properties.name,
+            lockState: properties.lockState,
+            unlockTimer: properties.unlockTimer,
+            readerState: properties.readerState,
+            lastUser: properties.lastUser,
+          });
         }
       }
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
-
-    return accessControls;
   }
 
   async getAccessControlProperties(id: number): Promise<AccessControlPropertiesResponse | undefined> {
     this.platform.log.debug(this.constructor.name, 'getAccessControlProperties', id);
 
     const message = new ObjectPropertiesRequest({
-      objectType: ObjectTypes.AccessControlReader,
+      objectType: ObjectTypes.AccessControl,
       index: id,
       relativeDirection: 0,
       filter1: 1, // Named access controls only
@@ -494,54 +476,38 @@ export class OmniService extends events.EventEmitter {
 
     const response = await this.session.sendApplicationDataMessage(message);
 
-    if (response.type === MessageTypes.ObjectPropertiesResponse) {
-      this._statusCache.set(AccessControlLockStatus.getKey(id), (<AccessControlPropertiesResponse>response).status);
-      return <AccessControlPropertiesResponse>response;
-    }
+    return response instanceof AccessControlPropertiesResponse
+      ? response
+      : undefined;
   }
 
-  async getAuxiliarySensors(): Promise<Map<number, AuxiliarySensorPropertiesResponse>> {
-    this.platform.log.debug(this.constructor.name, 'getAuxiliarySensors');
+  private async setAuxiliarySensors(): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAuxiliarySensors');
 
-    const sensors = new Map<number, AuxiliarySensorPropertiesResponse>();
     try {
-      for(const id of this.getAuxiliarySensorIdsFromZones()) {
-        const properties = await this.getAuxiliarySensorsProperties(id);
+      const sensorIds = this.omni.zones.entries().filter(v => v[1].isAuxiliarySensor).map(v => v[0]);
+      for(const id of sensorIds) {
+        const properties = await this.getAuxiliarySensorProperties(id);
         if (properties !== undefined) {
-          sensors.set(id, properties);
+          this.omni.sensors[id] = new AuxiliarySensor({
+            id: id,
+            name: properties.name,
+            type: properties.type,
+            state: properties.state,
+            temperature: properties.temperature,
+            lowSetPoint: properties.lowSetPoint,
+            highSetPoint: properties.highSetPoint,
+          });
         }
       }
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
-
-    return sensors;
   }
 
-  private getAuxiliarySensorIdsFromZones(): number[] {
-    const auxiliarySensorTypes = [
-      ZoneTypes.OutdoorTemperature,
-      ZoneTypes.Temperature,
-      ZoneTypes.TemperatureAlarm,
-      ZoneTypes.Humidity,
-      ZoneTypes.ExtendedRangeOutdoorTemperature,
-      ZoneTypes.ExtendedRangeTemperature,
-      ZoneTypes.ExtendedRangeTemperatureAlarm,
-    ];
 
-    const sensorIds: number[] = [];
-
-    for(const [zoneId, zone] of this.zones.entries()) {
-      if (auxiliarySensorTypes.includes(zone.zoneType)) {
-        sensorIds.push(zoneId);
-      }
-    }
-
-    return sensorIds;
-  }
-
-  async getAuxiliarySensorsProperties(id: number): Promise<AuxiliarySensorPropertiesResponse | undefined> {
+  async getAuxiliarySensorProperties(id: number): Promise<AuxiliarySensorPropertiesResponse | undefined> {
     this.platform.log.debug(this.constructor.name, 'getAuxiliarySensorsProperties', id);
 
     const message = new ObjectPropertiesRequest({
@@ -555,24 +521,45 @@ export class OmniService extends events.EventEmitter {
 
     const response = await this.session.sendApplicationDataMessage(message);
 
-    if (response.type === MessageTypes.ObjectPropertiesResponse) {
-      this._statusCache.set(AuxiliarySensorStatus.getKey(id), (<AuxiliarySensorPropertiesResponse>response).status);
-      return <AuxiliarySensorPropertiesResponse>response;
-    }
+    return response instanceof AuxiliarySensorPropertiesResponse
+      ? response
+      : undefined;
   }
 
   async setTime(): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setTime');
 
     try {
-      const status = await this.getSystemStatus();
-      let now = new Date();
-
-      if (Math.abs(status!.dateTime.getTime() - now.getTime()) <= 60000 && status!.isDaylightSavings === this.isDaylightSavings(now) ) {
+      const response = await this.getSystemStatus();
+      if (response === undefined) {
         return;
       }
 
-      this.platform.log.info(`Sync Time: Omni Controller ${status!.dateTime.toLocaleString()}, Host ${now.toLocaleString()}`);
+      this.omni.status = new SystemStatus({
+        timeDateValid: response.timeDateValid,
+        year: response.year,
+        month: response.month,
+        day: response.day,
+        dayOfWeek: response.dayOfWeek,
+        hour: response.hour,
+        minute: response.minute,
+        second: response.second,
+        daylightSavingsTime: response.daylightSavingsTime,
+        sunriseHour: response.sunriseHour,
+        sunriseMinute: response.sunriseMinute,
+        sunsetHour: response.sunsetHour,
+        sunsetMinute: response.sunsetMinute,
+        batteryReading: response.batteryReading,
+      });
+
+      let now = new Date();
+
+      if (Math.abs(this.omni.status.dateTime.getTime() - now.getTime()) <= 60000 &&
+      this.omni.status.daylightSavingsTime === this.isDaylightSavings(now) ) {
+        return;
+      }
+
+      this.platform.log.info(`Sync Time: Omni Controller ${this.omni.status.dateTime.toLocaleString()}, Host ${now.toLocaleString()}`);
 
       // Round to nearest minute
       now = new Date(Math.round((new Date()).getTime() / 60000) * 60000);
@@ -587,13 +574,13 @@ export class OmniService extends events.EventEmitter {
         daylightSavings: this.isDaylightSavings(now) ? 1 : 0,
       });
   
-      const response = await this.session.sendApplicationDataMessage(message);
+      const setTimeResponse = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (setTimeResponse.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`Set Time failed: ${error.message}`);
+      this.platform.log.warn(`Set Time: Failed [${error.message}]`);
     }
   }
 
@@ -614,29 +601,27 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Button, buttonId);
-        this.platform.log.info(`${prefix} Execute Button`);
+        this.platform.log.info(`${this.omni.buttons[buttonId]}: Execute Button`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      this.emit(`button-${buttonId}`);
+      this.emit(this.getEventKey(OmniObjectStatusTypes.Button, buttonId));
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Button, buttonId);
-      this.platform.log.warn(`${prefix} Execute Button failed [${error.message}]`);
+      this.platform.log.warn(`${this.omni.buttons[buttonId]}: Execute Button failed [${error.message}]`);
     }
   }
 
   async setZoneBypass(zoneId: number, state: boolean): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setZoneBypass', zoneId, state);
 
+    const zone = this.omni.zones[zoneId];
     try {
-      const areaId = this.zones.get(zoneId)!.areaId;
-      const codeId = await this.getCodeId(areaId);
+      const codeId = await this.getCodeId(zone.areaId);
       if (codeId === undefined) {
         return;
       }
@@ -648,24 +633,23 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Zone, zoneId);
-        this.platform.log.info(`${prefix} Set Bypass ${state ? 'On' : 'Off'} [${this.codes.get(codeId)?.name}]`);
+        this.platform.log.info(`${zone}: Set Bypass ${state ? 'On' : 'Off'} [${this.omni.codes[codeId].name}]`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Zone, zoneId);
-      this.platform.log.warn(`${prefix} Set Bypass failed [${error.message}]`);
+      this.platform.log.warn(`${zone}: Set Bypass failed [${error.message}]`);
     }
   }
 
   async setUnitState(unitId: number, state: boolean): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setUnitState', unitId, state);
 
+    const unit = this.omni.units[unitId];
     try {
       const message = new ControllerCommandRequest({
         command: state ? Commands.UnitOn : Commands.UnitOff,
@@ -674,24 +658,23 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Unit, unitId);
-        this.platform.log.info(`${prefix} Set State ${state ? 'On' : 'Off'}`);
+        this.platform.log.info(`${unit}: Set State ${state ? 'On' : 'Off'}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Unit, unitId);
-      this.platform.log.warn(`${prefix} Set State failed [${error.message}]`);
+      this.platform.log.warn(`${unit}: Set State failed [${error.message}]`);
     }
   }
 
   async setUnitBrightness(unitId: number, brightness: number): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setUnitBrightness', unitId, brightness);
 
+    const unit = this.omni.units[unitId];
     try {
       if (brightness < 0) {
         brightness = 0;
@@ -708,76 +691,75 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Unit, unitId);
-        this.platform.log.info(`${prefix} Set Lighting Level ${brightness}%`);
+        this.platform.log.info(`${unit}: Set Lighting Level ${brightness}%`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Unit, unitId);
-      this.platform.log.warn(`${prefix} Set Lighting Level failed [${error.message}]`);
+      this.platform.log.warn(`${unit}: Set Lighting Level failed [${error.message}]`);
     }
   }
   
   async setThermostatHeatSetPoint(thermostatId: number, temperature: number): Promise<void> { // temperature is in Celcius
     this.platform.log.debug(this.constructor.name, 'setThermostatHeatSetPoint', thermostatId, temperature);
 
+    const thermostat = this.omni.thermostats[thermostatId];
+    const omniTemperature = new OmniTemperature(OmniTemperature.fromCelcius(temperature), this.omni.formats.temperature);
     try {
       const message = new ControllerCommandRequest({
         command: Commands.SetHeatSetPoint,
-        parameter1: this.convertToOmniTemperature(temperature),
+        parameter1: omniTemperature.value,
         parameter2: thermostatId,
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-        this.platform.log.info(`${prefix} Set Heat SetPoint ${this.formatTemperature(temperature)}`);
+        this.platform.log.info(`${thermostat}: Set Heat SetPoint ${omniTemperature}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-      this.platform.log.warn(`${prefix} Set Heat SetPoint failed [${error.message}]`);
+      this.platform.log.warn(`${thermostat}: Set Heat SetPoint failed [${error.message}]`);
     }
   }
 
   async setThermostatCoolSetPoint(thermostatId: number, temperature: number): Promise<void> { // temperature is in Celcius
     this.platform.log.debug(this.constructor.name, 'setThermostatCoolSetPoint', thermostatId, temperature);
 
+    const thermostat = this.omni.thermostats[thermostatId];
+    const omniTemperature = new OmniTemperature(OmniTemperature.fromCelcius(temperature), this.omni.formats.temperature);
     try {
       const message = new ControllerCommandRequest({
         command: Commands.SetCoolSetPoint,
-        parameter1: this.convertToOmniTemperature(temperature),
+        parameter1: omniTemperature.value,
         parameter2: thermostatId,
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-        this.platform.log.info(`${prefix} Set Cool SetPoint ${this.formatTemperature(temperature)}`);
+        this.platform.log.info(`${thermostat}: Set Cool SetPoint ${omniTemperature}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-      this.platform.log.warn(`${prefix} Set Cool SetPoint failed [${error.message}]`);
+      this.platform.log.warn(`${thermostat}: Set Cool SetPoint failed [${error.message}]`);
     }
   }
 
   async setThermostatMode(thermostatId: number, mode: ThermostatModes): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setThermostatMode', thermostatId, mode);
 
+    const thermostat = this.omni.thermostats[thermostatId];
     try {
       const message = new ControllerCommandRequest({
         command: Commands.SetThermostatMode,
@@ -786,76 +768,75 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-        this.platform.log.info(`${prefix} Set Mode ${ThermostatModes[mode]}`);
+        this.platform.log.info(`${thermostat}: Set Mode ${ThermostatModes[mode]}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-      this.platform.log.warn(`${prefix} Set Mode failed [${error.message}]`);
+      this.platform.log.warn(`${thermostat}: Set Mode failed [${error.message}]`);
     }
   }
 
   async setThermostatHumidifySetPoint(thermostatId: number, humidity: number): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setThermostatHumidifySetPoint', thermostatId, humidity);
 
+    const thermostat = this.omni.thermostats[thermostatId];
+    const omniTemperature = new OmniTemperature(OmniTemperature.fromPercentage(humidity), TemperatureFormats.Percentage);
     try {
       const message = new ControllerCommandRequest({
         command: Commands.SetHumidifySetPoint,
-        parameter1: this.convertToOmniHumidity(humidity),
+        parameter1: omniTemperature.value,
         parameter2: thermostatId,
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-        this.platform.log.info(`${prefix} Set Humidity SetPoint ${humidity}`);
+        this.platform.log.info(`${thermostat}: Set Humidify SetPoint ${omniTemperature}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-      this.platform.log.warn(`${prefix} Set Humidity SetPoint failed [${error.message}]`);
+      this.platform.log.warn(`${thermostat}: Set Humidify SetPoint failed [${error.message}]`);
     }
   }
 
   async setThermostatDehumidifySetPoint(thermostatId: number, humidity: number): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setThermostatDehumidifySetPoint', thermostatId, humidity);
 
+    const thermostat = this.omni.thermostats[thermostatId];
+    const omniTemperature = new OmniTemperature(OmniTemperature.fromPercentage(humidity), TemperatureFormats.Percentage);
     try {
       const message = new ControllerCommandRequest({
         command: Commands.SetDehumidifySetPoint,
-        parameter1: this.convertToOmniHumidity(humidity),
+        parameter1: omniTemperature.value,
         parameter2: thermostatId,
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-        this.platform.log.info(`${prefix} Set Dehumidity SetPoint ${humidity}`);
+        this.platform.log.info(`${thermostat}: Set Dehumidify SetPoint ${omniTemperature}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Thermostat, thermostatId);
-      this.platform.log.warn(`${prefix} Set Dehumidity SetPoint failed [${error.message}]`);
+      this.platform.log.warn(`${thermostat}: Set Dehumidify SetPoint failed [${error.message}]`);
     }
   }
 
   async setLockState(accessControlId: number, lock: boolean): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'lockDoor', accessControlId, lock);
 
+    const accessControl = this.omni.accessControls[accessControlId];
     try {
       const message = new ControllerCommandRequest({
         command: lock ? Commands.LockDoor : Commands.UnlockDoor,
@@ -864,18 +845,16 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.AccessControlLock, accessControlId);
-        this.platform.log.info(`${prefix} ${lock ? 'Lock' : 'Unlock'}`);
+        this.platform.log.info(`${accessControl}: ${lock ? 'Lock' : 'Unlock'}`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.AccessControlLock, accessControlId);
-      this.platform.log.warn(`${prefix} ${lock ? 'Lock' : 'Unlock'} failed [${error.message}]`);
+      this.platform.log.warn(`${accessControl}: ${lock ? 'Lock' : 'Unlock'} failed [${error.message}]`);
     }
   }
 
@@ -886,7 +865,7 @@ export class OmniService extends events.EventEmitter {
       const message = new EnableNotificationsRequest(true);
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
@@ -896,15 +875,21 @@ export class OmniService extends events.EventEmitter {
   }
 
   // System
-  async getSystemInformation(): Promise<SystemInformationResponse | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getSystemInformation');
+  async setSystemInformation(): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setSystemInformation');
 
     try {
       const message = new SystemInformationRequest();
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type === MessageTypes.SystemInformationResponse) {
-        return <SystemInformationResponse>response;
+      if (response instanceof SystemInformationResponse) {
+        this.omni.information = new SystemInformation({
+          modelNumber: response.modelNumber,
+          majorVersion: response.majorVersion,
+          minorVersion: response.minorVersion,
+          revision: response.revision,
+          localPhoneNumber: response.localPhoneNumber,
+        });
       }
     } catch(error) {
       this.platform.log.error(error);
@@ -918,10 +903,7 @@ export class OmniService extends events.EventEmitter {
     try {
       const message = new SystemStatusRequest();
       const response = await this.session.sendApplicationDataMessage(message);
-
-      if (response.type === MessageTypes.SystemStatusResponse) {
-        return <SystemStatusResponse>response;
-      }
+      return response as SystemStatusResponse;
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
@@ -934,25 +916,26 @@ export class OmniService extends events.EventEmitter {
     try {
       const message = new SystemTroublesRequest();
       const response = await this.session.sendApplicationDataMessage(message);
-
-      if (response.type === MessageTypes.SystemTroublesResponse) {
-        return <SystemTroublesResponse>response;
-      }
+      return response as SystemTroublesResponse;
     } catch(error) {
       this.platform.log.error(error);
       throw error;      
     }
   }
 
-  async getSystemFormats(): Promise<SystemFormatsResponse | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getSystemFormats');
+  async setSystemFormats(): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setSystemFormats');
 
     try {
       const message = new SystemFormatsRequest();
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type === MessageTypes.SystemFormatsResponse) {
-        return <SystemFormatsResponse>response;
+      if (response instanceof SystemFormatsResponse) {
+        this.omni.formats = new SystemFormats({
+          temperature: response.temperature,
+          time: response.time,
+          date: response.date,
+        });
       }
     } catch(error) {
       this.platform.log.error(error);
@@ -969,73 +952,73 @@ export class OmniService extends events.EventEmitter {
     let response: ApplicationDataResponse | undefined;
 
     // Areas
-    if (this.areas.size > 0) {
-      startId = Math.min(...this.areas.keys());
-      endId = Math.max(...this.areas.keys());
-      response = await this.getObjectStatus(ObjectTypes.Area, startId, endId);
+    if (this.omni.areas.length > 0) {
+      startId = Math.min(...this.omni.areas.keys());
+      endId = Math.max(...this.omni.areas.keys());
+      response = await this.getObjectStatus(ObjectStatusTypes.Area, startId, endId);
       if (response instanceof ExtendedAreaStatusResponse) {
-        this.processStatus(ObjectTypes.Area, response.areas);
+        this.processAreaStatus(response);
       }
     }
 
     // Zones
-    if (this.zones.size > 0) {
-      startId = Math.min(...this.zones.keys());
-      endId = Math.max(...this.zones.keys());
-      response = await this.getObjectStatus(ObjectTypes.Zone, startId, endId);
+    if (this.omni.zones.length > 0) {
+      startId = Math.min(...this.omni.zones.keys());
+      endId = Math.max(...this.omni.zones.keys());
+      response = await this.getObjectStatus(ObjectStatusTypes.Zone, startId, endId);
       if (response instanceof ExtendedZoneStatusResponse) {
-        this.processStatus(ObjectTypes.Zone, response.zones);
+        this.processZoneStatus(response);
       }
     }
 
     // Units
-    if (this.units.size > 0) {
-      startId = Math.min(...this.units.keys());
-      endId = Math.max(...this.units.keys());
-      response = await this.getObjectStatus(ObjectTypes.Unit, startId, endId);
+    if (this.omni.units.length > 0) {
+      startId = Math.min(...this.omni.units.keys());
+      endId = Math.max(...this.omni.units.keys());
+      response = await this.getObjectStatus(ObjectStatusTypes.Unit, startId, endId);
       if (response instanceof ExtendedUnitStatusResponse) {
-        this.processStatus(ObjectTypes.Unit, response.units);
+        this.processUnitStatus(response);
       }
     }
 
     // Thermostats
-    if (this.thermostats.size > 0) {
-      startId = Math.min(...this.thermostats.keys());
-      endId = Math.max(...this.thermostats.keys());
-      response = await this.getObjectStatus(ObjectTypes.Thermostat, startId, endId);
+    if (this.omni.thermostats.length > 0) {
+      startId = Math.min(...this.omni.thermostats.keys());
+      endId = Math.max(...this.omni.thermostats.keys());
+      response = await this.getObjectStatus(ObjectStatusTypes.Thermostat, startId, endId);
       if (response instanceof ExtendedThermostatStatusResponse) {
-        this.processStatus(ObjectTypes.Thermostat, response.thermostats);
+        this.processThermostatStatus(response);
       }
     }
 
-    // Access Control Lock
-    if (this.accessControls.size > 0) {
-      startId = Math.min(...this.accessControls.keys());
-      endId = Math.max(...this.accessControls.keys());
-      response = await this.getObjectStatus(ObjectTypes.AccessControlLock, startId, endId);
+    // Access Controls
+    if (this.omni.accessControls.length > 0) {
+      startId = Math.min(...this.omni.accessControls.keys());
+      endId = Math.max(...this.omni.accessControls.keys());
+      response = await this.getObjectStatus(ObjectStatusTypes.AccessControlLock, startId, endId);
       if (response instanceof ExtendedAccessControlLockStatusResponse) {
-        this.processStatus(ObjectTypes.AccessControlLock, response.locks);
+        this.processAccessControlLockStatus(response);
       }
     }
 
     // Auxiliary Sensors
-    if (this.auxiliarySensors.size > 0) {
-      startId = Math.min(...this.auxiliarySensors.keys());
-      endId = Math.max(...this.auxiliarySensors.keys());
-      response = await this.getObjectStatus(ObjectTypes.AuxiliarySensor, startId, endId);
+    if (this.omni.sensors.length > 0) {
+      startId = Math.min(...this.omni.sensors.keys());
+      endId = Math.max(...this.omni.sensors.keys());
+      response = await this.getObjectStatus(ObjectStatusTypes.AuxiliarySensor, startId, endId);
       if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
-        this.processStatus(ObjectTypes.AuxiliarySensor, response.sensors);
+        this.processAuxiliarySensorStatus(response);
       }
     }
   }
 
   private async getObjectStatus(
-    objectType: ObjectTypes, startId: number, endId: number): Promise<ApplicationDataResponse | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getObjectStatus', objectType, startId, endId);
+    statusType: ObjectStatusTypes, startId: number, endId: number): Promise<ApplicationDataResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getObjectStatus', statusType, startId, endId);
 
     try {
       const message = new ExtendedObjectStatusRequest({
-        objectType: objectType,
+        statusType: statusType,
         startId: startId,
         endId: endId,
       });
@@ -1046,171 +1029,192 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  private processStatus(objectType: ObjectTypes, statuses: Map<number, IStatus>): void {
-    this.platform.log.debug(this.constructor.name, 'processStatus', objectType, statuses);
+  private processAreaStatus(response: ExtendedAreaStatusResponse) {
+    this.platform.log.debug(this.constructor.name, 'processAreaStatus', response);
 
     try {
-      for(const [id, status] of statuses.entries()) {
-        if (!this._omniObjects[objectType].has(id)) {
+      for(const index in response.id) {
+        const id = response.id[index];
+        if (!this.omni.areas.hasKey(id)) {
           continue;
         }
-        if (status.equals(this._statusCache.get(status.getKey(id)))) {
+        const area = this.omni.areas[id];
+        const status = new AreaStatus({
+          mode: response.mode[index],
+          alarms: response.alarms[index],
+          entryTimer: response.entryTimer[index],
+          exitTimer: response.exitTimer[index],
+        });
+        if (status.equals(area.status)) {
           continue;
         }
         if (this.platform.settings.showOmniEvents) {
-          this.platform.log.info(this.getOmniEventMessage(objectType, id, status));
+          this.platform.log.info(`${area}: ${status}`);
         }
-        this._statusCache.set(status.getKey(id), status);
-        this.emit(status.getKey(id), status);
+        area.status = status;
+        this.emit(this.getEventKey(OmniObjectStatusTypes.Area, id), status);
       }
     } catch(error) {
       this.platform.log.error(error);
     }
   }
 
-  private getOmniEventMessage(objectType: ObjectTypes, id: number, status: IStatus): string {
-    let message = this.getLogMessagePrefix(objectType, id);
-    switch(objectType) {
-      case ObjectTypes.Area:
-        if (status instanceof AreaStatus) {
-          message = `${message} ${SecurityModes[status.securityMode]}`;
-          if (status.alarmsTriggered.length > 0) {
-            const alarms = status.alarmsTriggered.map((alarm) => Alarms[alarm]);
-            message = `${message}; Alarm(s) triggered: ${alarms.join()}`;
-          }
-        }
-        return message;
-      case ObjectTypes.Zone:
-        if (status instanceof ZoneStatus) {
-          return `${message} ${ZoneStates[status.currentState]}`;
-        }
-        break;
-      case ObjectTypes.Unit:
-        if (status instanceof UnitStatus) {
-          return `${message} ${UnitStates[status.state]}`;
-        }
-        break;
-      case ObjectTypes.Thermostat:
-        if (status instanceof ThermostatStatus) {
-          return `${message} ${this.formatTemperature(status.currentTemperature)}; ${ThermostatModes[status.mode]}`;
-        }
-        break;
-      case ObjectTypes.AccessControlLock:
-        if (status instanceof AccessControlLockStatus) {
-          return `${message} ${status.locked ? 'Locked' : 'Unlocked'}`;
-        }
-        break;
-      case ObjectTypes.AuxiliarySensor:
-        if (status instanceof AuxiliarySensorStatus) {
-          message += this.auxiliarySensors.get(id)!.isTemperatureSensor
-            ? `${this.formatTemperature(status.temperature)}`
-            : `${status.humidity}%`;
-          return message;
-        }
-        break;
-    }
-    return `${message} Unsupported object type`;
-  }
+  private processZoneStatus(response: ExtendedZoneStatusResponse) {
+    this.platform.log.debug(this.constructor.name, 'processZoneStatus', response);
 
-  async getAreaStatus(areaId: number): Promise<AreaStatus | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getAreaStatus', areaId);
-
-    const status = <AreaStatus | undefined>this._statusCache.get(AreaStatus.getKey(areaId));
-    if (status !== undefined) {
-      return status;
-    }
-
-    const response = await this.getObjectStatus(ObjectTypes.Area, areaId, areaId);
-    if (response instanceof ExtendedAreaStatusResponse) {
-      const status = response.areas.get(areaId);
-      this._statusCache.set(status!.getKey(areaId), status);
-      return status;
+    try {
+      for(const index in response.id) {
+        const id = response.id[index];
+        if (!this.omni.zones.hasKey(id)) {
+          continue;
+        }
+        const zone = this.omni.zones[id];
+        const status = new ZoneStatus({
+          state: response.state[index],
+          loopReading: response.loopReading[index],
+        });
+        if (status.equals(zone.status)) {
+          continue;
+        }
+        if (this.platform.settings.showOmniEvents) {
+          this.platform.log.info(`${zone}: ${status}`);
+        }
+        zone.status = status;
+        this.emit(this.getEventKey(OmniObjectStatusTypes.Zone, id), status);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
     }
   }
 
-  async getZoneStatus(zoneId: number): Promise<ZoneStatus | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getZoneStatus', zoneId);
+  private processUnitStatus(response: ExtendedUnitStatusResponse) {
+    this.platform.log.debug(this.constructor.name, 'processUnitStatus', response);
 
-    const status = <ZoneStatus | undefined>this._statusCache.get(ZoneStatus.getKey(zoneId));
-    if (status !== undefined) {
-      return status;
-    }
-
-    const response = await this.getObjectStatus(ObjectTypes.Zone, zoneId, zoneId);
-    if (response instanceof ExtendedZoneStatusResponse) {
-      const status = response.zones.get(zoneId);
-      this._statusCache.set(status!.getKey(zoneId), status);
-      return status;
-    }
-  }
-
-  async getUnitStatus(unitId: number): Promise<UnitStatus | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getUnitStatus', unitId);
-
-    const status = <UnitStatus | undefined>this._statusCache.get(UnitStatus.getKey(unitId));
-    if (status !== undefined) {
-      return status;
-    }
-
-    const response = await this.getObjectStatus(ObjectTypes.Unit, unitId, unitId);
-    if (response instanceof ExtendedUnitStatusResponse) {
-      const status = response.units.get(unitId);
-      this._statusCache.set(status!.getKey(unitId), status);
-      return status;
+    try {
+      for(const index in response.id) {
+        const id = response.id[index];
+        if (!this.omni.units.hasKey(id)) {
+          continue;
+        }
+        const unit = this.omni.units[id];
+        const status = new UnitStatus({
+          state: response.state[index],
+          timeRemaining: response.timeRemaining[index],
+        });
+        if (status.equals(unit.status)) {
+          continue;
+        }
+        if (this.platform.settings.showOmniEvents) {
+          this.platform.log.info(`${unit}: ${status}`);
+        }
+        unit.status = status;
+        this.emit(this.getEventKey(OmniObjectStatusTypes.Unit, id), status);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
     }
   }
 
-  async getThermostatStatus(thermostatId: number): Promise<ThermostatStatus | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getThermostatStatus', thermostatId);
+  private processThermostatStatus(response: ExtendedThermostatStatusResponse) {
+    this.platform.log.debug(this.constructor.name, 'processThermostatStatus', response);
 
-    const status = <ThermostatStatus | undefined>this._statusCache.get(ThermostatStatus.getKey(thermostatId));
-    if (status !== undefined) {
-      return status;
-    }
-
-    const response = await this.getObjectStatus(ObjectTypes.Thermostat, thermostatId, thermostatId);
-    if (response instanceof ExtendedThermostatStatusResponse) {
-      const status = response.thermostats.get(thermostatId);
-      this._statusCache.set(status!.getKey(thermostatId), status);
-      return status;
+    try {
+      for(const index in response.id) {
+        const id = response.id[index];
+        if (!this.omni.thermostats.hasKey(id)) {
+          continue;
+        }
+        const thermostat = this.omni.thermostats[id];
+        const status = new ThermostatStatus({
+          communicating: response.communicating[index],
+          temperature: response.temperature[index],
+          heatSetPoint: response.heatSetPoint[index],
+          coolSetPoint: response.coolSetPoint[index],
+          mode: response.mode[index],
+          fan: response.fan[index],
+          hold: response.hold[index],
+          humidity: response.humidity[index],
+          humidifySetPoint: response.humidifySetPoint[index],
+          dehumidifySetPoint: response.dehumidifySetPoint[index],
+          outdoorTemperature: response.outdoorTemperature[index],
+          state: response.state[index],
+        });
+        if (status.equals(thermostat.status)) {
+          continue;
+        }
+        if (this.platform.settings.showOmniEvents) {
+          this.platform.log.info(`${thermostat}: ${status}`);
+        }
+        thermostat.status = status;
+        this.emit(this.getEventKey(OmniObjectStatusTypes.Thermostat, id), status);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
     }
   }
 
-  async getLockStatus(lockId: number): Promise<AccessControlLockStatus | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getLockStatus', lockId);
+  private processAuxiliarySensorStatus(response: ExtendedAuxiliarySensorStatusResponse) {
+    this.platform.log.debug(this.constructor.name, 'processAuxiliarySensorStatus', response);
 
-    const status = <AccessControlLockStatus | undefined>this._statusCache.get(AccessControlLockStatus.getKey(lockId));
-    if (status !== undefined) {
-      return status;
-    }
-
-    const response = await this.getObjectStatus(ObjectTypes.AccessControlLock, lockId, lockId);
-    if (response instanceof ExtendedAccessControlLockStatusResponse) {
-      const status = response.locks.get(lockId);
-      this._statusCache.set(status!.getKey(lockId), status);
-      return status;
+    try {
+      for(const index in response.id) {
+        const id = response.id[index];
+        if (!this.omni.sensors.hasKey(id)) {
+          continue;
+        }
+        const sensor = this.omni.sensors[id];
+        const status = new AuxiliarySensorStatus({
+          state: response.state[index],
+          temperature: response.temperature[index],
+          lowSetPoint: response.lowSetPoint[index],
+          highSetPoint: response.highSetPoint[index],
+        });
+        if (status.equals(sensor.status)) {
+          continue;
+        }
+        if (this.platform.settings.showOmniEvents) {
+          this.platform.log.info(`${sensor}: ${status}`);
+        }
+        sensor.status = status;
+        this.emit(this.getEventKey(OmniObjectStatusTypes.AuxiliarySensor, id), status);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
     }
   }
 
-  async getAuxiliarySensorStatus(auxiliarySensorId: number): Promise<AuxiliarySensorStatus | undefined> {
-    this.platform.log.debug(this.constructor.name, 'getAuxiliarySensorStatus', auxiliarySensorId);
+  private processAccessControlLockStatus(response: ExtendedAccessControlLockStatusResponse) {
+    this.platform.log.debug(this.constructor.name, 'processAccessControlLockStatus', response);
 
-    const status = <AuxiliarySensorStatus | undefined>this._statusCache.get(AuxiliarySensorStatus.getKey(auxiliarySensorId));
-    if (status !== undefined) {
-      return status;
-    }
-
-    const response = await this.getObjectStatus(ObjectTypes.AuxiliarySensor, auxiliarySensorId, auxiliarySensorId);
-    if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
-      const status = response.sensors.get(auxiliarySensorId);
-      this._statusCache.set(status!.getKey(auxiliarySensorId), status);
-      return status;
+    try {
+      for(const index in response.id) {
+        const id = response.id[index];
+        if (!this.omni.accessControls.hasKey(id)) {
+          continue;
+        }
+        const accessControl = this.omni.accessControls[id];
+        const status = new AccessControlLockStatus({
+          lockState: response.lockState[index],
+          unlockTimer: response.unlockTimer[index],
+        });
+        if (status.equals(accessControl.lockStatus)) {
+          continue;
+        }
+        if (this.platform.settings.showOmniEvents) {
+          this.platform.log.info(`${accessControl}: ${status}`);
+        }
+        accessControl.lockStatus = status;
+        this.emit(this.getEventKey(OmniObjectStatusTypes.AccessControlLock, id), status);
+      }
+    } catch(error) {
+      this.platform.log.error(error);
     }
   }
 
   async setAreaAlarmMode(areaId: number, mode: ArmedModes | ExtendedArmedModes): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setAlarmState', areaId, mode);
 
+    const area = this.omni.areas[areaId];
     try {
       const codeId = await this.getCodeId(areaId);
       if (codeId === undefined) {
@@ -1220,8 +1224,7 @@ export class OmniService extends events.EventEmitter {
       const command: Commands = this.getAreaArmCommand(mode);
 
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Area, areaId);
-        this.platform.log.info(`${prefix} Set Mode ${Commands[command]} [${this.codes.get(codeId)?.name}]`);
+        this.platform.log.info(`${area}: Set Mode ${Commands[command]} [${this.omni.codes[codeId].name}]`);
       }
 
       const message = new ControllerCommandRequest({
@@ -1232,12 +1235,11 @@ export class OmniService extends events.EventEmitter {
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Area, areaId);
-      this.platform.log.warn(`${prefix} Set Mode failed [${error.message}]`);
+      this.platform.log.warn(`${area}: Set Mode failed [${error.message}]`);
     }
   }
 
@@ -1287,25 +1289,49 @@ export class OmniService extends events.EventEmitter {
     }
   }
 
-  private async reportSystemTroubles() {
+  private async reportSystemTroubles(): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'reportSystemTroubles');
 
     try {
       const response = await this.getSystemTroubles();
-
       if (!(response instanceof SystemTroublesResponse)) {
-        throw new Error('SystemTroublesResponse not received');
+        return;
       }
 
-      this.emit('system-troubles', response.troubles);
-      for(const trouble of response.troubles) {
-        if (!this._troubles.includes(trouble)) {
+      const lastTroubles = [...this.omni.troubles];
+      this.omni.troubles.length = 0; // clear array
+      for (const trouble of response.troubles) {
+        switch(trouble) {
+          case 1:
+          case 7:
+            this.omni.troubles.push(SystemTroubles.Freeze);
+            break;
+          case 2:
+          case 8:
+            this.omni.troubles.push(SystemTroubles.BatteryLow);
+            break;
+          case 3:
+            this.omni.troubles.push(SystemTroubles.ACPower);
+            break;
+          case 4:
+            this.omni.troubles.push(SystemTroubles.PhoneLine);
+            break;
+          case 5:
+            this.omni.troubles.push(SystemTroubles.DigitalCommunicator);
+            break;
+          case 6:
+            this.omni.troubles.push(SystemTroubles.Fuse);
+            break;
+        }
+      }
+
+      this.emit('system-troubles', this.omni.troubles);
+      for(const trouble of this.omni.troubles) {
+        if (!lastTroubles.includes(trouble)) {
           this.platform.log.warn(`Trouble: ${SystemTroubles[trouble]}`);
           this.emit('system-trouble', trouble);
         }
       }
-
-      this._troubles = [...response.troubles];
     } catch(error) {
       this.platform.log.warn(`Report System Troubles failed [${error.message}]`);
     }
@@ -1314,10 +1340,10 @@ export class OmniService extends events.EventEmitter {
   async setEmergencyAlarm(areaId: number, emergencyType: EmergencyTypes): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setEmergencyAlarm', areaId, emergencyType);
 
+    const area = this.omni.areas[areaId];
     try {
       if (this.platform.settings.showOmniEvents) {
-        const prefix = this.getLogMessagePrefix(ObjectTypes.Area, areaId);
-        this.platform.log.info(`${prefix} Set Emergency Alarm [${EmergencyTypes[emergencyType]}]`);
+        this.platform.log.info(`${area}: Set Emergency Alarm [${EmergencyTypes[emergencyType]}]`);
       }
 
       const message = new KeypadEmergencyRequest({
@@ -1327,12 +1353,11 @@ export class OmniService extends events.EventEmitter {
   
       const response = await this.session.sendApplicationDataMessage(message);
 
-      if (response.type !== MessageTypes.Acknowledge) {
+      if (response.messageType !== MessageTypes.Acknowledge) {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      const prefix = this.getLogMessagePrefix(ObjectTypes.Area, areaId);
-      this.platform.log.warn(`${prefix} Set Emergency Alarm failed [${error.message}]`);
+      this.platform.log.warn(`${area}: Set Emergency Alarm failed [${error.message}]`);
     }
   }
 
@@ -1353,38 +1378,5 @@ export class OmniService extends events.EventEmitter {
       : 0;
 
     return [...Array(capacity).keys()].map(i => ++i);
-  }
-
-  private convertToOmniTemperature(temperature: number): number {
-    let omniTemperature = (40 + temperature) * 2;
-    if (omniTemperature < 44) {
-      omniTemperature = 44;
-    } else if (omniTemperature > 180) {
-      omniTemperature = 180;
-    }
-    return omniTemperature;
-  }
-
-  private convertToOmniHumidity(humidity: number): number {
-    if (humidity <= 0) {
-      return 44;
-    } else if (humidity >= 100) {
-      return 156;
-    } else {
-      return 44 + Math.round(humidity / 100.0 * 112.0);
-    }
-  }
-
-  private formatTemperature(celcius: number): string {
-    if (this.temperatureFormat === TemperatureFormats.Celsius) {
-      return `${celcius.toFixed(1)}C`;
-    } else {
-      const fahrenheit = (celcius * 9.0 / 5.0) + 32.0;
-      return `${fahrenheit.toFixed(1)}F`;
-    }
-  }
-
-  private getLogMessagePrefix(objectType: ObjectTypes, id: number): string {
-    return `${ObjectTypes[objectType]} ${id} [${this._omniObjects[objectType].get(id)!.name}]:`;
   }
 }

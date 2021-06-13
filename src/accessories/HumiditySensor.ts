@@ -1,8 +1,8 @@
 import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
-import { AuxiliarySensorStatus } from '../models/AuxiliarySensorStatus';
-import { ZoneStatus } from '../models/ZoneStatus';
+import { AuxiliarySensorStatus } from '../models/AuxiliarySensor';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class HumiditySensor extends SensorBase {
 
@@ -27,23 +27,25 @@ export class HumiditySensor extends SensorBase {
       .getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
       .on('get', this.getCharacteristicValue.bind(this, this.getCurrentRelativeHumidity.bind(this), 'CurrentRelativeHumidity'));
 
-    this.platform.omniService.on(ZoneStatus.getKey(this.platformAccessory.context.index), super.updateValues.bind(this));
-    this.platform.omniService.on(AuxiliarySensorStatus.getKey(this.platformAccessory.context.index), this.updateSensorValues.bind(this));
+    this.platform.omniService.on(
+      this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
+      super.updateValues.bind(this));
+    this.platform.omniService.on(
+      this.platform.omniService.getEventKey(OmniObjectStatusTypes.AuxiliarySensor, this.platformAccessory.context.index),
+      this.updateSensorValues.bind(this));
   }
 
-  private async getCurrentRelativeHumidity(): Promise<number> {
+  private getCurrentRelativeHumidity(): number {
     this.platform.log.debug(this.constructor.name, 'getCurrentRelativeHumidity');
 
-    const auxiliarySensorStatus = await this.platform.omniService.getAuxiliarySensorStatus(this.platformAccessory.context.index);
-
-    return auxiliarySensorStatus!.humidity;
+    return this.platform.omniService.omni.sensors[this.platformAccessory.context.index].status.temperature.toPercentage();
   }
 
-  updateSensorValues(sensorStatus: AuxiliarySensorStatus): void {
-    this.platform.log.debug(this.constructor.name, 'updateSensorValues', sensorStatus);
+  updateSensorValues(status: AuxiliarySensorStatus): void {
+    this.platform.log.debug(this.constructor.name, 'updateSensorValues', status);
 
     this.service
       .getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-      .updateValue(sensorStatus.humidity);
+      .updateValue(status.temperature.toPercentage());
   }
 }

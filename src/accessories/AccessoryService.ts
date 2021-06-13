@@ -20,7 +20,8 @@ import { EmergencyAlarmSwitch } from './EmergencyAlarmSwitch';
 import { LockMechanism } from './LockMechanism';
 import { TemperatureSensor} from './TemperatureSensor';
 import { HumiditySensor } from './HumiditySensor';
-import { EmergencyTypes, ZoneTypes } from '../omni/messages/enums';
+import { EmergencyTypes } from '../omni/messages/enums';
+import { ZoneTypes } from '../models/Zone';
 
 export class AccessoryService {
   private accessories: Map<string, AccessoryBase> = new Map();
@@ -62,7 +63,7 @@ export class AccessoryService {
     const areas = new Map<number, string>();
 
     if (this.platform.settings.includeAreas) {
-      for(const [index, area] of this.platform.omniService.areas) {
+      for(const [index, area] of this.platform.omniService.omni.areas.entries()) {
         areas.set(index, area.name);
       }
     }
@@ -86,8 +87,8 @@ export class AccessoryService {
     const zones = new Map<number, string>();
 
     if (this.platform.settings.includeZones) {
-      for(const [index, zone] of this.platform.omniService.zones) {
-        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'motion')) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (this.isZoneOfAccessoryType(index, zone.type, 'motion')) {
           zones.set(index, zone.name);
         }
       }
@@ -112,8 +113,8 @@ export class AccessoryService {
     const zones = new Map<number, string>();
 
     if (this.platform.settings.includeZones) {
-      for(const [index, zone] of this.platform.omniService.zones) {
-        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'smoke')) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (this.isZoneOfAccessoryType(index, zone.type, 'smoke')) {
           zones.set(index, zone.name);
         }
       }
@@ -138,8 +139,8 @@ export class AccessoryService {
     const zones = new Map<number, string>();
 
     if (this.platform.settings.includeZones) {
-      for(const [index, zone] of this.platform.omniService.zones) {
-        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'contact')) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (this.isZoneOfAccessoryType(index, zone.type, 'contact')) {
           zones.set(index, zone.name);
         }
       }
@@ -164,8 +165,8 @@ export class AccessoryService {
     const zones = new Map<number, string>();
 
     if (this.platform.settings.includeZones) {
-      for(const [index, zone] of this.platform.omniService.zones) {
-        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'carbondioxide')) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (this.isZoneOfAccessoryType(index, zone.type, 'carbondioxide')) {
           zones.set(index, zone.name);
         }
       }
@@ -190,8 +191,8 @@ export class AccessoryService {
     const zones = new Map<number, string>();
 
     if (this.platform.settings.includeZones) {
-      for(const [index, zone] of this.platform.omniService.zones) {
-        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'carbonmonoxide')) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (this.isZoneOfAccessoryType(index, zone.type, 'carbonmonoxide')) {
           zones.set(index, zone.name);
         }
       }
@@ -216,8 +217,8 @@ export class AccessoryService {
     const zones = new Map<number, string>();
 
     if (this.platform.settings.includeZones) {
-      for(const [index, zone] of this.platform.omniService.zones) {
-        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'leak')) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (this.isZoneOfAccessoryType(index, zone.type, 'leak')) {
           zones.set(index, zone.name);
         }
       }
@@ -242,8 +243,8 @@ export class AccessoryService {
     const zones = new Map<number, string>();
 
     if (this.platform.settings.includeZones) {
-      for(const [index, zone] of this.platform.omniService.zones) {
-        if (this.isZoneOfAccessoryType(index, zone.zoneType, 'occupancy')) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (this.isZoneOfAccessoryType(index, zone.type, 'occupancy')) {
           zones.set(index, zone.name);
         }
       }
@@ -276,8 +277,8 @@ export class AccessoryService {
     ];
 
     if (this.platform.settings.includeAuxiliarySensors) {
-      for(const [index, zone] of this.platform.omniService.zones) {
-        if (temperatureTypes.includes(zone.zoneType)) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (temperatureTypes.includes(zone.type)) {
           zones.set(index, zone.name);
         }
       }
@@ -302,8 +303,8 @@ export class AccessoryService {
     const zones = new Map<number, string>();
 
     if (this.platform.settings.includeAuxiliarySensors) {
-      for(const [index, zone] of this.platform.omniService.zones) {
-        if (zone.zoneType === ZoneTypes.Humidity) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (zone.type === ZoneTypes.Humidity) {
           zones.set(index, zone.name);
         }
       }
@@ -357,7 +358,7 @@ export class AccessoryService {
     const zones = new Map<number, string>();
 
     if (this.platform.settings.includeBypassZones) {
-      for(const [index, zone] of this.platform.omniService.zones) {
+      for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
         const sensorType = this.platform.settings.sensors.get(index);
         if (sensorType !== undefined && !sensorTypes.includes(sensorType.toLowerCase())) {
           continue;
@@ -385,7 +386,7 @@ export class AccessoryService {
     const buttons = new Map<number, string>();
 
     if (this.platform.settings.includeButtons) {
-      for(const [index, button] of this.platform.omniService.buttons) {
+      for(const [index, button] of this.platform.omniService.omni.buttons.entries()) {
         if (this.platform.settings.garageDoors.has(index)) {
           continue;
         }
@@ -410,8 +411,8 @@ export class AccessoryService {
     this.platform.log.debug(this.constructor.name, 'discoverGarageDoors');
 
     for(const buttonId of this.platform.settings.garageDoors.keys()) {
-      const button = this.platform.omniService.buttons.get(buttonId);
-      this.addAccessory(GarageDoorOpener, GarageDoorOpener.type, button!.name, buttonId);
+      const button = this.platform.omniService.omni.buttons[buttonId];
+      this.addAccessory(GarageDoorOpener, GarageDoorOpener.type, button.name, buttonId);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -429,7 +430,7 @@ export class AccessoryService {
     const units = new Map<number, string>();
 
     if (this.platform.settings.includeUnits) {
-      for(const [index, unit] of this.platform.omniService.units) {
+      for(const [index, unit] of this.platform.omniService.omni.units.entries()) {
         if (this.isUnitOfAccessoryType(index, 'switch')) {
           units.set(index, unit.name);
         }
@@ -455,7 +456,7 @@ export class AccessoryService {
     const units = new Map<number, string>();
 
     if (this.platform.settings.includeUnits) {
-      for(const [index, unit] of this.platform.omniService.units) {
+      for(const [index, unit] of this.platform.omniService.omni.units.entries()) {
         if (this.isUnitOfAccessoryType(index, 'lightbulb')) {
           units.set(index, unit.name);
         }
@@ -495,7 +496,7 @@ export class AccessoryService {
     const thermostats = new Map<number, string>();
 
     if (this.platform.settings.includeThermostats) {
-      for(const [index, thermostat] of this.platform.omniService.thermostats) {
+      for(const [index, thermostat] of this.platform.omniService.omni.thermostats.entries()) {
         thermostats.set(index, thermostat.name);
       }
     }
@@ -519,7 +520,7 @@ export class AccessoryService {
     const areaEmergencies = new Map<number, string>();
 
     if (this.platform.settings.includeEmergencyAlarms) {
-      for(const [areaId, area] of this.platform.omniService.areas) {
+      for(const [areaId, area] of this.platform.omniService.omni.areas.entries()) {
         for (const emegencyType in EmergencyTypes) {
           if (!isNaN(Number(emegencyType))) {
             const index = areaId * 256 + Number(emegencyType);
@@ -548,7 +549,7 @@ export class AccessoryService {
     const accessControls = new Map<number, string>();
 
     if (this.platform.settings.includeAccessControls) {
-      for(const [index, accessControl] of this.platform.omniService.accessControls) {
+      for(const [index, accessControl] of this.platform.omniService.omni.accessControls.entries()) {
         accessControls.set(index, accessControl.name);
       }
     }

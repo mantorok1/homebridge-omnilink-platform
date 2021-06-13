@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## NEXT
+
+* Code refactor to impove performance
+
 ## 1.4.3 (2021-05-30)
 
 * Update dependencies, one of which had a high severity vulnerability

@@ -2,7 +2,8 @@ import { PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
 import { EmergencyTypes } from '../omni/messages/enums';
-import { AreaStatus, ArmedModes, Alarms } from '../models/AreaStatus';
+import { AreaStatus, ArmedModes, Alarms } from '../models/Area';
+import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class EmergencyAlarmSwitch extends AccessoryBase {
   private areaId: number;
@@ -39,18 +40,19 @@ export class EmergencyAlarmSwitch extends AccessoryBase {
       .on('get', this.getCharacteristicValue.bind(this, this.getEmergencyAlarmSwitchOn.bind(this), 'On'))
       .on('set', this.setCharacteristicValue.bind(this, this.setEmergencyAlarmSwitchOn.bind(this), 'On'));
 
-    this.platform.omniService.on(AreaStatus.getKey(this.areaId), this.updateValues.bind(this));
+    this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Area, this.areaId),
+      this.updateValues.bind(this));
   }
 
-  async getEmergencyAlarmSwitchOn(): Promise<boolean> {
+  private getEmergencyAlarmSwitchOn(): boolean {
     this.platform.log.debug(this.constructor.name, 'getEmergencyAlarmSwitchOn');
 
-    const areaStatus = await this.platform.omniService.getAreaStatus(this.areaId);
+    const areaStatus = this.platform.omniService.omni.areas[this.areaId].status;
 
     return areaStatus!.alarmsTriggered.includes(this.getAlarmMode(this.emergencyType));
   }
 
-  async setEmergencyAlarmSwitchOn(value: boolean): Promise<void> {
+  private async setEmergencyAlarmSwitchOn(value: boolean): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setEmergencyAlarmSwitchOn', value);
 
     if (value) {
