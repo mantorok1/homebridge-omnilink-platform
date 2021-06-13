@@ -64,6 +64,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeAreas) {
       for(const [index, area] of this.platform.omniService.omni.areas.entries()) {
+        if (this.platform.settings.exclude.areas.includes(index)) {
+          continue;
+        }
         areas.set(index, area.name);
       }
     }
@@ -267,18 +270,13 @@ export class AccessoryService {
     this.platform.log.debug(this.constructor.name, 'discoverZoneTemperatureSensors');
 
     const zones = new Map<number, string>();
-    const temperatureTypes = [
-      ZoneTypes.OutdoorTemperature,
-      ZoneTypes.Temperature,
-      ZoneTypes.TemperatureAlarm,
-      ZoneTypes.ExtendedRangeOutdoorTemperature,
-      ZoneTypes.ExtendedRangeTemperature,
-      ZoneTypes.ExtendedRangeTemperatureAlarm,
-    ];
 
     if (this.platform.settings.includeAuxiliarySensors) {
       for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
-        if (temperatureTypes.includes(zone.type)) {
+        if (this.platform.settings.exclude.auxiliarySensors.includes(index)) {
+          continue;
+        }
+        if (zone.isAuxiliarySensor && zone.type !== ZoneTypes.Humidity) {
           zones.set(index, zone.name);
         }
       }
@@ -304,6 +302,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeAuxiliarySensors) {
       for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (this.platform.settings.exclude.auxiliarySensors.includes(index)) {
+          continue;
+        }
         if (zone.type === ZoneTypes.Humidity) {
           zones.set(index, zone.name);
         }
@@ -324,8 +325,12 @@ export class AccessoryService {
   }
 
   private isZoneOfAccessoryType(index: number, zoneType: ZoneTypes, accessoryType: string): boolean {
+    if (this.platform.settings.exclude.zones.includes(index)) {
+      return false;
+    }
+
     // Special handling for Auxiliary sensors
-    if (zoneType >= ZoneTypes.ProgrammableEnergySaverModule) {
+    if (this.platform.omniService.omni.zones[index].isAuxiliarySensor) {
       return false;
     }
 
@@ -359,6 +364,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeBypassZones) {
       for(const [index, zone] of this.platform.omniService.omni.zones.entries()) {
+        if (this.platform.settings.exclude.zones.includes(index)) {
+          continue;
+        }
         const sensorType = this.platform.settings.sensors.get(index);
         if (sensorType !== undefined && !sensorTypes.includes(sensorType.toLowerCase())) {
           continue;
@@ -388,6 +396,9 @@ export class AccessoryService {
     if (this.platform.settings.includeButtons) {
       for(const [index, button] of this.platform.omniService.omni.buttons.entries()) {
         if (this.platform.settings.garageDoors.has(index)) {
+          continue;
+        }
+        if (this.platform.settings.exclude.buttons.includes(index)) {
           continue;
         }
         buttons.set(index, button.name);
@@ -477,6 +488,10 @@ export class AccessoryService {
   }
 
   private isUnitOfAccessoryType(index: number, accessoryType: string): boolean {
+    if (this.platform.settings.exclude.units.includes(index)) {
+      return false;
+    }
+
     const unitAccessoryType = this.platform.settings.units.get(index);
     if (unitAccessoryType === undefined) {
       if (this.platform.settings.defaultUnitAccessoryType !== accessoryType) {
@@ -497,6 +512,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeThermostats) {
       for(const [index, thermostat] of this.platform.omniService.omni.thermostats.entries()) {
+        if (this.platform.settings.exclude.thermostats.includes(index)) {
+          continue;
+        }
         thermostats.set(index, thermostat.name);
       }
     }
@@ -550,6 +568,9 @@ export class AccessoryService {
 
     if (this.platform.settings.includeAccessControls) {
       for(const [index, accessControl] of this.platform.omniService.omni.accessControls.entries()) {
+        if (this.platform.settings.exclude.accessControls.includes(index)) {
+          continue;
+        }
         accessControls.set(index, accessControl.name);
       }
     }

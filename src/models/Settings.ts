@@ -37,11 +37,22 @@ export type MqttSettings = {
   showMqttEvents: boolean, 
 }
 
+type Exclude = {
+  areas: number[],
+  zones: number[],
+  units: number[],
+  buttons: number[],
+  thermostats: number[],
+  auxiliarySensors: number[],
+  accessControls: number[]
+}
+
 export class Settings {
   private readonly _privateKey: Buffer;
   private readonly _sensors: Map<number, string>;
   private readonly _garageDoors: Map<number, GarageDoor>;
   private readonly _units: Map<number, string>;
+  private readonly _exclude: Exclude;
   private readonly _mqtt?: MqttSettings;
   private readonly _defaultAccessoryMappings = {
     zone: 'motion',
@@ -54,6 +65,15 @@ export class Settings {
     this._sensors = new Map<number, string>();
     this._garageDoors = new Map<number, GarageDoor>();
     this._units = new Map<number, string>();
+    this._exclude = {
+      areas: [],
+      zones: [],
+      units: [],
+      buttons: [],
+      thermostats: [],
+      auxiliarySensors: [],
+      accessControls: [],
+    };
 
     if (config.map?.zones !== undefined) {
       for(const sensorType of Object.keys(config.map.zones)) {
@@ -94,6 +114,12 @@ export class Settings {
             this._units.set(unit.unitId, unit.type);
           }
         }
+      }
+    }
+
+    for (const objectType of Object.keys(this._exclude)) {
+      if (config.exclude?.[objectType] !== undefined && config.exclude[objectType].length > 0) {
+        this._exclude[objectType].push(...config.exclude[objectType].split(',').map(Number));
       }
     }
 
@@ -202,6 +228,10 @@ export class Settings {
 
   get garageDoorZones(): number[] {
     return [...this._garageDoors.values()].map(g => g.zoneId);
+  }
+
+  get exclude(): Exclude {
+    return this._exclude;
   }
 
   get includeHumidityControls(): boolean {

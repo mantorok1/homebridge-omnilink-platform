@@ -270,6 +270,53 @@
           }
         }
       },
+      "exclude": {
+        "type": "object",
+        "properties": {
+          "areas": {
+            "title": "Areas",
+            "description": "comma seperated list of area numbers",
+            "type": "string",
+            "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+          },
+          "zones": {
+            "title": "Zones",
+            "description": "comma seperated list of zone numbers",
+            "type": "string",
+            "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+          },
+          "units": {
+            "title": "Units",
+            "description": "comma seperated list of unit numbers",
+            "type": "string",
+            "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+          },
+          "buttons": {
+            "title": "Buttons",
+            "description": "comma seperated list of button numbers",
+            "type": "string",
+            "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+          },
+          "thermostats": {
+            "title": "Thermostats",
+            "description": "comma seperated list of thermostat numbers",
+            "type": "string",
+            "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+          },
+          "auxiliarySensors": {
+            "title": "Auxiliary Sensors",
+            "description": "comma seperated list of auxiliary sensor numbers",
+            "type": "string",
+            "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+          },
+          "accessControls": {
+            "title": "Access Controls",
+            "description": "comma seperated list of access control numbers",
+            "type": "string",
+            "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+          }
+        }
+      },
       "sensors": {
         "title": "Zone Sensor Overrides",
         "type": "array",
@@ -607,6 +654,21 @@
             "map.units.switch",
             "map.units.lightbulb",
             "map.units.none"
+          ]
+        },
+        {
+          "type": "section",
+          "title": "Exclusions",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            "exclude.areas",
+            "exclude.zones",
+            "exclude.units",
+            "exclude.buttons",
+            "exclude.thermostats",
+            "exclude.auxiliarySensors",
+            "exclude.accessControls"
           ]
         },
         {

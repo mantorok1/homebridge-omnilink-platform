@@ -79,6 +79,7 @@ If you find the default config is not correct for your system or not to your lik
 |`targetHumidityDifference`|No|number|The difference between the Humidify and Dehumidify set points. This allows the plugin to set the other Omni humidity set point. `0` means do not set|`0`|
 |`defaultAccessoryMappings`|No|object|Defines the default zone and unit HomeKit accessory mappings.<br/>For `zone` and `zoneFireEmergency` the defaults can be either `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy` or `none`<br/>For `unit` the defaults can be either `switch`, `lightbulb` or `none`|`{"zone": "motion", "zoneFireEmergency": "smoke", "unit": "switch"}`|
 |`map`|No|object|See 'Map Configuration' below||
+|`exclude`|No|object|See 'Exclude Configuration' below||
 |`garageDoors`|No|array|Defines 1 or more garage door accessories. Each definition requires the following properties:<br/><ul><li>`buttonId` - the button number correspnding to the button that opens/closes the door<li>`zoneId` - the zone number corresponding to the sensor that determines if the garage door is closed or not<li>`openTime` - the time taken (in seconds) for the garage door to fully open</ul>Example garage door definition: `{ "buttonId": 2, "zoneId": 3, "openTime": 10 }`||
 |`sensors`|No|array|**DEPRECATED: Use `map.zones` instead**<br/>Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of HomeKit sensor accessory to use (valid options: `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "contact" }`||
 |`units`|No|array|**DEPRECATED: Use `map.units` instead**<br/>Defines 1 or more unit accessories. This can be useful to override a unit as the default one is incorrect. Each unit definition requires the following properties:<br/><ul><li>`unitId` - the unit number corresponding to the unit<li>`type` - type of HomeKit accessory to use (valid options: `switch`, `lightbulb`). Any other value will remove the accessory</ul>Example unit definition: `{ "unitId": 2, "type": "lightbulb" }`||
@@ -121,6 +122,21 @@ Unit Mappings
 |`switch`|No|string|List of the unit numbers that are to be mapped to Switches|
 |`lightbulb`|No|string|List of the unit numbers that are to be mapped to Lightbulbs|
 |`none`|No|string|List of the unit numbers that are not to be mapped to any accessory|
+
+NOTE: The lists are to be supplied as comma seperated (eg. `"1,2,3"`)
+
+### Exclude Configuration
+Defines which Omni objects (areas, zones etc) are to be excluded when creating HomeKit accessories
+
+|Option|Required|Type|Description|
+|-|-|-|-|
+|`areas`|No|string|List of the area numbers that are to be excluded|
+|`zones`|No|string|List of the zone numbers that are to be excluded|
+|`units`|No|string|List of the unit numbers that are to be excluded|
+|`buttons`|No|string|List of the button numbers that are to be excluded|
+|`thermostats`|No|string|List of the thermostat numbers that are to be excluded|
+|`auxiliarySensors`|No|string|List of the auxiliary sensor numbers that are to be excluded|
+|`accessControls`|No|string|List of the access control numbers that are to be excluded|
 
 NOTE: The lists are to be supplied as comma seperated (eg. `"1,2,3"`)
 
@@ -182,6 +198,11 @@ Option|Required|Type|Description|Default Value (if not supplied)|
             "lightbulb": "1,3",
             "none": "2"
           }
+        },
+        "exclude": {
+          "zones": "7,8,9",
+          "units": "6,7",
+          "buttons": "4"
         },
         "garageDoors": [
           {

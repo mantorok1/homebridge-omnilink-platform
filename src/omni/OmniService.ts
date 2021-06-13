@@ -170,6 +170,7 @@ export class OmniService extends events.EventEmitter {
     this.session.on('thermostats', this.processThermostatStatus.bind(this));
     this.session.on('locks', this.processAccessControlLockStatus.bind(this));
     this.session.on('sensors', this.processAuxiliarySensorStatus.bind(this));
+    await this.refreshAllStatuses();
   }
 
   getEventKey(statusType: OmniObjectStatusTypes, id: number): string {

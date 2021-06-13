@@ -90,7 +90,6 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
           const devices = await this.readCache();
           await this.omniService.discover(devices);
           await this.writeCache(devices);
-          await this.omniService.refreshAllStatuses();
           this.omniService.initialised();
         }
       })();

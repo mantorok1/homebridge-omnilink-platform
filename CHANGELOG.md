@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## NEXT
 
-* Code refactor to impove performance
+* Code refactor to improve performance
+* Allow exclusions of areas, zones, units, buttons, thermostats, auxiliary sensors & access controls
 
 ## 1.4.3 (2021-05-30)
 
