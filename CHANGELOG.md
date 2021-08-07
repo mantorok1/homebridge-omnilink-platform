@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## NEXT
 
+|:warning: **Upcoming Breaking Change**|
+|---|
+|The following settings will not be supported in the next version of the plugin. This version has removed them from the Homebridge Config UI although they are still recognised by the plugin. If you have not already done so please update your settings to use the new Mapping and Exclusion configurations if necessary.<br/><ul><li>Zone Sensor Settings</li><li>Unit Accessory Settings</li><li>Zone Accessory Mappings &gt; None</li><li>Unit Accessory Mappings &gt; None</li></ul>|
+
 * Add timeout to requests that take more than 10 seconds to respond
+* Remove deprecated settings from `config.schema.json` and `README` files
 
 ## 1.4.4 (2021-06-14)
 

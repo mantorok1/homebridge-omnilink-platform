@@ -2,6 +2,10 @@
 
 [![npm](https://badgen.net/npm/v/homebridge-omnilink-platform) ![npm](https://badgen.net/npm/dt/homebridge-omnilink-platform)](https://www.npmjs.com/package/homebridge-omnilink-platform) [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
+|:warning: **Upcoming Breaking Change**|
+|---|
+|The following settings will not be supported in the next version of the plugin. This version has removed them from the Homebridge Config UI although they are still recognised by the plugin. If you have not already done so please update your settings to use the new Mapping and Exclusion configurations if necessary.<br/><ul><li>Zone Sensor Settings</li><li>Unit Accessory Settings</li><li>Zone Accessory Mappings &gt; None</li><li>Unit Accessory Mappings &gt; None</li></ul>|
+
 This Homebridge Plugin allows you to control a HAI/Leviton Omni series Security & Home Automation System via the Omni-Link II protocol over a TCP/IP connection.
 
 Functions available:
@@ -81,8 +85,6 @@ If you find the default config is not correct for your system or not to your lik
 |`map`|No|object|See 'Map Configuration' below||
 |`exclude`|No|object|See 'Exclude Configuration' below||
 |`garageDoors`|No|array|Defines 1 or more garage door accessories. Each definition requires the following properties:<br/><ul><li>`buttonId` - the button number correspnding to the button that opens/closes the door<li>`zoneId` - the zone number corresponding to the sensor that determines if the garage door is closed or not<li>`openTime` - the time taken (in seconds) for the garage door to fully open</ul>Example garage door definition: `{ "buttonId": 2, "zoneId": 3, "openTime": 10 }`||
-|`sensors`|No|array|**DEPRECATED: Use `map.zones` instead**<br/>Defines 1 or more sensor accessories. This can be useful to override a sensor as the default one is incorrect. Each sensor definition requires the following properties:<br/><ul><li>`zoneId` - the zone number corresponding to the sensor<li>`sensorType` - type of HomeKit sensor accessory to use (valid options: `motion`, `smoke`, `contact`, `carbondioxide`, `carbonmonoxide`, `leak`, `occupancy`). Any other value will remove the accessory</ul>Example sensor definition: `{ "zoneId": 2, "sensorType": "contact" }`||
-|`units`|No|array|**DEPRECATED: Use `map.units` instead**<br/>Defines 1 or more unit accessories. This can be useful to override a unit as the default one is incorrect. Each unit definition requires the following properties:<br/><ul><li>`unitId` - the unit number corresponding to the unit<li>`type` - type of HomeKit accessory to use (valid options: `switch`, `lightbulb`). Any other value will remove the accessory</ul>Example unit definition: `{ "unitId": 2, "type": "lightbulb" }`||
 |`pushover`|No|object|See 'Pushover Notification Configuration' below||
 |`mqtt`|No|object|See 'MQTT Configuration' below||
 |`syncTime`|No|boolean|Sync the controller's date and time with the Homebridge host|`false`|
@@ -114,14 +116,12 @@ Zone Mappings
 |`carbonmonoxide`|No|string|List of the zone numbers that are to be mapped to Carbon Monoxide Sensors|
 |`leak`|No|string|List of the zone numbers that are to be mapped to Leak Sensors|
 |`occupancy`|No|string|List of the zone numbers that are to be mapped to Occupancy Sensors|
-|`none`|No|string|List of the zone numbers that are not to be mapped to any accessory|
 
 Unit Mappings
 |Option|Required|Type|Description|
 |-|-|-|-|
 |`switch`|No|string|List of the unit numbers that are to be mapped to Switches|
 |`lightbulb`|No|string|List of the unit numbers that are to be mapped to Lightbulbs|
-|`none`|No|string|List of the unit numbers that are not to be mapped to any accessory|
 
 NOTE: The lists are to be supplied as comma seperated (eg. `"1,2,3"`)
 
