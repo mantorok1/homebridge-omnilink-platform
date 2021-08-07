@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## NEXT
+## 1.4.5 (2021-08-07)
 
 |:warning: **Upcoming Breaking Change**|
 |---|
