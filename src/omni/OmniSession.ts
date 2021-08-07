@@ -242,7 +242,7 @@ export class OmniSession extends events.EventEmitter {
       this.platform.log.info(`Request: ${[...packet.message?.values() ?? '']}`);
     }
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const key = packet.type === PacketTypes.ApplicationData ? packet.message!.toString('hex') : '';
       if (key.length > 0) {
         const value: OmniPacket | undefined = this.cache.get(key);
@@ -252,7 +252,14 @@ export class OmniSession extends events.EventEmitter {
         }
       }
 
+      const timer = setTimeout(() => {
+        clearTimeout(timer);
+        this.removeAllListeners(packet.sequence.toString());
+        reject(`Request timed out [${[...packet.message?.values() ?? '']}]`);
+      }, 10000);
+
       this.once(packet.sequence.toString(), (response: OmniPacket) => {
+        clearTimeout(timer);
         if (key.length > 0) {
           this.cache.set(key, response);
         }

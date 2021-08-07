@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## NEXT
+
+* Add timeout to requests that take more than 10 seconds to respond
+
 ## 1.4.4 (2021-06-14)
 
 * Code refactor to improve performance
