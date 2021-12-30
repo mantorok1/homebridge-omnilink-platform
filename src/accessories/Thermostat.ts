@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
 import { TemperatureFormats } from '../models/SystemFormats';
@@ -92,45 +92,45 @@ export class Thermostat extends AccessoryBase {
 
     this.service
       .getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
-      .on('get', this.getCharacteristicValue.bind(this, this.getCurrentHeatingCoolingState.bind(this), 'CurrentHeatingCoolingState'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getCurrentHeatingCoolingState.bind(this), 'CurrentHeatingCoolingState'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState)
-      .on('get', this.getCharacteristicValue.bind(this, this.getTargetHeatingCoolingState.bind(this), 'TargetHeatingCoolingState'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setTargetHeatingCoolingState.bind(this), 'TargetHeatingCoolingState'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getTargetHeatingCoolingState.bind(this), 'TargetHeatingCoolingState'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setTargetHeatingCoolingState.bind(this), 'TargetHeatingCoolingState'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.CurrentTemperature)
-      .on('get', this.getCharacteristicValue.bind(this, this.getCurrentTemperature.bind(this), 'CurrentTemperature'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getCurrentTemperature.bind(this), 'CurrentTemperature'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.TargetTemperature)
-      .on('get', this.getCharacteristicValue.bind(this, this.getTargetTemperature.bind(this), 'TargetTemperature'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setTargetTemperature.bind(this), 'TargetTemperature'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getTargetTemperature.bind(this), 'TargetTemperature'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setTargetTemperature.bind(this), 'TargetTemperature'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits)
-      .on('get', this.getCharacteristicValue.bind(this, this.getTemperatureDisplayUnits.bind(this), 'TemperatureDisplayUnits'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getTemperatureDisplayUnits.bind(this), 'TemperatureDisplayUnits'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.CoolingThresholdTemperature)
-      .on('get', this.getCharacteristicValue.bind(this, this.getCoolingThresholdTemperature.bind(this), 'CoolingThresholdTemperature'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setCoolingThresholdTemperature.bind(this), 'CoolingThresholdTemperature'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getCoolingThresholdTemperature.bind(this), 'CoolingThresholdTemperature'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setCoolingThresholdTemperature.bind(this), 'CoolingThresholdTemperature'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.HeatingThresholdTemperature)
-      .on('get', this.getCharacteristicValue.bind(this, this.getHeatingThresholdTemperature.bind(this), 'HeatingThresholdTemperature'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setHeatingThresholdTemperature.bind(this), 'HeatingThresholdTemperature'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getHeatingThresholdTemperature.bind(this), 'HeatingThresholdTemperature'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setHeatingThresholdTemperature.bind(this), 'HeatingThresholdTemperature'));
 
     if (this.platform.settings.includeHumidityControls) {
       this.service
         .getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-        .on('get', this.getCharacteristicValue.bind(this, this.getCurrentRelativeHumidity.bind(this), 'CurrentRelativeHumidity'));
+        .onGet(this.getCharacteristicValue.bind(this, this.getCurrentRelativeHumidity.bind(this), 'CurrentRelativeHumidity'));
 
       this.service
         .getCharacteristic(this.platform.Characteristic.TargetRelativeHumidity)
-        .on('get', this.getCharacteristicValue.bind(this, this.getTargetRelativeHumidity.bind(this), 'TargetRelativeHumidity'))
-        .on('set', this.setCharacteristicValue.bind(this, this.setTargetRelativeHumidity.bind(this), 'TargetRelativeHumidity'));
+        .onGet(this.getCharacteristicValue.bind(this, this.getTargetRelativeHumidity.bind(this), 'TargetRelativeHumidity'))
+        .onSet(this.setCharacteristicValue.bind(this, this.setTargetRelativeHumidity.bind(this), 'TargetRelativeHumidity'));
     }
 
     this.platform.omniService.on(
@@ -138,7 +138,7 @@ export class Thermostat extends AccessoryBase {
       this.updateValues.bind(this));
   }
 
-  private getCurrentHeatingCoolingState(): number {
+  private getCurrentHeatingCoolingState(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getCurrentHeatingCoolingState');
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -149,7 +149,7 @@ export class Thermostat extends AccessoryBase {
     return this.getCurrentHeatingCoolingStateCharacteristicValue(thermostatStatus);
   }
 
-  private getCurrentHeatingCoolingStateCharacteristicValue(status: ThermostatStatus): number {
+  private getCurrentHeatingCoolingStateCharacteristicValue(status: ThermostatStatus): CharacteristicValue {
     if (status.isHeating()) {
       return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
     } else if (status.isCooling()) {
@@ -159,7 +159,7 @@ export class Thermostat extends AccessoryBase {
     }
   }
 
-  private getTargetHeatingCoolingState(): number {
+  private getTargetHeatingCoolingState(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getTargetHeatingCoolingState');
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -170,7 +170,7 @@ export class Thermostat extends AccessoryBase {
     return this.getTargetHeatingCoolingStateCharacteristicValue(thermostatStatus);
   }
 
-  private getTargetHeatingCoolingStateCharacteristicValue(status: ThermostatStatus): number {
+  private getTargetHeatingCoolingStateCharacteristicValue(status: ThermostatStatus): CharacteristicValue {
     switch (status.mode) {
       case ThermostatModes.Heat:
       case ThermostatModes.EmergencyHeat:
@@ -184,7 +184,7 @@ export class Thermostat extends AccessoryBase {
     } 
   }
 
-  private async setTargetHeatingCoolingState(value: number): Promise<void> {
+  private async setTargetHeatingCoolingState(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'getTargetHeatingCoolingState', value);
 
     let mode = ThermostatModes.Off;
@@ -203,7 +203,7 @@ export class Thermostat extends AccessoryBase {
     await this.platform.omniService.setThermostatMode(this.platformAccessory.context.index, mode);
   }
 
-  private getCurrentTemperature(): number {
+  private getCurrentTemperature(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getCurrentTemperature');
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -214,7 +214,7 @@ export class Thermostat extends AccessoryBase {
     return thermostatStatus.temperature.toCelcius();
   }
 
-  private getTargetTemperature(): number {
+  private getTargetTemperature(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getTargetTemperature');
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -231,7 +231,7 @@ export class Thermostat extends AccessoryBase {
       : Math.max(thermostatStatus.heatSetPoint.toCelcius(), this.minTemperature);
   }
 
-  private async setTargetTemperature(value: number): Promise<void> {
+  private async setTargetTemperature(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setTargetTemperature', value);
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -240,13 +240,13 @@ export class Thermostat extends AccessoryBase {
     }
 
     if (thermostatStatus.mode === ThermostatModes.Cool) {
-      await this.platform.omniService.setThermostatCoolSetPoint(this.platformAccessory.context.index, value);
+      await this.platform.omniService.setThermostatCoolSetPoint(this.platformAccessory.context.index, value as number);
       return;
     }
-    await this.platform.omniService.setThermostatHeatSetPoint(this.platformAccessory.context.index, value);
+    await this.platform.omniService.setThermostatHeatSetPoint(this.platformAccessory.context.index, value as number);
   }
 
-  private getTemperatureDisplayUnits(): number {
+  private getTemperatureDisplayUnits(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getTemperatureDisplayUnits');
 
     return this.platform.omniService.omni.formats.temperature === TemperatureFormats.Fahrenheit
@@ -254,7 +254,7 @@ export class Thermostat extends AccessoryBase {
       : this.platform.Characteristic.TemperatureDisplayUnits.CELSIUS;
   }
 
-  private getCoolingThresholdTemperature(): number {
+  private getCoolingThresholdTemperature(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getCoolingThresholdTemperature');
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -265,13 +265,13 @@ export class Thermostat extends AccessoryBase {
     return Math.min(thermostatStatus.coolSetPoint.toCelcius(), this.maxTemperature);
   }
 
-  private async setCoolingThresholdTemperature(value: number): Promise<void> {
+  private async setCoolingThresholdTemperature(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setCoolingThresholdTemperature', value);
 
-    await this.platform.omniService.setThermostatCoolSetPoint(this.platformAccessory.context.index, value);
+    await this.platform.omniService.setThermostatCoolSetPoint(this.platformAccessory.context.index, value as number);
   }
 
-  private getHeatingThresholdTemperature(): number {
+  private getHeatingThresholdTemperature(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getHeatingThresholdTemperature');
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -282,13 +282,13 @@ export class Thermostat extends AccessoryBase {
     return Math.max(thermostatStatus.heatSetPoint.toCelcius(), this.minTemperature);
   }
 
-  private async setHeatingThresholdTemperature(value: number): Promise<void> {
+  private async setHeatingThresholdTemperature(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setHeatingThresholdTemperature', value);
 
-    await this.platform.omniService.setThermostatHeatSetPoint(this.platformAccessory.context.index, value);
+    await this.platform.omniService.setThermostatHeatSetPoint(this.platformAccessory.context.index, value as number);
   }
 
-  private getCurrentRelativeHumidity(): number {
+  private getCurrentRelativeHumidity(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getCurrentRelativeHumidity');
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -299,7 +299,7 @@ export class Thermostat extends AccessoryBase {
     return thermostatStatus.humidity.toPercentage();
   }
 
-  private getTargetRelativeHumidity(): number {
+  private getTargetRelativeHumidity(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getTargetRelativeHumidity');
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -312,7 +312,7 @@ export class Thermostat extends AccessoryBase {
       : thermostatStatus.dehumidifySetPoint.toPercentage();
   }
 
-  private async setTargetRelativeHumidity(value: number): Promise<void> {
+  private async setTargetRelativeHumidity(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setTargetRelativeHumidity', value);
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
@@ -320,17 +320,18 @@ export class Thermostat extends AccessoryBase {
       return;
     }
 
+    const humidity = value as number;
     let humidifySetPoint: number | undefined;
     let dehumidifySetPoint: number | undefined;
     if (this.platform.settings.targetHumiditySetPointType === 1) {
-      humidifySetPoint = value;
+      humidifySetPoint = humidity;
       if (this.platform.settings.targetHumidityDifference !== 0) {
-        dehumidifySetPoint = value + this.platform.settings.targetHumidityDifference;
+        dehumidifySetPoint = humidity + this.platform.settings.targetHumidityDifference;
       }
     } else {
-      dehumidifySetPoint = value;
+      dehumidifySetPoint = humidity;
       if (this.platform.settings.targetHumidityDifference !== 0) {
-        humidifySetPoint = value - this.platform.settings.targetHumidityDifference;
+        humidifySetPoint = humidity - this.platform.settings.targetHumidityDifference;
       }
     }
 

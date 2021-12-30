@@ -1,5 +1,6 @@
 import { AccessoryBase } from './AccessoryBase';
 import { ZoneStatus } from '../models/Zone';
+import { CharacteristicValue } from 'homebridge';
 
 export abstract class SensorBase extends AccessoryBase {
 
@@ -8,10 +9,10 @@ export abstract class SensorBase extends AccessoryBase {
     
     this.service
       .getCharacteristic(this.platform.Characteristic.StatusFault)
-      .on('get', this.getCharacteristicValue.bind(this, this.getStatusFault.bind(this), 'StatusFault'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getStatusFault.bind(this), 'StatusFault'));
   }
 
-  private getStatusFault(): number {
+  private getStatusFault(): CharacteristicValue {
     this.platform.log.debug('SensorBase', 'getStatusFault');
 
     const zoneStatus = this.platform.omniService.omni.zones[this.platformAccessory.context.index].status;

@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
 import { AreaStatus, Alarms, ArmedModes } from '../models/Area';
@@ -28,16 +28,16 @@ export class SecuritySystem extends AccessoryBase {
     
     this.service
       .getCharacteristic(this.platform.Characteristic.SecuritySystemCurrentState)
-      .on('get', this.getCharacteristicValue.bind(this, this.getSecuritySystemCurrentState.bind(this), 'SecuritySystemCurrentState'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getSecuritySystemCurrentState.bind(this), 'SecuritySystemCurrentState'));
   
     this.service
       .getCharacteristic(this.platform.Characteristic.SecuritySystemTargetState)
-      .on('get', this.getCharacteristicValue.bind(this, this.getSecuritySystemTargetState.bind(this), 'SecuritySystemTargetState'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setSecuritySystemTargetState.bind(this), 'SecuritySystemTargetState'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getSecuritySystemTargetState.bind(this), 'SecuritySystemTargetState'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setSecuritySystemTargetState.bind(this), 'SecuritySystemTargetState'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.StatusFault)
-      .on('get', this.getCharacteristicValue.bind(this, this.getStatusFault.bind(this), 'StatusFault'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getStatusFault.bind(this), 'StatusFault'));
     
     this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Area, this.platformAccessory.context.index),
       this.updateValues.bind(this));
@@ -45,7 +45,7 @@ export class SecuritySystem extends AccessoryBase {
     this.platform.omniService.on('system-troubles', this.updateStatusFault.bind(this));
   }
 
-  private getSecuritySystemCurrentState(): number {
+  private getSecuritySystemCurrentState(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getSecuritySystemCurrentState');
 
     const areaStatus = this.platform.omniService.omni.areas[this.platformAccessory.context.index].status;
@@ -72,7 +72,7 @@ export class SecuritySystem extends AccessoryBase {
     }
   }
 
-  private getSecuritySystemTargetState(): number {
+  private getSecuritySystemTargetState(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getSecuritySystemTargetState');
 
     const areaStatus = this.platform.omniService.omni.areas[this.platformAccessory.context.index].status;
@@ -95,10 +95,10 @@ export class SecuritySystem extends AccessoryBase {
     }
   }
 
-  private async setSecuritySystemTargetState(value: number): Promise<void> {
+  private async setSecuritySystemTargetState(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setSecuritySystemTargetState', value);
 
-    const securitySystemTargetState = await this.getSecuritySystemTargetState();
+    const securitySystemTargetState = this.getSecuritySystemTargetState();
 
     if (securitySystemTargetState === value) {
       return;
@@ -120,7 +120,7 @@ export class SecuritySystem extends AccessoryBase {
     await this.platform.omniService.setAreaAlarmMode(this.platformAccessory.context.index, alarmMode);
   }
 
-  private getStatusFault(): number {
+  private getStatusFault(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getStatusFault');
 
     return this.faultDetected

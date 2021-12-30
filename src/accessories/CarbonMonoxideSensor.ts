@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
 import { ZoneStatus } from '../models/Zone';
@@ -26,13 +26,13 @@ export class CarbonMonoxideSensor extends SensorBase {
 
     this.service
       .getCharacteristic(this.platform.Characteristic.CarbonMonoxideDetected)
-      .on('get', this.getCharacteristicValue.bind(this, this.getCarbonMonoxideDetected.bind(this), 'CarbonMonoxideDetected'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getCarbonMonoxideDetected.bind(this), 'CarbonMonoxideDetected'));
 
     this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
       this.updateValues.bind(this));
   }
 
-  private getCarbonMonoxideDetected(): number {
+  private getCarbonMonoxideDetected(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getCarbonMonoxideDetected');
 
     const zoneStatus = this.platform.omniService.omni.zones[this.platformAccessory.context.index].status;

@@ -1,10 +1,10 @@
 # Omni-Link Platform
 
-[![npm](https://badgen.net/npm/v/homebridge-omnilink-platform) ![npm](https://badgen.net/npm/dt/homebridge-omnilink-platform)](https://www.npmjs.com/package/homebridge-omnilink-platform) [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
-
-|:warning: **Upcoming Breaking Change**|
-|---|
-|The following settings will not be supported in the next version of the plugin. This version has removed them from the Homebridge Config UI although they are still recognised by the plugin. If you have not already done so please update your settings to use the new Mapping and Exclusion configurations if necessary.<br/><ul><li>Zone Sensor Settings</li><li>Unit Accessory Settings</li><li>Zone Accessory Mappings &gt; None</li><li>Unit Accessory Mappings &gt; None</li></ul>|
+[![npm](https://badgen.net/npm/v/homebridge-omnilink-platform?icon=npm&label)](https://www.npmjs.com/package/homebridge-omnilink-platform)
+[![npm](https://badgen.net/npm/dt/homebridge-omnilink-platform)](https://www.npmjs.com/package/homebridge-omnilink-platform)
+[![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
+[![npm](https://badgen.net/badge/paypal/mantorok1/yellow)](https://paypal.me/Mantorok1)
+[![npm](https://badgen.net/discord/online-members/8fpZA4S?icon=discord&label=discord)](https://discord.com/channels/432663330281226270/922725736584994847)
 
 This Homebridge Plugin allows you to control a HAI/Leviton Omni series Security & Home Automation System via the Omni-Link II protocol over a TCP/IP connection.
 
@@ -47,7 +47,7 @@ The plugin will discover what features your system has and create HomeKit access
 |`Auxiliary Sensor`|`Temperature Sensor` (for sensors that report temperature)<br/>`Humidity Sensor` (for sensors that report humidity)|
 
 ## Installation
-Note: This plugin requires [Homebridge](https://homebridge.io) (version 1.0.0 or above) to be installed first.
+Note: This plugin requires [Homebridge](https://homebridge.io) (version 1.3.0 or above) to be installed first.
 
 It is highly recommended that you use [Homebridge Config UI X](https://www.npmjs.com/package/homebridge-config-ui-x) to install and configure the plugin. Alternatively you can install from the command line as follows:
 
@@ -191,12 +191,10 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "map": {
           "zones": {
             "contact": "1,2,3",
-            "occupancy": "6",
-            "none": "4,5"
+            "occupancy": "6"
           },
           "units": {
-            "lightbulb": "1,3",
-            "none": "2"
+            "lightbulb": "1,3"
           }
         },
         "exclude": {

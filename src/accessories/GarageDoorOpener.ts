@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
 import { ZoneStatus } from '../models/Zone';
@@ -25,7 +25,7 @@ export class GarageDoorOpener extends AccessoryBase {
   }
 
   protected async identifyHandler(): Promise<void> {
-    const state = await this.getTargetDoorState();
+    const state = this.getTargetDoorState();
     if (state === this.platform.Characteristic.TargetDoorState.CLOSED) {
       await this.setTargetDoorState(this.platform.Characteristic.TargetDoorState.OPEN);
     } else {
@@ -41,16 +41,16 @@ export class GarageDoorOpener extends AccessoryBase {
     
     this.service
       .getCharacteristic(this.platform.Characteristic.CurrentDoorState)
-      .on('get', this.getCharacteristicValue.bind(this, this.getCurrentDoorState.bind(this), 'CurrentDoorState'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getCurrentDoorState.bind(this), 'CurrentDoorState'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.TargetDoorState)
-      .on('get', this.getCharacteristicValue.bind(this, this.getTargetDoorState.bind(this), 'TargetDoorState'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setTargetDoorState.bind(this), 'TargetDoorState'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getTargetDoorState.bind(this), 'TargetDoorState'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setTargetDoorState.bind(this), 'TargetDoorState'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.ObstructionDetected)
-      .on('get', this.getCharacteristicValue.bind(this, this.getObstructionDetected.bind(this), 'ObstructionDetected'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getObstructionDetected.bind(this), 'ObstructionDetected'));
 
     if (this.zoneId !== undefined) {
       this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.zoneId),
@@ -58,7 +58,7 @@ export class GarageDoorOpener extends AccessoryBase {
     }
   }
 
-  private getCurrentDoorState(): number {
+  private getCurrentDoorState(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getCurrentDoorState');
 
     if (this.zoneId === undefined) {
@@ -72,7 +72,7 @@ export class GarageDoorOpener extends AccessoryBase {
       : this.platform.Characteristic.CurrentDoorState.OPEN;
   }
 
-  private getTargetDoorState(): number {
+  private getTargetDoorState(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getTargetDoorState');
 
     if (this.zoneId === undefined) {
@@ -86,7 +86,7 @@ export class GarageDoorOpener extends AccessoryBase {
       : this.platform.Characteristic.TargetDoorState.OPEN;
   }
 
-  private async setTargetDoorState(value: number): Promise<void> {
+  private async setTargetDoorState(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setTargetDoorState', value);
 
     const targetDoorState = this.getTargetDoorState();

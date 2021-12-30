@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
 import { AuxiliarySensorStatus } from '../models/AuxiliarySensor';
@@ -25,7 +25,7 @@ export class HumiditySensor extends SensorBase {
     
     this.service
       .getCharacteristic(this.platform.Characteristic.CurrentRelativeHumidity)
-      .on('get', this.getCharacteristicValue.bind(this, this.getCurrentRelativeHumidity.bind(this), 'CurrentRelativeHumidity'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getCurrentRelativeHumidity.bind(this), 'CurrentRelativeHumidity'));
 
     this.platform.omniService.on(
       this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
@@ -35,7 +35,7 @@ export class HumiditySensor extends SensorBase {
       this.updateSensorValues.bind(this));
   }
 
-  private getCurrentRelativeHumidity(): number {
+  private getCurrentRelativeHumidity(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getCurrentRelativeHumidity');
 
     return this.platform.omniService.omni.sensors[this.platformAccessory.context.index].status.temperature.toPercentage();

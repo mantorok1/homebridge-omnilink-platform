@@ -89,7 +89,9 @@ export class OmniService extends events.EventEmitter {
           await this.session.openConnection();
           connected = true;
         } catch(error) {
-          this.platform.log.warn(`Connection to controller failed: ${error.message}`);
+          if (error instanceof Error) {
+            this.platform.log.warn(`Connection to controller failed: ${error.message}`);
+          }
           this.platform.log.warn('Will try again in 1 minute');
           this.session.closeConnection();
           await this.delay(60000);
@@ -115,8 +117,10 @@ export class OmniService extends events.EventEmitter {
         }, 3600000); // every hour
       }
     } catch(error) {
-      this.platform.log.error(error);
-      throw error;      
+      if (error instanceof Error) {
+        this.platform.log.error(`Failed to initialise Omni Service: ${error.message}`);
+      }
+      throw error;
     }
   }
 
@@ -199,7 +203,9 @@ export class OmniService extends events.EventEmitter {
         }
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -243,7 +249,9 @@ export class OmniService extends events.EventEmitter {
         }
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -285,7 +293,9 @@ export class OmniService extends events.EventEmitter {
         }
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -324,7 +334,9 @@ export class OmniService extends events.EventEmitter {
         }
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -363,7 +375,9 @@ export class OmniService extends events.EventEmitter {
         }
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -415,7 +429,9 @@ export class OmniService extends events.EventEmitter {
         }
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -458,7 +474,9 @@ export class OmniService extends events.EventEmitter {
         }
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -502,7 +520,9 @@ export class OmniService extends events.EventEmitter {
         }
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -581,7 +601,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`Set Time: Failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`Set Time: Failed [${error.message}]`);
+      }
     }
   }
 
@@ -613,7 +635,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${this.omni.buttons[buttonId]}: Execute Button failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${this.omni.buttons[buttonId]}: Execute Button failed [${error.message}]`);
+      }
     }
   }
 
@@ -643,7 +667,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${zone}: Set Bypass failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${zone}: Set Bypass failed [${error.message}]`);
+      }
     }
   }
 
@@ -668,7 +694,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${unit}: Set State failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${unit}: Set State failed [${error.message}]`);
+      }
     }
   }
 
@@ -701,7 +729,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${unit}: Set Lighting Level failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${unit}: Set Lighting Level failed [${error.message}]`);
+      }
     }
   }
   
@@ -727,7 +757,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${thermostat}: Set Heat SetPoint failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${thermostat}: Set Heat SetPoint failed [${error.message}]`);
+      }
     }
   }
 
@@ -753,7 +785,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${thermostat}: Set Cool SetPoint failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${thermostat}: Set Cool SetPoint failed [${error.message}]`);
+      }
     }
   }
 
@@ -778,7 +812,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${thermostat}: Set Mode failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${thermostat}: Set Mode failed [${error.message}]`);
+      }
     }
   }
 
@@ -804,7 +840,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${thermostat}: Set Humidify SetPoint failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${thermostat}: Set Humidify SetPoint failed [${error.message}]`);
+      }
     }
   }
 
@@ -830,7 +868,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${thermostat}: Set Dehumidify SetPoint failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${thermostat}: Set Dehumidify SetPoint failed [${error.message}]`);
+      }
     }
   }
 
@@ -855,7 +895,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${accessControl}: ${lock ? 'Lock' : 'Unlock'} failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${accessControl}: ${lock ? 'Lock' : 'Unlock'} failed [${error.message}]`);
+      }
     }
   }
 
@@ -870,7 +912,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -893,7 +937,9 @@ export class OmniService extends events.EventEmitter {
         });
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -906,7 +952,9 @@ export class OmniService extends events.EventEmitter {
       const response = await this.session.sendApplicationDataMessage(message);
       return response as SystemStatusResponse;
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -919,7 +967,9 @@ export class OmniService extends events.EventEmitter {
       const response = await this.session.sendApplicationDataMessage(message);
       return response as SystemTroublesResponse;
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -939,7 +989,9 @@ export class OmniService extends events.EventEmitter {
         });
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
       throw error;      
     }
   }
@@ -1026,7 +1078,9 @@ export class OmniService extends events.EventEmitter {
   
       return await this.session.sendApplicationDataMessage(message);
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
     }
   }
 
@@ -1056,7 +1110,9 @@ export class OmniService extends events.EventEmitter {
         this.emit(this.getEventKey(OmniObjectStatusTypes.Area, id), status);
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
     }
   }
 
@@ -1084,7 +1140,9 @@ export class OmniService extends events.EventEmitter {
         this.emit(this.getEventKey(OmniObjectStatusTypes.Zone, id), status);
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
     }
   }
 
@@ -1112,7 +1170,9 @@ export class OmniService extends events.EventEmitter {
         this.emit(this.getEventKey(OmniObjectStatusTypes.Unit, id), status);
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
     }
   }
 
@@ -1150,7 +1210,9 @@ export class OmniService extends events.EventEmitter {
         this.emit(this.getEventKey(OmniObjectStatusTypes.Thermostat, id), status);
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
     }
   }
 
@@ -1180,7 +1242,9 @@ export class OmniService extends events.EventEmitter {
         this.emit(this.getEventKey(OmniObjectStatusTypes.AuxiliarySensor, id), status);
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
     }
   }
 
@@ -1208,7 +1272,9 @@ export class OmniService extends events.EventEmitter {
         this.emit(this.getEventKey(OmniObjectStatusTypes.AccessControlLock, id), status);
       }
     } catch(error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
     }
   }
 
@@ -1240,7 +1306,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${area}: Set Mode failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${area}: Set Mode failed [${error.message}]`);
+      }
     }
   }
 
@@ -1286,7 +1354,9 @@ export class OmniService extends events.EventEmitter {
       return response.codeId;
 
     } catch(error) {
-      this.platform.log.warn(`Get Code Id failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`Get Code Id failed [${error.message}]`);
+      }
     }
   }
 
@@ -1334,7 +1404,9 @@ export class OmniService extends events.EventEmitter {
         }
       }
     } catch(error) {
-      this.platform.log.warn(`Report System Troubles failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`Report System Troubles failed [${error.message}]`);
+      }
     }
   }
 
@@ -1358,7 +1430,9 @@ export class OmniService extends events.EventEmitter {
         throw new Error('Acknowledgement not received');
       }
     } catch(error) {
-      this.platform.log.warn(`${area}: Set Emergency Alarm failed [${error.message}]`);
+      if (error instanceof Error) {
+        this.platform.log.warn(`${area}: Set Emergency Alarm failed [${error.message}]`);
+      }
     }
   }
 

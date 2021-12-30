@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
 import { AccessControlLockStatus } from '../models/AccessControl';
@@ -18,7 +18,7 @@ export class LockMechanism extends AccessoryBase {
   }
 
   protected async identifyHandler(): Promise<void> {
-    const state = await this.getLockTargetState();
+    const state = this.getLockTargetState();
     await this.setLockTargetState(state === this.platform.Characteristic.LockTargetState.SECURED
       ? this.platform.Characteristic.LockTargetState.UNSECURED
       : this.platform.Characteristic.LockTargetState.SECURED);
@@ -32,19 +32,19 @@ export class LockMechanism extends AccessoryBase {
     
     this.service
       .getCharacteristic(this.platform.Characteristic.LockCurrentState)
-      .on('get', this.getCharacteristicValue.bind(this, this.getLockCurrentState.bind(this), 'LockCurrentState'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getLockCurrentState.bind(this), 'LockCurrentState'));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.LockTargetState)
-      .on('get', this.getCharacteristicValue.bind(this, this.getLockTargetState.bind(this), 'LockTargetState'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setLockTargetState.bind(this), 'LockTargetState'));  
+      .onGet(this.getCharacteristicValue.bind(this, this.getLockTargetState.bind(this), 'LockTargetState'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setLockTargetState.bind(this), 'LockTargetState'));  
 
     this.platform.omniService.on(
       this.platform.omniService.getEventKey(OmniObjectStatusTypes.AccessControlLock, this.platformAccessory.context.index),
       this.updateValues.bind(this));
   }
 
-  private getLockCurrentState(): number {
+  private getLockCurrentState(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getLockCurrentState');
 
     const lockStatus = this.platform.omniService.omni.accessControls[this.platformAccessory.context.index].lockStatus;
@@ -54,7 +54,7 @@ export class LockMechanism extends AccessoryBase {
       : this.platform.Characteristic.LockCurrentState.UNSECURED;
   }
 
-  private getLockTargetState(): number {
+  private getLockTargetState(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getLockTargetState');
 
     const lockStatus = this.platform.omniService.omni.accessControls[this.platformAccessory.context.index].lockStatus;
@@ -64,7 +64,7 @@ export class LockMechanism extends AccessoryBase {
       : this.platform.Characteristic.LockTargetState.UNSECURED;
   }
 
-  private async setLockTargetState(value: number): Promise<void> {
+  private async setLockTargetState(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setLockTargetState', value);
 
     const lock = value === this.platform.Characteristic.LockCurrentState.SECURED;

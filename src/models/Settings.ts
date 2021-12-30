@@ -58,7 +58,7 @@ export class Settings {
     zone: 'motion',
     zoneFireEmergency: 'smoke',
     unit: 'switch',
-  }
+  };
 
   constructor(private readonly config: PlatformConfig) {
     this._privateKey = this.getPrivateKey([<string>config.key1, <string>config.key2]);
@@ -82,14 +82,6 @@ export class Settings {
           this._sensors.set(zoneId, sensorType);
         }
       }
-    } else if (config.sensors !== undefined) {
-      if (Array.isArray(config.sensors)) {
-        for(const sensor of config.sensors) {
-          if (sensor.zoneId !== undefined && sensor.sensorType !== undefined) {
-            this._sensors.set(sensor.zoneId, sensor.sensorType);
-          }
-        }
-      }
     }
 
     if (config.garageDoors !== undefined && Array.isArray(config.garageDoors)) {
@@ -105,14 +97,6 @@ export class Settings {
         const unitIds: number[] = config.map.units[accessoryType].split(',').map(Number);
         for(const unitId of unitIds) {
           this._units.set(unitId, accessoryType);
-        }
-      }
-    } else if (config.units !== undefined) {
-      if (Array.isArray(config.units)) {
-        for(const unit of config.units) {
-          if (unit.unitId !== undefined && unit.type !== undefined) {
-            this._units.set(unit.unitId, unit.type);
-          }
         }
       }
     }

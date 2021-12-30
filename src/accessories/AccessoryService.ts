@@ -53,7 +53,9 @@ export class AccessoryService {
       this.discoverEmergencyAlarmSwitches();
       this.discoverAccessControls();
     } catch (error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
     }
   }
 

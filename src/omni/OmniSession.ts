@@ -114,7 +114,9 @@ export class OmniSession extends events.EventEmitter {
         .process(this.sendPacket.bind(this));
 
     } catch (error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(`Failed to start Omni session: ${error.message}`);
+      }
       throw error;
     }
   }
@@ -125,7 +127,10 @@ export class OmniSession extends events.EventEmitter {
     try {
       await this.stopNewSession();
     } catch (error) {
-      this.platform.log.error(error);
+      if (error instanceof Error) {
+        this.platform.log.error(`Failed to stop Omni session: ${error.message}`);
+      }
+      throw error;
     }
   }
 
@@ -300,7 +305,9 @@ export class OmniSession extends events.EventEmitter {
           throw new Error(`Packet type ${packet.type} not supported`);
       }
     } catch (error) {
-      this.platform.log.warn(error.message);
+      if (error instanceof Error) {
+        this.platform.log.warn(error.message);
+      }
     }
   }
 

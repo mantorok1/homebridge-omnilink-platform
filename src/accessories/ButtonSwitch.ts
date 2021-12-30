@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniObjectStatusTypes } from '../models/OmniObjectModel';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
@@ -28,20 +28,20 @@ export class ButtonSwitch extends AccessoryBase {
     
     this.service
       .getCharacteristic(this.platform.Characteristic.On)
-      .on('get', this.getCharacteristicValue.bind(this, this.getButtonSwitchOn.bind(this), 'On'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setButtonSwitchOn.bind(this), 'On'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getButtonSwitchOn.bind(this), 'On'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setButtonSwitchOn.bind(this), 'On'));
 
     this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Button, this.platformAccessory.context.index),
       this.updateValues.bind(this));
   }
 
-  private getButtonSwitchOn(): boolean {
+  private getButtonSwitchOn(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getButtonSwitchOn');
 
     return false;
   }
 
-  private async setButtonSwitchOn(value: boolean): Promise<void> {
+  private async setButtonSwitchOn(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setButtonSwitchOn', value);
 
     if (value) {

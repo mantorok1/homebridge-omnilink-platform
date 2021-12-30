@@ -92,7 +92,9 @@ export class PushoverService {
         });
       }
     } catch(error) {
-      this.platform.log.warn('Pushover notification(s) failed:', error.message);
+      if (error instanceof Error) {
+        this.platform.log.warn('Pushover notification(s) failed:', error.message);
+      }
     }
   }
 
@@ -129,7 +131,9 @@ export class PushoverService {
 
       this.receipts.delete(areaName);
     } catch(error) {
-      this.platform.log.warn('Cancel Pushover notification failed:', error.message);
+      if (error instanceof Error) {
+        this.platform.log.warn('Cancel Pushover notification failed:', error.message);
+      }
     }
   }
 
@@ -159,7 +163,9 @@ export class PushoverService {
         });
       }
     } catch(error) {
-      this.platform.log.warn('Pushover notification(s) failed:', error.message);
+      if (error instanceof Error) {
+        this.platform.log.warn('Pushover notification(s) failed:', error.message);
+      }
     }
   }
 

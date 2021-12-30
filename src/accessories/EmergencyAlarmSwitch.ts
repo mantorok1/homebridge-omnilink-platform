@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
 import { EmergencyTypes } from '../omni/messages/enums';
@@ -25,7 +25,7 @@ export class EmergencyAlarmSwitch extends AccessoryBase {
   }
 
   protected async identifyHandler(): Promise<void> {
-    const state = await this.getEmergencyAlarmSwitchOn();
+    const state = this.getEmergencyAlarmSwitchOn();
     await this.setEmergencyAlarmSwitchOn(!state);
     super.identifyHandler();
   }
@@ -37,14 +37,14 @@ export class EmergencyAlarmSwitch extends AccessoryBase {
     
     this.service
       .getCharacteristic(this.platform.Characteristic.On)
-      .on('get', this.getCharacteristicValue.bind(this, this.getEmergencyAlarmSwitchOn.bind(this), 'On'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setEmergencyAlarmSwitchOn.bind(this), 'On'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getEmergencyAlarmSwitchOn.bind(this), 'On'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setEmergencyAlarmSwitchOn.bind(this), 'On'));
 
     this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Area, this.areaId),
       this.updateValues.bind(this));
   }
 
-  private getEmergencyAlarmSwitchOn(): boolean {
+  private getEmergencyAlarmSwitchOn(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getEmergencyAlarmSwitchOn');
 
     const areaStatus = this.platform.omniService.omni.areas[this.areaId].status;
@@ -52,7 +52,7 @@ export class EmergencyAlarmSwitch extends AccessoryBase {
     return areaStatus!.alarmsTriggered.includes(this.getAlarmMode(this.emergencyType));
   }
 
-  private async setEmergencyAlarmSwitchOn(value: boolean): Promise<void> {
+  private async setEmergencyAlarmSwitchOn(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setEmergencyAlarmSwitchOn', value);
 
     if (value) {

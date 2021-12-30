@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
 import { UnitStatus, UnitStates } from '../models/Unit';
@@ -30,27 +30,27 @@ export class UnitSwitch extends AccessoryBase {
     
     this.service
       .getCharacteristic(this.platform.Characteristic.On)
-      .on('get', this.getCharacteristicValue.bind(this, this.getUnitSwitchOn.bind(this), 'On'))
-      .on('set', this.setCharacteristicValue.bind(this, this.setUnitSwitchOn.bind(this), 'On'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getUnitSwitchOn.bind(this), 'On'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setUnitSwitchOn.bind(this), 'On'));
 
     this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Unit, this.platformAccessory.context.index),
       this.updateValues.bind(this));
   }
 
-  private getUnitSwitchOn(): boolean {
+  private getUnitSwitchOn(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getUnitSwitchOn');
 
     return this.platform.omniService.omni.units[this.platformAccessory.context.index].status.state === UnitStates.On;
   }
 
-  private async setUnitSwitchOn(value: boolean): Promise<void> {
+  private async setUnitSwitchOn(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setUnitSwitchOn', value);
 
     if (this.getUnitSwitchOn() === value) {
       return;
     }
 
-    await this.platform.omniService.setUnitState(this.platformAccessory.context.index, value);
+    await this.platform.omniService.setUnitState(this.platformAccessory.context.index, value as boolean);
   }
 
   updateValues(status: UnitStatus): void {

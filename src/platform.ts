@@ -52,27 +52,35 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
         this.omniService.terminate();
       });
     } catch(error) {
-      this.log.error(error);
+      if (error instanceof Error) {
+        this.log.error(error.message);
+      }
     }
   }
 
   async configureAccessory(platformAccessory: PlatformAccessory) {
     this.log.debug(this.constructor.name, 'configureAccessory');
 
-    if (this.settings.clearCache) {
-      this.deletedAccessories.push(platformAccessory);
-      return;
+    try {
+      if (this.settings.clearCache) {
+        this.deletedAccessories.push(platformAccessory);
+        return;
+      }
+
+      await this.initOmniService();
+
+      this.accessoryService.configure(platformAccessory);
+    } catch(error) {
+      if (error instanceof Error) {
+        this.log.error(`Failed to configure accessory ${platformAccessory.displayName}: ${error.message}`);
+      }
     }
-
-    await this.initOmniService();
-
-    this.accessoryService.configure(platformAccessory);
   }
 
   private async initOmniService(): Promise<void> {
-    this.log.debug(this.constructor.name, 'initService');
+    this.log.debug(this.constructor.name, 'initOmniService');
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       (async() => {
         if (this._serviceInitialised) {
           resolve();
@@ -85,12 +93,19 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
         });
   
         if (!this._serviceInitialising) {
-          this._serviceInitialising = true;
-          await this.omniService.init(); 
-          const devices = await this.readCache();
-          await this.omniService.discover(devices);
-          await this.writeCache(devices);
-          this.omniService.initialised();
+          try {
+            this._serviceInitialising = true;
+            await this.omniService.init(); 
+            const devices = await this.readCache();
+            await this.omniService.discover(devices);
+            await this.writeCache(devices);
+            this.omniService.initialised();
+          } catch(error) {
+            if (error instanceof Error) {
+              this.log.error(`Init Omni Service failed: ${error.message}`);
+            }
+            reject(error);
+          }
         }
       })();
     });
@@ -125,7 +140,9 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       this.mqttService.init();
 
     } catch (error) {
-      this.log.error(error);
+      if (error instanceof Error) {
+        this.log.error(`Failed to discover devices: ${error.message}`);
+      }
     }
   }
 
@@ -224,8 +241,10 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       } catch {
         // do nothing
       }
-    } catch(ex) {
-      this.log.warn(`Writing config failed [${ex.message}]`);
+    } catch(error) {
+      if (error instanceof Error) {
+        this.log.warn(`Writing config failed [${error.message}]`);
+      }
     }
   }
 }

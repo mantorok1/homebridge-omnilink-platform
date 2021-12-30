@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.0 (2021-12-30)
+
+* **BREAKING CHANGE**: Remove support for the following settings:
+  - `sensors` [Zone Sensor Settings]
+  - `units` [Unit Accessory Settings]
+  - `map.zones.none` [Zone Accessory Mappings &gt; None]
+  - `map.units.none` [Unit Accessory Mappings &gt; None]
+* Use newer promise-based characteristic getters and setters (onGet & onSet). Requires Homebridge version 1.3.0 or above.
+* Improvements to error handling
+* Update dependencies, some of which had moderate severity vulnerabilities
+
 ## 1.4.5 (2021-08-07)
 
 |:warning: **Upcoming Breaking Change**|

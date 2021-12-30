@@ -1,6 +1,6 @@
 import crypto = require('crypto');
 
-import { Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallback, CharacteristicGetCallback } from 'homebridge';
+import { Service, PlatformAccessory, CharacteristicValue, Nullable } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 
 export abstract class AccessoryBase {
@@ -35,31 +35,29 @@ export abstract class AccessoryBase {
   getCharacteristicValue(
     getValue: () => CharacteristicValue,
     characteristic: string,
-    callback: CharacteristicGetCallback,
-  ): void {
-    this.platform.log.debug('AccessoryBase', 'getCharacteristicValue', 'getValue', characteristic, 'callback');
+  ): Nullable<CharacteristicValue> | Promise<Nullable<CharacteristicValue>> {
+    this.platform.log.debug('AccessoryBase', 'getCharacteristicValue', 'getValue', characteristic);
 
     if (this.platform.settings.showHomebridgeEvents) {
       this.platform.log.info(`${this.platformAccessory.displayName}: Getting characteristic '${characteristic}'`);
     }
 
     try {
-      const value = getValue();
-
-      callback(null, value);
+      return getValue();
     } catch (error) {
-      this.platform.log.error(error);
-      callback(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
+      throw error;
     }
   }
 
   async setCharacteristicValue(
-    setValue,
+    setValue: (value: CharacteristicValue) => Promise<void>,
     characteristic: string,
     value: CharacteristicValue,
-    callback: CharacteristicSetCallback,
   ): Promise<void> {
-    this.platform.log.debug('AccessoryBase', 'setCharacteristic', 'setValue', characteristic, value, 'callback');
+    this.platform.log.debug('AccessoryBase', 'setCharacteristicValue', 'setValue', characteristic, value);
 
     if (this.platform.settings.showHomebridgeEvents) {
       this.platform.log.info(`${this.platformAccessory.displayName}: Setting characteristic '${characteristic}' to '${value}'`);
@@ -67,11 +65,11 @@ export abstract class AccessoryBase {
     
     try {
       await setValue(value);
-
-      callback(null);
     } catch (error) {
-      this.platform.log.error(error);
-      callback(error);
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
+      throw error;
     }
   }
 }

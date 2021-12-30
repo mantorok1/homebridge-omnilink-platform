@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
 import { ZoneStatus } from '../models/Zone';
@@ -26,13 +26,13 @@ export class MotionSensor extends SensorBase {
 
     this.service
       .getCharacteristic(this.platform.Characteristic.MotionDetected)
-      .on('get', this.getCharacteristicValue.bind(this, this.getMotionDetected.bind(this), 'MotionDetected'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getMotionDetected.bind(this), 'MotionDetected'));
 
     this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
       this.updateValues.bind(this));
   }
 
-  private getMotionDetected(): boolean {
+  private getMotionDetected(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getMotionDetected');
 
     const zoneStatus = this.platform.omniService.omni.zones[this.platformAccessory.context.index].status;

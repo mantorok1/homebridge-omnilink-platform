@@ -1,4 +1,4 @@
-import { PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { SensorBase } from './SensorBase';
 import { AuxiliarySensorStatus } from '../models/AuxiliarySensor';
@@ -25,7 +25,7 @@ export class TemperatureSensor extends SensorBase {
     
     this.service
       .getCharacteristic(this.platform.Characteristic.CurrentTemperature)
-      .on('get', this.getCharacteristicValue.bind(this, this.getCurrentTemperature.bind(this), 'CurrentTemperature'));
+      .onGet(this.getCharacteristicValue.bind(this, this.getCurrentTemperature.bind(this), 'CurrentTemperature'));
 
     this.platform.omniService.on(
       this.platform.omniService.getEventKey(OmniObjectStatusTypes.Zone, this.platformAccessory.context.index),
@@ -35,7 +35,7 @@ export class TemperatureSensor extends SensorBase {
       this.updateSensorValues.bind(this));
   }
 
-  private getCurrentTemperature(): number {
+  private getCurrentTemperature(): CharacteristicValue {
     this.platform.log.debug(this.constructor.name, 'getCurrentTemperature');
 
     return this.platform.omniService.omni.sensors[this.platformAccessory.context.index].status.temperature.toCelcius();
