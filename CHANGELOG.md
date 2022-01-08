@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.1 (2022-01-09)
+
+* Remove build on node 10.x
+* Update dependencies
+
 ## 1.5.0 (2021-12-30)
 
 * **BREAKING CHANGE**: Remove support for the following settings:
