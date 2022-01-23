@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.2 (2022-01-23)
+
+* Update dependencies, one of which had a high severity vulnerability
+
 ## 1.5.1 (2022-01-09)
 
 * Remove build on node 10.x
