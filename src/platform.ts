@@ -188,6 +188,16 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
     for (const [index, sensor] of omni.sensors.entries()) {
       this.log.info(`  ${String(index).padStart(3)}: ${sensor.name.padEnd(17)} [${AuxiliarySensorTypes[sensor.type]}]`);
     }
+
+    this.log.info('Audio Sources found:', omni.audioSources.length);
+    for (const [index, audioSource] of omni.audioSources.entries()) {
+      this.log.info(`  ${String(index).padStart(3)}: ${audioSource.name}`);
+    }
+
+    this.log.info('Audio Zones found:', omni.audioZones.length);
+    for (const [index, audioZones] of omni.audioZones.entries()) {
+      this.log.info(`  ${String(index).padStart(3)}: ${audioZones.name}`);
+    }
   }
 
   private async readCache(): Promise<Devices | undefined> {
@@ -215,10 +225,6 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
   private async writeCache(devices?: Devices): Promise<void> {
     this.log.debug(this.constructor.name, 'writeCache', devices);
 
-    if (devices !== undefined) {
-      return;
-    }
-
     devices = {
       areas: [...this.omniService.omni.areas.keys()],
       zones: [...this.omniService.omni.zones.keys()],
@@ -226,6 +232,8 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       buttons: [...this.omniService.omni.buttons.keys()],
       thermostats: [...this.omniService.omni.thermostats.keys()],
       codes: [...this.omniService.omni.codes.keys()],
+      audioSources: [...this.omniService.omni.audioSources.keys()],
+      audioZones: [...this.omniService.omni.audioZones.keys()],
       accessControls: [...this.omniService.omni.accessControls.keys()],
     };
 

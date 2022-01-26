@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.3 (2022-01-27)
+
+* Auto discovery of Omni Audio Sources & Zones. **NOTE:** No integration with HomeKit yet
+
 ## 1.5.2 (2022-01-23)
 
 * Update dependencies, one of which had a high severity vulnerability

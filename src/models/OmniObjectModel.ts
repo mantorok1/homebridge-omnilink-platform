@@ -10,6 +10,8 @@ import { SystemFormats } from './SystemFormats';
 import { SystemStatus } from './SystemStatus';
 import { AccessControl } from './AccessControl';
 import { Thermostat } from './Thermostat';
+import { AudioSource } from './AudioSource';
+import { AudioZone } from './AudioZone';
 
 export { OmniObjectTypes, OmniObjectStatusTypes };
 
@@ -37,6 +39,8 @@ export class OmniObjectModel {
     this._objects[OmniObjectTypes.Unit] = new OmniObjects<Unit>();
     this._objects[OmniObjectTypes.Thermostat] = new OmniObjects<Thermostat>();
     this._objects[OmniObjectTypes.AuxiliarySensor] = new OmniObjects<AuxiliarySensor>();
+    this._objects[OmniObjectTypes.AudioSource] = new OmniObjects<AudioSource>();
+    this._objects[OmniObjectTypes.AudioZone] = new OmniObjects<AudioZone>();
     this._objects[OmniObjectTypes.AccessControl] = new OmniObjects<AccessControl>();
   }
 
@@ -94,6 +98,14 @@ export class OmniObjectModel {
 
   get sensors(): OmniObjects<AuxiliarySensor> {
     return this._objects[OmniObjectTypes.AuxiliarySensor] as OmniObjects<AuxiliarySensor>;
+  }
+
+  get audioSources(): OmniObjects<AudioSource> {
+    return this._objects[OmniObjectTypes.AudioSource] as OmniObjects<AudioSource>;
+  }
+
+  get audioZones(): OmniObjects<AudioZone> {
+    return this._objects[OmniObjectTypes.AudioZone] as OmniObjects<AudioZone>;
   }
 
   get accessControls(): OmniObjects<AccessControl> {

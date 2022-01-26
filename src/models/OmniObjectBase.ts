@@ -6,6 +6,8 @@ export enum OmniObjectTypes {
   Unit,
   Thermostat,
   AuxiliarySensor,
+  AudioSource,
+  AudioZone,
   AccessControl
 }
 
@@ -16,6 +18,7 @@ export enum OmniObjectStatusTypes {
   Unit,
   Thermostat,
   AuxiliarySensor,
+  AudioZone,
   AccessControlLock,
   AccessControlReader
 }

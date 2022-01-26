@@ -51,6 +51,11 @@ import { SystemInformation } from '../models/SystemInformation';
 import { SystemFormats, TemperatureFormats } from '../models/SystemFormats';
 import { SystemStatus } from '../models/SystemStatus';
 import { OmniTemperature } from '../models/OmniTemperature';
+import { AudioSourcePropertiesResponse } from './messages/AudioSourcePropertiesResponse';
+import { AudioZonePropertiesResponse } from './messages/AudioZonePropertiesResponse';
+import { AudioSource } from '../models/AudioSource';
+import { AudioZone, AudioZoneStatus } from '../models/AudioZone';
+import { ExtendedAudioZoneStatusResponse } from './messages/ExtendedAudioZoneStatusResponse';
 
 export type Devices = {
   areas: number[],
@@ -59,6 +64,8 @@ export type Devices = {
   buttons: number[],
   thermostats: number[],
   codes: number[],
+  audioSources: number[],
+  audioZones: number[],
   accessControls: number[]
 }
 
@@ -165,6 +172,8 @@ export class OmniService extends events.EventEmitter {
     await this.setUnits(devices?.['units']);
     await this.setThermostats(devices?.['thermostats']);
     await this.setAuxiliarySensors();
+    await this.setAudioSources(devices?.['audioSources']);
+    await this.setAudioZones(devices?.['audioZones']);
     await this.setAccessControls(devices?.['accessControls']);
 
     // Event Handlers
@@ -174,6 +183,7 @@ export class OmniService extends events.EventEmitter {
     this.session.on('thermostats', this.processThermostatStatus.bind(this));
     this.session.on('locks', this.processAccessControlLockStatus.bind(this));
     this.session.on('sensors', this.processAuxiliarySensorStatus.bind(this));
+    this.session.on('audio_zones', this.processAudioZoneStatus.bind(this));
     await this.refreshAllStatuses();
   }
 
@@ -451,6 +461,92 @@ export class OmniService extends events.EventEmitter {
     const response = await this.session.sendApplicationDataMessage(message);
 
     return response instanceof ThermostatPropertiesResponse
+      ? response
+      : undefined;
+  }
+
+  private async setAudioSources(sourceIds?: number[]): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAudioSources', sourceIds);
+
+    try {
+      sourceIds = sourceIds ?? await this.getObjectIds(ObjectTypes.AudioSource);
+      for(const id of sourceIds) {
+        const properties = await this.getAudioSourceProperties(id);
+        if (properties !== undefined) {
+          this.omni.audioSources[id] = new AudioSource({
+            id: id,
+            name: properties.name,
+          });
+        }
+      }
+    } catch(error) {
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
+      throw error;      
+    }
+  }
+  
+  private async getAudioSourceProperties(id: number): Promise<AudioSourcePropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getAudioSourceProperties', id);
+
+    const message = new ObjectPropertiesRequest({
+      objectType: ObjectTypes.AudioSource,
+      index: id,
+      relativeDirection: 0,
+      filter1: 1, // Named audio sources only
+      filter2: 0,
+      filter3: 0,
+    });
+
+    const response = await this.session.sendApplicationDataMessage(message);
+
+    return response instanceof AudioSourcePropertiesResponse
+      ? response
+      : undefined;
+  }
+
+  private async setAudioZones(zoneIds?: number[]): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAudioZones', zoneIds);
+
+    try {
+      zoneIds = zoneIds ?? await this.getObjectIds(ObjectTypes.AudioZone);
+      for(const id of zoneIds) {
+        const properties = await this.getAudioZoneProperties(id);
+        if (properties !== undefined) {
+          this.omni.audioZones[id] = new AudioZone({
+            id: id,
+            name: properties.name,
+            state: properties.state,
+            sourceId: properties.sourceId,
+            volume: properties.volume,
+            mute: properties.mute,
+          });
+        }
+      }
+    } catch(error) {
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
+      throw error;      
+    }
+  }
+
+  private async getAudioZoneProperties(id: number): Promise<AudioZonePropertiesResponse | undefined> {
+    this.platform.log.debug(this.constructor.name, 'getAudioZoneProperties', id);
+
+    const message = new ObjectPropertiesRequest({
+      objectType: ObjectTypes.AudioZone,
+      index: id,
+      relativeDirection: 0,
+      filter1: 1, // Named audio zones only
+      filter2: 0,
+      filter3: 0,
+    });
+
+    const response = await this.session.sendApplicationDataMessage(message);
+
+    return response instanceof AudioZonePropertiesResponse
       ? response
       : undefined;
   }
@@ -1063,6 +1159,16 @@ export class OmniService extends events.EventEmitter {
         this.processAuxiliarySensorStatus(response);
       }
     }
+
+    // Audio Zones - TODO
+    if (this.omni.audioZones.length > 0) {
+      startId = Math.min(...this.omni.audioZones.keys());
+      endId = Math.max(...this.omni.audioZones.keys());
+      response = await this.getObjectStatus(ObjectStatusTypes.AudioZone, startId, endId);
+      if (response instanceof ExtendedAudioZoneStatusResponse) {
+        this.processAudioZoneStatus(response);
+      }
+    }
   }
 
   private async getObjectStatus(
@@ -1240,6 +1346,38 @@ export class OmniService extends events.EventEmitter {
         }
         sensor.status = status;
         this.emit(this.getEventKey(OmniObjectStatusTypes.AuxiliarySensor, id), status);
+      }
+    } catch(error) {
+      if (error instanceof Error) {
+        this.platform.log.error(error.message);
+      }
+    }
+  }
+
+  private processAudioZoneStatus(response: ExtendedAudioZoneStatusResponse) {
+    this.platform.log.debug(this.constructor.name, 'processAudioZoneStatus', response);
+
+    try {
+      for(const index in response.id) {
+        const id = response.id[index];
+        if (!this.omni.audioZones.hasKey(id)) {
+          continue;
+        }
+        const audioZone = this.omni.audioZones[id];
+        const status = new AudioZoneStatus({
+          state: response.state[index],
+          sourceId: response.sourceId[index],
+          volume: response.volume[index],
+          mute: response.mute[index],
+        });
+        if (status.equals(audioZone.status)) {
+          continue;
+        }
+        if (this.platform.settings.showOmniEvents) {
+          this.platform.log.info(`${audioZone}: ${status}`);
+        }
+        audioZone.status = status;
+        this.emit(this.getEventKey(OmniObjectStatusTypes.AudioZone, id), status);
       }
     } catch(error) {
       if (error instanceof Error) {

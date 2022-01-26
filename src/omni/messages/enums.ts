@@ -40,6 +40,8 @@ export enum ObjectTypes {
   Area = 5,
   Thermostat = 6,
   AuxiliarySensor = 8,
+  AudioSource = 9,
+  AudioZone = 10,
   AccessControl = 14,
 }
 
@@ -49,6 +51,7 @@ export enum ObjectStatusTypes {
   Area = 5,
   Thermostat = 6,
   AuxiliarySensor = 8,
+  AudioZone = 10,
   AccessControlReader = 14,
   AccessControlLock = 15,
 }

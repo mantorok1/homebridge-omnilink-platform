@@ -32,6 +32,9 @@ import { AccessControlPropertiesResponse } from './messages/AccessControlPropert
 import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAccessControlLockStatusResponse';
 import { AuxiliarySensorPropertiesResponse } from './messages/AuxiliarySensorPropertiesResponse';
 import { ExtendedAuxiliarySensorStatusResponse } from './messages/ExtendedAuxiliarySensorStatusResponse';
+import { AudioSourcePropertiesResponse } from './messages/AudioSourcePropertiesResponse';
+import { AudioZonePropertiesResponse } from './messages/AudioZonePropertiesResponse';
+import { ExtendedAudioZoneStatusResponse } from './messages/ExtendedAudioZoneStatusResponse';
 
 export class OmniSession extends events.EventEmitter {
   private socket: net.Socket;
@@ -364,6 +367,12 @@ export class OmniSession extends events.EventEmitter {
           case ObjectTypes.AuxiliarySensor:
             response = new AuxiliarySensorPropertiesResponse(message);
             break;
+          case ObjectTypes.AudioSource:
+            response = new AudioSourcePropertiesResponse(message);
+            break;
+          case ObjectTypes.AudioZone:
+            response = new AudioZonePropertiesResponse(message);
+            break;
           case ObjectTypes.AccessControl:
             response = new AccessControlPropertiesResponse(message);
             break;
@@ -388,6 +397,9 @@ export class OmniSession extends events.EventEmitter {
             break;
           case ObjectStatusTypes.AuxiliarySensor:
             response = new ExtendedAuxiliarySensorStatusResponse(message);
+            break;
+          case ObjectStatusTypes.AudioZone:
+            response = new ExtendedAudioZoneStatusResponse(message);
             break;
           case ObjectStatusTypes.AccessControlReader:
             // response = new ExtendedAccessControlReaderStatusResponse(message);
@@ -430,6 +442,8 @@ export class OmniSession extends events.EventEmitter {
       this.emit('locks', response);
     } else if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
       this.emit('sensors', response);
+    } else if (response instanceof ExtendedAudioZoneStatusResponse) {
+      this.emit('audio_zones', response);
     }
   }
 }
