@@ -42,6 +42,16 @@ export class OmniObjectModel {
     this._objects[OmniObjectTypes.AudioSource] = new OmniObjects<AudioSource>();
     this._objects[OmniObjectTypes.AudioZone] = new OmniObjects<AudioZone>();
     this._objects[OmniObjectTypes.AccessControl] = new OmniObjects<AccessControl>();
+
+    /*  Uncomment this to test Audio Zones & Sources
+    this.audioSources[1] = new AudioSource({id: 1, name: 'TV'});
+    this.audioSources[2] = new AudioSource({id: 2, name: 'Radio'});
+    this.audioSources[3] = new AudioSource({id: 3, name: 'CD Player'});
+    this.audioSources[4] = new AudioSource({id: 4, name: 'Bluetooth'});
+
+    this.audioZones[1] = new AudioZone({id: 1, name: 'Test-AZ', state: 1, sourceId: 1, volume: 50, mute: 1});
+    this.audioZones[2] = new AudioZone({id: 1, name: 'Kitchen AZ', state: 1, sourceId: 2, volume: 60, mute: 1});
+    */
   }
 
   get information(): SystemInformation {

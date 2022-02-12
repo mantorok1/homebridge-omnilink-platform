@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.4 (2022-02-13)
+
+* Add Television accessories for Omni Audio Zones & Sources
+
 ## 1.5.3 (2022-01-27)
 
 * Auto discovery of Omni Audio Sources & Zones. **NOTE:** No integration with HomeKit yet

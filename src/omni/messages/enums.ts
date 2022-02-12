@@ -77,6 +77,9 @@ export enum Commands {
   SetDehumidifySetPoint = 74,
   LockDoor = 105,
   UnlockDoor = 106,
+  SetAudioZoneState = 112,
+  SetAudioZoneVolume = 113,
+  SetAudioZoneSource = 114 
 }
 
 export enum SecurityModes {
@@ -117,4 +120,11 @@ export enum EmergencyTypes {
   Burglary = 1,
   Fire = 2,
   Auxiliary = 3
+}
+
+export enum AudioZoneCommandStates {
+  Off = 0,
+  On = 1,
+  MuteOff = 2,
+  MuteOn = 3
 }

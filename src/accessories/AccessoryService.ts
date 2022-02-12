@@ -22,6 +22,7 @@ import { TemperatureSensor} from './TemperatureSensor';
 import { HumiditySensor } from './HumiditySensor';
 import { EmergencyTypes } from '../omni/messages/enums';
 import { ZoneTypes } from '../models/Zone';
+import { AudioZoneTelevision } from './AudioZoneTelevision';
 
 export class AccessoryService {
   private accessories: Map<string, AccessoryBase> = new Map();
@@ -52,6 +53,7 @@ export class AccessoryService {
       this.discoverThermostats();
       this.discoverEmergencyAlarmSwitches();
       this.discoverAccessControls();
+      this.discoverAudioZoneTelevisions();
     } catch (error) {
       if (error instanceof Error) {
         this.platform.log.error(error.message);
@@ -74,7 +76,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of areas) {
-      this.addAccessory(SecuritySystem, SecuritySystem.type, name, index);
+      this.addPlatformAccessory(SecuritySystem, SecuritySystem.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -100,7 +102,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(MotionSensor, MotionSensor.type, name, index);
+      this.addPlatformAccessory(MotionSensor, MotionSensor.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -126,7 +128,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(SmokeSensor, SmokeSensor.type, name, index);
+      this.addPlatformAccessory(SmokeSensor, SmokeSensor.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -152,7 +154,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(ContactSensor, ContactSensor.type, name, index);
+      this.addPlatformAccessory(ContactSensor, ContactSensor.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -178,7 +180,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(CarbonDioxideSensor, CarbonDioxideSensor.type, name, index);
+      this.addPlatformAccessory(CarbonDioxideSensor, CarbonDioxideSensor.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -204,7 +206,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(CarbonMonoxideSensor, CarbonMonoxideSensor.type, name, index);
+      this.addPlatformAccessory(CarbonMonoxideSensor, CarbonMonoxideSensor.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -230,7 +232,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(LeakSensor, LeakSensor.type, name, index);
+      this.addPlatformAccessory(LeakSensor, LeakSensor.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -256,7 +258,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(OccupancySensor, OccupancySensor.type, name, index);
+      this.addPlatformAccessory(OccupancySensor, OccupancySensor.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -285,7 +287,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(TemperatureSensor, TemperatureSensor.type, name, index);
+      this.addPlatformAccessory(TemperatureSensor, TemperatureSensor.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -314,7 +316,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(HumiditySensor, HumiditySensor.type, name, index);
+      this.addPlatformAccessory(HumiditySensor, HumiditySensor.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -378,7 +380,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of zones) {
-      this.addAccessory(BypassZoneSwitch, BypassZoneSwitch.type, name, index);
+      this.addPlatformAccessory(BypassZoneSwitch, BypassZoneSwitch.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -408,7 +410,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of buttons) {
-      this.addAccessory(ButtonSwitch, ButtonSwitch.type, name, index);
+      this.addPlatformAccessory(ButtonSwitch, ButtonSwitch.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -425,7 +427,7 @@ export class AccessoryService {
 
     for(const buttonId of this.platform.settings.garageDoors.keys()) {
       const button = this.platform.omniService.omni.buttons[buttonId];
-      this.addAccessory(GarageDoorOpener, GarageDoorOpener.type, button.name, buttonId);
+      this.addPlatformAccessory(GarageDoorOpener, GarageDoorOpener.type, button.name, buttonId);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -451,7 +453,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of units) {
-      this.addAccessory(UnitSwitch, UnitSwitch.type, name, index);
+      this.addPlatformAccessory(UnitSwitch, UnitSwitch.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -477,7 +479,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of units) {
-      this.addAccessory(UnitLightbulb, UnitLightbulb.type, name, index);
+      this.addPlatformAccessory(UnitLightbulb, UnitLightbulb.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -522,7 +524,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of thermostats) {
-      this.addAccessory(Thermostat, Thermostat.type, name, index);
+      this.addPlatformAccessory(Thermostat, Thermostat.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -551,7 +553,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of areaEmergencies) {
-      this.addAccessory(EmergencyAlarmSwitch, EmergencyAlarmSwitch.type, name, index);
+      this.addPlatformAccessory(EmergencyAlarmSwitch, EmergencyAlarmSwitch.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -578,7 +580,7 @@ export class AccessoryService {
     }
 
     for(const [index, name] of accessControls) {
-      this.addAccessory(LockMechanism, LockMechanism.type, name, index);
+      this.addPlatformAccessory(LockMechanism, LockMechanism.type, name, index);
     }
 
     for(const accessory of this.accessories.values()) {
@@ -590,11 +592,51 @@ export class AccessoryService {
     }
   }
 
-  addAccessory<TAccessory extends AccessoryBase>(
+  discoverAudioZoneTelevisions(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverAudioZoneTelevisions');
+
+    const audioZones = new Map<number, string>();
+
+    for(const [index, audioZone] of this.platform.omniService.omni.audioZones.entries()) {
+      audioZones.set(index, audioZone.name);
+    }
+
+    for(const [index, name] of audioZones) {
+      this.addExternalAccessory(AudioZoneTelevision, AudioZoneTelevision.type, name, index);
+    }
+  }
+
+  addPlatformAccessory<TAccessory extends AccessoryBase>(
     Accessory: new (platform: OmniLinkPlatform, accessory: PlatformAccessory) => TAccessory,
     type: string, name: string, index?: number,
   ): void {
-    this.platform.log.debug(this.constructor.name, 'addAccessory', 'Accessory', type, name, index);
+    this.platform.log.debug(this.constructor.name, 'addPlatformAccessory', 'Accessory', type, name, index);
+    const platformAccessory = this.addAccessory(Accessory, type, name, index);
+
+    if (platformAccessory !== undefined) {
+      this.platform.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [platformAccessory]);
+      this.platform.log.info(`Add ${type}: ${name}`);
+    }
+  }
+
+  addExternalAccessory<TAccessory extends AccessoryBase>(
+    Accessory: new (platform: OmniLinkPlatform, accessory: PlatformAccessory) => TAccessory,
+    type: string, name: string, index?: number,
+  ): void {
+    this.platform.log.debug(this.constructor.name, 'addExternalAccessory', 'Accessory', type, name, index);
+    const externalAccessory = this.addAccessory(Accessory, type, name, index);
+
+    if (externalAccessory !== undefined) {
+      this.platform.api.publishExternalAccessories(PLUGIN_NAME, [externalAccessory]);
+      this.platform.log.info(`Add External ${type}: ${name}`);
+    }
+  }
+
+  private addAccessory<TAccessory extends AccessoryBase>(
+    Accessory: new (platform: OmniLinkPlatform, accessory: PlatformAccessory) => TAccessory,
+    type: string, name: string, index?: number,
+  ): PlatformAccessory | undefined {
+    this.platform.log.info(this.constructor.name, 'addAccessory', 'Accessory', type, name, index);
 
     const key: string = this.getKey(type, index);
 
@@ -612,8 +654,7 @@ export class AccessoryService {
 
     this.accessories.set(key, accessory);
 
-    this.platform.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [platformAccessory]);
-    this.platform.log.info(`Add ${type}: ${name}`);
+    return platformAccessory;
   }
 
   removeAccessory(type: string, index?: number): void {
@@ -687,6 +728,8 @@ export class AccessoryService {
         return new TemperatureSensor(this.platform, platformAccessory);
       case 'humiditysensor':
         return new HumiditySensor(this.platform, platformAccessory);
+      case 'audiozonetelevision':
+        return new AudioZoneTelevision(this.platform, platformAccessory);
     }
   }
 

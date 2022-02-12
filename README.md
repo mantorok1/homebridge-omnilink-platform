@@ -21,6 +21,7 @@ Functions available:
 * Bypass zones
 * Lock/unlock doors
 * Notify temperature/humidity from auxiliary sensors
+* Control audio zones
 * Sync Omni controller's date & time with Homebridge host
 * Pushover notifications when alarms are triggered or system has troubles
 * MQTT client (see section "MQTT Client" for further details)
@@ -45,6 +46,7 @@ The plugin will discover what features your system has and create HomeKit access
 |`Bypass Zone`|`Switch`|
 |`Access Contol`|`Lock Mechanism`|
 |`Auxiliary Sensor`|`Temperature Sensor` (for sensors that report temperature)<br/>`Humidity Sensor` (for sensors that report humidity)|
+|`Audio Zone`|`Television` (External accessory with Category of 'Speaker')<br/>See 'Audio Zones' section below for more details
 
 ## Installation
 Note: This plugin requires [Homebridge](https://homebridge.io) (version 1.3.0 or above) to be installed first.
@@ -256,6 +258,52 @@ Option|Required|Type|Description|Default Value (if not supplied)|
       }
     ],
     ...
+
+## Audio Zones
+Each audio zone is configured as a Television accessory (shown with a speaker icon) in HomeKit. Volume controls are not supported within the Home app so you need to use the Remote app in the Control Center to do this. Here's a list of the functionaly that's possible:
+
+**Home App**
+|Action|Description|
+|-|-|
+|Power|Turn Audio Zone On or Off|
+|Sources|Select the Audio Source for the zone|
+
+**Remote App** (in Control Center)
+
+Select the Audio Zone you want to control from the Drop Down at the top of the screen
+|Action|Descripton|
+|-|-|
+|Up Arrow (or Volume Up button)|Increase volume by 10%|
+|Down Arrow (or Volume Down button)|Decrease volume by 10%|
+|Select|Toggle Mute On and Off|
+|Left Arrow|Change Audio Source by cycling backwards|
+|Right Arrow|Change Audio Source by cycling forwards|
+|Play/Pause|Toggle Power On and Off|
+
+### How to add an Audio Zone:
+Each audio zone is published as an external accessory so it needs to be added manually the first time (unlike other types of accessories that are automatically added). To do this follow these steps for **each** Audio Zone:
+1. Open the Home app and tap the `+` button at the top left
+2. Then select `Add Accessory`
+3. Select `More options...` and the Audio Zones should be shown
+4. Select one of them and tap `Add Anyway`
+5. Enter your 8 digit Homebridge code and tap `Continue`
+6. After a short while you will be asked a few questions such as its location, name, sources. Just tap `Continue` on each of these
+7. Finally you should get to the point that the Audio Zone has been added. Tap on either `Done` or `View in Home` and you're finished
+
+### How to remove an Audio Zone:
+If you no longer want to see the Audio Zone in the Home app follow these steps:
+1. Find the accessory you want to remove in the Home app
+2. Tap and hold the accessory tile until it opens up
+3. Swipe up until you see the `Remove Accessory` button at the bottom
+4. Tap the button and then tap `Remove` to confirm
+
+### Troubleshooting
+After removing an Audio Zone there are some Homebridge files which may need to be manually deleted before you can re-add the accessory again. If you don't see your Audio Zone when following the 'How to add an Audio Zone' procedure above try the following:
+1. Navigate to the `persist` folder in Homebridge. Here you should see a number of files named `AccessoryInfo.xxxxxxxxxxxx.json` (where xxxxxxxxxxxx is some hexidecimal number)
+2. Open up each one in a text editor until you find the one that corresponds to the Audio Zone you are trying to add. You can see its name at the top after `displayName`. Example: `{"displayName":"My Audio Zone ...`
+3. Take note of the hexidecimal number in the filename
+4. Now delete the `AccessoryInfo.xxxxxxxxxxxx.json` and `IdentifierCache.xxxxxxxxxxxx.json` files with the hexidecimal number from the previous step
+5. Restart Homebridge
 
 ## MQTT Client
 The plugin is able to operate as an MQTT client. It publishes various topics containing information about the Omni controller which other clients can subscribe to. It also subscribes to topics allowing other clients to send commands to the controller. This can be useful for interacting with external applications such as [Home Assistant](https://www.home-assistant.io) and [Node-RED](https://nodered.org).

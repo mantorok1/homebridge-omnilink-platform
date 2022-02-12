@@ -3,7 +3,8 @@ import events = require('events');
 import { OmniLinkPlatform } from '../platform';
 import { OmniSession } from './OmniSession';
 
-import { MessageTypes, ObjectTypes, Commands, AuthorityLevels, EmergencyTypes, ObjectStatusTypes } from './messages/enums';
+import { MessageTypes, ObjectTypes, Commands, AuthorityLevels, EmergencyTypes, ObjectStatusTypes, AudioZoneCommandStates }
+  from './messages/enums';
 import { ObjectTypeCapacitiesRequest } from './messages/ObjectTypeCapacitiesRequest';
 import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
 import { ObjectPropertiesRequest } from './messages/ObjectPropertiesRequest';
@@ -694,7 +695,7 @@ export class OmniService extends events.EventEmitter {
       const setTimeResponse = await this.session.sendApplicationDataMessage(message);
 
       if (setTimeResponse.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -724,12 +725,12 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
+      if (response.messageType !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledge not received');
+      }
 
       this.emit(this.getEventKey(OmniObjectStatusTypes.Button, buttonId));
 
-      if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
-      }
     } catch(error) {
       if (error instanceof Error) {
         this.platform.log.warn(`${this.omni.buttons[buttonId]}: Execute Button failed [${error.message}]`);
@@ -758,9 +759,8 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -785,9 +785,8 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -820,9 +819,8 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -848,9 +846,8 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -876,9 +873,8 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -903,9 +899,8 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -931,9 +926,8 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -959,9 +953,8 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -986,13 +979,92 @@ export class OmniService extends events.EventEmitter {
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
         this.platform.log.warn(`${accessControl}: ${lock ? 'Lock' : 'Unlock'} failed [${error.message}]`);
+      }
+    }
+  }
+
+  async setAudioZoneState(audioZoneId: number, state: AudioZoneCommandStates): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAudioZoneState', audioZoneId, state);
+
+    try {
+      const message = new ControllerCommandRequest({
+        command: Commands.SetAudioZoneState,
+        parameter1: state,
+        parameter2: audioZoneId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.omni.audioZones[audioZoneId]}: Set state to ${AudioZoneCommandStates[state]}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+      if (response.messageType !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledge not received');
+      }
+    } catch(error) {
+      if (error instanceof Error) {
+        this.platform.log.warn(
+          `${this.omni.audioZones[audioZoneId]}: Set state to ${AudioZoneCommandStates[state]} failed [${error.message}]`);
+      }
+    }
+  }
+
+  async setAudioZoneVolume(audioZoneId: number, volume: number): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAudioZoneVolume', audioZoneId, volume);
+
+    try {
+      volume = Math.max(volume, 0);
+      volume = Math.min(volume, 100);
+
+      const message = new ControllerCommandRequest({
+        command: Commands.SetAudioZoneVolume,
+        parameter1: volume,
+        parameter2: audioZoneId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.omni.audioZones[audioZoneId]}: Set volume to ${volume}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+      if (response.messageType !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledge not received');
+      }
+    } catch(error) {
+      if (error instanceof Error) {
+        this.platform.log.warn(`${this.omni.audioZones[audioZoneId]}: Set volume to ${volume} failed [${error.message}]`);
+      }
+    }
+  }
+
+  async setAudioZoneSource(audioZoneId: number, sourceId: number): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setAudioZoneSource', audioZoneId, sourceId);
+
+    try {
+      const message = new ControllerCommandRequest({
+        command: Commands.SetAudioZoneSource,
+        parameter1: sourceId,
+        parameter2: audioZoneId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${this.omni.audioZones[audioZoneId]}: Set source to ${this.omni.audioSources[sourceId]}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+      if (response.messageType !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledge not received');
+      }
+    } catch(error) {
+      if (error instanceof Error) {
+        this.platform.log.warn(
+          `${this.omni.audioZones[audioZoneId]}: Set source to ${this.omni.audioSources[sourceId]} failed [${error.message}]`);
       }
     }
   }
@@ -1003,9 +1075,8 @@ export class OmniService extends events.EventEmitter {
     try {
       const message = new EnableNotificationsRequest(true);
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -1160,7 +1231,7 @@ export class OmniService extends events.EventEmitter {
       }
     }
 
-    // Audio Zones - TODO
+    // Audio Zones
     if (this.omni.audioZones.length > 0) {
       startId = Math.min(...this.omni.audioZones.keys());
       endId = Math.max(...this.omni.audioZones.keys());
@@ -1439,9 +1510,8 @@ export class OmniService extends events.EventEmitter {
       });
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
@@ -1563,9 +1633,8 @@ export class OmniService extends events.EventEmitter {
       });
   
       const response = await this.session.sendApplicationDataMessage(message);
-
       if (response.messageType !== MessageTypes.Acknowledge) {
-        throw new Error('Acknowledgement not received');
+        throw new Error('Acknowledge not received');
       }
     } catch(error) {
       if (error instanceof Error) {
