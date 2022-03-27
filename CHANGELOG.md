@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.5 (2022-03-27)
+
+* Update dependencies, one of which had a high severity vulnerability
+
 ## 1.5.4 (2022-02-13)
 
 * Add Television accessories for Omni Audio Zones & Sources
