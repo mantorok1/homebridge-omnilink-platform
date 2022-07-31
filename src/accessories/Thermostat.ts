@@ -208,10 +208,18 @@ export class Thermostat extends AccessoryBase {
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
     if (thermostatStatus === undefined) {
-      return 0;
+      return this.platform.settings.minTemperature;
     }
 
-    return thermostatStatus.temperature.toCelcius();
+    return this.getCurrentTemperatureCharacteristicValue(thermostatStatus);
+  }
+
+  private getCurrentTemperatureCharacteristicValue(thermostatStatus: ThermostatStatus): number {
+    let currentTemperature = thermostatStatus.temperature.toCelcius();
+    currentTemperature = Math.max(currentTemperature, this.platform.settings.minTemperature);
+    currentTemperature = Math.min(currentTemperature, this.platform.settings.maxTemperature);
+
+    return currentTemperature;
   }
 
   private getTargetTemperature(): CharacteristicValue {
@@ -219,7 +227,7 @@ export class Thermostat extends AccessoryBase {
 
     const thermostatStatus = this.platform.omniService.omni.thermostats[this.platformAccessory.context.index].status;
     if (thermostatStatus === undefined) {
-      return 0;
+      return this.minTemperature;
     }
 
     return this.getTargetTemperatureCharacteristicValue(thermostatStatus);
@@ -356,7 +364,7 @@ export class Thermostat extends AccessoryBase {
 
     this.service
       .getCharacteristic(this.platform.Characteristic.CurrentTemperature)
-      .updateValue(thermostatStatus.temperature.toCelcius());
+      .updateValue(this.getCurrentTemperatureCharacteristicValue(thermostatStatus));
 
     this.service
       .getCharacteristic(this.platform.Characteristic.TargetTemperature)

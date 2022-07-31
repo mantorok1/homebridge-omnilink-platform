@@ -141,7 +141,22 @@
         "minimum": 0,
         "maximum": 100
       },
-      "defaultAccessoryMappings": {
+      "minTemperature": {
+        "title": "Minimum allowed temperature (in Celcius)",
+        "type": "number",
+        "default": 0,
+        "required": false,
+        "minimum": -40,
+        "maximum": 87.5
+      },
+      "maxTemperature": {
+        "title": "Maximum allowed temperature (in Celcius)",
+        "type": "number",
+        "default": 40,
+        "required": false,
+        "minimum": -40,
+        "maximum": 87.5
+      },      "defaultAccessoryMappings": {
         "type": "object",
         "properties": {
           "zone": {
@@ -630,6 +645,14 @@
           "expandable": true,
           "expanded": false,
           "items": [
+            {
+              "type": "flex",
+              "flex-flow": "row wrap",
+              "items": [
+                "minTemperature",
+                "maxTemperature"
+              ]
+            },
             "includeHumidityControls",
             "targetHumiditySetPointType",
             "targetHumidityDifference"

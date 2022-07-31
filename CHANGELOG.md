@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.6 (2022-07-31)
+
+* Add minimum and maximum allowed temperature to Thermostat accessory
+* Update dependencies, some of which had moderate severity vulnerabilities
+
 ## 1.5.5 (2022-03-27)
 
 * Update dependencies, one of which had a high severity vulnerability

@@ -80,6 +80,8 @@ If you find the default config is not correct for your system or not to your lik
 |`setHomeAsAway`|No|boolean|Changes the security mode to "Away" if "Home" is selected. This may be useful if you don't use the "Home" mode and want to ensure the alarm is set to "Away" if accidently set to "Home"|`false`|
 |`setNightAsAway`|No|boolean|Changes the security mode to "Away" if "Night" is selected. Likewise, useful if you don't use the "Night" mode|`false`|
 |`securityCode`|No|string|The 4 digit security code used to arm and disarm the security system. Without this the security system cannot be operated||
+|`minTemperature`|No|number|The minimum allowed temperature to be shown in the Thermostat accessory (in Celcius)|`0`| 
+|`maxTemperature`|No|number|The maximum allowed temperature to be shown in the Thermostat accessory (in Celcius)|`40`| 
 |`includeHumidityControls`|No|boolean|Include the Humidity controls in the HomeKit Thermostat accessory|`false`|
 |`targetHumiditySetPointType`|No|number|Selects which type of Omni set point (ie. Humidify or Dehumidify) that HomeKit's Target Humidity will map to<br/>[`1` = Humidify, `2` = Dehumidify]|`1`|
 |`targetHumidityDifference`|No|number|The difference between the Humidify and Dehumidify set points. This allows the plugin to set the other Omni humidity set point. `0` means do not set|`0`|
@@ -403,7 +405,7 @@ See [Change Log](CHANGELOG.md).
 
 ## Known Limitations / Troubleshooting
 * I've only been able to test this plugin using my own system. I can't guarantee it will work on others.
-* Thermostats, Access Controls & Auxiliary Sensors were not able to be tested as my system doesn't have any. If you encounter any bugs please raise an issue on GitHub and I'll attempt to fix it ASAP.
+* Thermostats, Access Controls, Auxiliary Sensors, Audio Zones & Sources were not able to be tested as my system doesn't have any. If you encounter any bugs please raise an issue on GitHub and I'll attempt to fix it ASAP.
 * This plugin only supports a subset of the functionality provided by the Omni-Link II protocol. If there's specific functionality you'd like to see included with this plugin please raise an issue on GitHub and I'll see what I can do. I may need you to assist with beta testing though.
 * There is a limit of 149 HomeKit accessories on a single Bridge which includes those from other plugins. If you have a lot of accessories it is recommended that you run this plugin in a [Child Bridge](https://github.com/homebridge/homebridge/wiki/Child-Bridges).
 * If you see a lot of Homebridge log messages such as the `[homebridge-omnilink-platform] This plugin slows down Homebridge` after installing/upgrading the plugin try restarting Homebridge.

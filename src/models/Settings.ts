@@ -218,6 +218,14 @@ export class Settings {
     return this._exclude;
   }
 
+  get minTemperature(): number {
+    return <number>this.config.minTemperature ?? 0;
+  }
+
+  get maxTemperature(): number {
+    return <number>this.config.maxTemperature ?? 40;
+  }
+
   get includeHumidityControls(): boolean {
     return <boolean>this.config.includeHumidityControls ?? false;
   }
