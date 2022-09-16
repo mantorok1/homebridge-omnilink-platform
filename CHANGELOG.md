@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.7 (2022-09-17)
+
+* [FIX] Support unnamed security codes ([#20](https://github.com/mantorok1/homebridge-omnilink-platform/issues/20))
+* Update dependencies
+
 ## 1.5.6 (2022-07-31)
 
 * Add minimum and maximum allowed temperature to Thermostat accessory

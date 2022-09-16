@@ -1500,7 +1500,7 @@ export class OmniService extends events.EventEmitter {
       const command: Commands = this.getAreaArmCommand(mode);
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${area}: Set Mode ${Commands[command]} [${this.omni.codes[codeId].name}]`);
+        this.platform.log.info(`${area}: Set Mode ${Commands[command]} [${this.omni.codes[codeId]?.name ?? ''}]`);
       }
 
       const message = new ControllerCommandRequest({
