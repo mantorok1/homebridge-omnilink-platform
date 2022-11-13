@@ -755,7 +755,7 @@ export class OmniService extends events.EventEmitter {
       });
 
       if (this.platform.settings.showOmniEvents) {
-        this.platform.log.info(`${zone}: Set Bypass ${state ? 'On' : 'Off'} [${this.omni.codes[codeId].name}]`);
+        this.platform.log.info(`${zone}: Set Bypass ${state ? 'On' : 'Off'} [${this.omni.codes[codeId]?.name ?? ''}]`);
       }
   
       const response = await this.session.sendApplicationDataMessage(message);
