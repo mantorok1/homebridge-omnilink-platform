@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.9 (2023-01-14)
+
+* Update dependencies
+
 ## 1.5.8 (2022-11-13)
+
 * [FIX] Support unnamed security codes for Zone Bypass switches
 * Support node 18.x and remove support for 12.x
 * Update dependencies

@@ -23,7 +23,7 @@ export class AudioZoneTelevision extends AccessoryBase {
 
     // Input sources
     for(const [index, audioSource] of this.platform.omniService.omni.audioSources.entries()) {
-      const inputSource = this.platformAccessory.addService(this.platform.Service.InputSource, audioSource.name, index);
+      const inputSource = this.platformAccessory.addService(this.platform.Service.InputSource, audioSource.name, index.toString());
       inputSource
         .setCharacteristic(this.platform.Characteristic.Identifier, index)
         .setCharacteristic(this.platform.Characteristic.ConfiguredName, audioSource.name)
