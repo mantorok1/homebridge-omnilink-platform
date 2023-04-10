@@ -250,6 +250,14 @@ export class Settings {
     return <boolean>this.config.showOmniEvents ?? false;
   }
 
+  get excludeZoneStatusChanges(): boolean {
+    return <boolean>this.config.excludeZoneStatusChanges ?? false;
+  }
+
+  get excludeTemperatureChanges(): boolean {
+    return <boolean>this.config.excludeTemperatureChanges ?? false;
+  }
+
   get showRequestResponse(): boolean {
     return <boolean>this.config.showRequestResponse ?? false;
   }

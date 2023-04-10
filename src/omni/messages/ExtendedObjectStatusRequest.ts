@@ -18,7 +18,7 @@ export class ExtendedObjectStatusRequest extends ApplicationDataRequest {
     this.endId = args.endId;
   }
 
-  statusType: ObjectStatusTypes = 0;
+  statusType: ObjectStatusTypes;
   startId = 0;
   endId = 0;
 

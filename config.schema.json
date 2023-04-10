@@ -1,7 +1,7 @@
 {
   "pluginAlias": "OmniLinkPlatform",
   "pluginType": "platform",
-  "singular": true,
+  "singular": false,
   "schema": {
     "type": "object",
     "properties": {
@@ -156,7 +156,8 @@
         "required": false,
         "minimum": -40,
         "maximum": 87.5
-      },      "defaultAccessoryMappings": {
+      },
+      "defaultAccessoryMappings": {
         "type": "object",
         "properties": {
           "zone": {
@@ -505,7 +506,19 @@
         "type": "boolean",
         "default": false,
         "required": false
-      },      
+      },
+      "excludeZoneStatusChanges": {
+        "title": "Exclude Zone Status changes from the log",
+        "type": "boolean",
+        "default": false,
+        "required": false        
+      },
+      "excludeTemperatureChanges": {
+        "title": "Exclude Temperature and Humidity changes from the log",
+        "type": "boolean",
+        "default": false,
+        "required": false           
+      },
       "showRequestResponse": {
         "title": "Show Requests and Responses in the log",
         "type": "boolean",
@@ -748,6 +761,8 @@
         "syncTime",
         "showHomebridgeEvents",
         "showOmniEvents",
+        "excludeZoneStatusChanges",
+        "excludeTemperatureChanges",
         "showRequestResponse",
         "clearCache",
         "forceAutoDiscovery"

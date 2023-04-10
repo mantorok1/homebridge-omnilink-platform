@@ -94,13 +94,13 @@ If you find the default config is not correct for your system or not to your lik
 |`syncTime`|No|boolean|Sync the controller's date and time with the Homebridge host|`false`|
 |`showHomebridgeEvents`|No|boolean|Show Homebridge events in the Homebridge log|`false`|
 |`showOmniEvents`|No|boolean|Show Omni notification events in the Homebridge log|`false`|
+|`excludeZoneStatusChanges`|No|boolean|Exclude Zone Status changes from the log|`false`|
+|`excludeTemperatureChanges`|No|boolean|Exclude Temperature and Humidity changes from the log|`false`|
 |`showRequestResponse`|No|boolean|Show requests to and responses from controller in the Homebridge log|`false`|
 |`clearCache`|No|boolean|Clear all the plugin's cached accessories from homebridge to force re-creation of HomeKit accessories on restart<br/>This is equivalent to deleting the `cachedAccessories` file|`false`|
 |`forceAutoDiscovery`|No|boolean|Force auto-discovery of Omni-Link devices on restart<br/>This is equivalent to deleting the `OmnilinkPlatform.json` file|`false`|
 
-*TIP:* The area, zone, button, unit and themostat numbers are displayed in the Homebridge logs when it starts up.
-
-**NOTE:**  Config options `sensors` & `units` may be removed in a future version of the plugin. Please migrate to the new `map` option ASAP.
+>**TIP:** The area, zone, button, unit and themostat numbers are displayed in the Homebridge logs when it starts up.
 
 ### Map Configuration
 Defines how Omni zones and units are to be mapped to HomeKit accessories. This can be useful to override an accessory if the default one is not the correct type or you wish to exclude it from HomeKit.
@@ -124,8 +124,8 @@ Zone Mappings
 Unit Mappings
 |Option|Required|Type|Description|
 |-|-|-|-|
-|`switch`|No|string|List of the unit numbers that are to be mapped to Switches|
-|`lightbulb`|No|string|List of the unit numbers that are to be mapped to Lightbulbs|
+|`switch`|No|string|List of the unit numbers that are to be mapped to Switches. Useful for units that only support On/Off states|
+|`lightbulb`|No|string|List of the unit numbers that are to be mapped to Lightbulbs. Useful for units that control dimmable lights|
 
 NOTE: The lists are to be supplied as comma seperated (eg. `"1,2,3"`)
 
@@ -254,6 +254,8 @@ Option|Required|Type|Description|Default Value (if not supplied)|
         "syncTime": true,
         "showHomebridgeEvents": true,
         "showOmniEvents": true,
+        "excludeZoneStatusChanges": false,
+        "excludeTemperatureChanges": false,
         "showRequestResponse": false,
         "clearCache": false,
         "forceAutoDiscovery": false

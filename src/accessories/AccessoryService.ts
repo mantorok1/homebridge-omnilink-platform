@@ -636,7 +636,7 @@ export class AccessoryService {
     Accessory: new (platform: OmniLinkPlatform, accessory: PlatformAccessory) => TAccessory,
     type: string, name: string, index?: number,
   ): PlatformAccessory | undefined {
-    this.platform.log.info(this.constructor.name, 'addAccessory', 'Accessory', type, name, index);
+    this.platform.log.debug(this.constructor.name, 'addAccessory', 'Accessory', type, name, index);
 
     const key: string = this.getKey(type, index);
 

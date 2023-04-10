@@ -24,7 +24,7 @@ export class ObjectPropertiesRequest extends ApplicationDataRequest {
     this.filter3 = args.filter3;
   }
 
-  objectType: ObjectTypes = 0;
+  objectType: ObjectTypes;
   index = 0;
   relativeDirection = 0;
   filter1 = 0;

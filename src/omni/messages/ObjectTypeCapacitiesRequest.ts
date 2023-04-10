@@ -14,7 +14,7 @@ export class ObjectTypeCapacitiesRequest extends ApplicationDataRequest {
     this.objectType = args.objectType;
   }
 
-  objectType: ObjectTypes = 0;  // 0 - 255
+  objectType: ObjectTypes;
 
   get data(): Buffer {
     return Buffer.from([this.type, this.objectType]);

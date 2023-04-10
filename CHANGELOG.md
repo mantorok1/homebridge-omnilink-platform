@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.10 (2023-04-10)
+
+* Add UI configuration for multiple instances of plugin ([#25](https://github.com/mantorok1/homebridge-omnilink-platform/issues/25))
+* [FIX] Failed pushover notification causes plugin to crash
+* Check status of all objects every minute in case of missed Omni events
+* Add ability to exclude "unimportant" Omni notification events from logs ([#21](https://github.com/mantorok1/homebridge-omnilink-platform/issues/21))
+* Update dependencies, one of which had a high severity vulnerability
+
 ## 1.5.9 (2023-01-14)
 
 * Update dependencies

@@ -112,9 +112,9 @@ export class OmniService extends events.EventEmitter {
 
       await this.notify();
 
-      // Check for system troubles (also ping controller so it doesn't close connection)
-      this.pingIntervalId = setInterval(() => {
-        this.reportSystemTroubles();
+      // Refresh statuses every minute (also ping controller so it doesn't close connection)
+      this.pingIntervalId = setInterval(async() => {
+        await this.refreshAllStatuses();
       }, 60000); // every minute
 
       // Sync time
@@ -1240,6 +1240,8 @@ export class OmniService extends events.EventEmitter {
         this.processAudioZoneStatus(response);
       }
     }
+
+    await this.reportSystemTroubles();
   }
 
   private async getObjectStatus(
@@ -1310,7 +1312,7 @@ export class OmniService extends events.EventEmitter {
         if (status.equals(zone.status)) {
           continue;
         }
-        if (this.platform.settings.showOmniEvents) {
+        if (this.platform.settings.showOmniEvents && !this.platform.settings.excludeZoneStatusChanges) {
           this.platform.log.info(`${zone}: ${status}`);
         }
         zone.status = status;
@@ -1380,7 +1382,7 @@ export class OmniService extends events.EventEmitter {
         if (status.equals(thermostat.status)) {
           continue;
         }
-        if (this.platform.settings.showOmniEvents) {
+        if (this.showThermostatEvent(status, thermostat.status)) {
           this.platform.log.info(`${thermostat}: ${status}`);
         }
         thermostat.status = status;
@@ -1391,6 +1393,26 @@ export class OmniService extends events.EventEmitter {
         this.platform.log.error(error.message);
       }
     }
+  }
+
+  private showThermostatEvent(currentStatus: ThermostatStatus, previousStatus: ThermostatStatus): boolean {
+    if (!this.platform.settings.showOmniEvents) {
+      return false;
+    }
+
+    if (!this.platform.settings.excludeTemperatureChanges) {
+      return true;
+    }
+
+    return currentStatus.communicating !== previousStatus.communicating ||
+      !currentStatus.heatSetPoint.equals(previousStatus.heatSetPoint) ||
+      !currentStatus.coolSetPoint.equals(previousStatus.coolSetPoint) ||
+      currentStatus.mode !== previousStatus.mode ||
+      currentStatus.fan !== previousStatus.fan ||
+      currentStatus.hold !== previousStatus.hold ||
+      !currentStatus.humidifySetPoint.equals(previousStatus.humidifySetPoint) ||
+      !currentStatus.dehumidifySetPoint.equals(previousStatus.dehumidifySetPoint) ||
+      currentStatus.state !== previousStatus.state;
   }
 
   private processAuxiliarySensorStatus(response: ExtendedAuxiliarySensorStatusResponse) {
@@ -1412,7 +1434,7 @@ export class OmniService extends events.EventEmitter {
         if (status.equals(sensor.status)) {
           continue;
         }
-        if (this.platform.settings.showOmniEvents) {
+        if (this.platform.settings.showOmniEvents && !this.platform.settings.excludeTemperatureChanges) {
           this.platform.log.info(`${sensor}: ${status}`);
         }
         sensor.status = status;

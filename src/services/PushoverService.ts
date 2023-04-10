@@ -82,6 +82,7 @@ export class PushoverService {
         this.pushover.send(pushoverMessage, (error, result) => {
           if (error) {
             this.platform.log.warn('Pushover notification(s) failed:', error.message);
+            return;
           }
           const receipt = JSON.parse(result).receipt;
           if (this.receipts.has(areaName)) {
