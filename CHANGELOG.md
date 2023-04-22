@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.11 (2023-04-22)
+
+* Setting thermostat temperature will firstly turn off Hold mode (if on), set the temperature and then turn Hold mode back on ([#27](https://github.com/mantorok1/homebridge-omnilink-platform/issues/27))
+* Support thermostat Hold mode in MQTT
+* Update dependencies
+
 ## 1.5.10 (2023-04-10)
 
 * Add UI configuration for multiple instances of plugin ([#25](https://github.com/mantorok1/homebridge-omnilink-platform/issues/25))

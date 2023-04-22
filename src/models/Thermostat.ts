@@ -131,7 +131,23 @@ export class ThermostatStatus {
   }
 
   toString(): string {
-    return `${this.temperature.toString()}; ${ThermostatModes[this.mode]}`;
+    let setPoint = '';
+    switch (this.mode) {
+      case ThermostatModes.Off:
+        setPoint = 'None';
+        break;
+      case ThermostatModes.Auto:
+        setPoint = `${this.heatSetPoint.toString()} - ${this.coolSetPoint.toString()}`;
+        break;
+      case ThermostatModes.Cool:
+        setPoint = this.coolSetPoint.toString();
+        break;
+      default:
+        setPoint = this.heatSetPoint.toString();
+        break;
+    }
+    return `Temp: ${this.temperature.toString()}; Mode: ${ThermostatModes[this.mode]}; ` +
+      `Set Point: ${setPoint}; Hold State: ${HoldStates[this.mode]}`;
   }
 
   get communicating(): number {

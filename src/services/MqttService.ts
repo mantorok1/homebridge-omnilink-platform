@@ -5,7 +5,7 @@ import { MqttSettings } from '../models/Settings';
 import { AreaStatus, ExtendedArmedModes, Alarms } from '../models/Area';
 import { ZoneStatus } from '../models/Zone';
 import { UnitStatus, UnitStates } from '../models/Unit';
-import { ThermostatStatus, ThermostatModes, ThermostatStates } from '../models/Thermostat';
+import { ThermostatStatus, ThermostatModes, ThermostatStates, HoldStates } from '../models/Thermostat';
 import { AccessControlLockStatus } from '../models/AccessControl';
 import { AuxiliarySensorStatus } from '../models/AuxiliarySensor';
 import { EmergencyTypes } from '../omni/messages/enums';
@@ -23,6 +23,7 @@ export class MqttService {
   private readonly alarmModes: string[] = ['burglary', 'fire', 'auxiliary'];
   private readonly unitStates: string[] = ['off', 'on'];
   private readonly thermostatModes: string[] = ['off', 'cool', 'heat', 'auto'];
+  private readonly thermostatHoldStates: string[] = ['off', 'hold', 'vacationhold'];
 
   constructor(
     private readonly platform: OmniLinkPlatform,
@@ -303,6 +304,26 @@ export class MqttService {
     await this.platform.omniService.setThermostatMode(this.getObjectId(topic), thermostatMode);
   }
 
+  async setThermostatHoldState(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatHoldState', topic, payload);
+
+    if (!this.thermostatHoldStates.includes(payload)) {
+      return;
+    }
+
+    let holdState = HoldStates.Off;
+    switch(payload) {
+      case 'hold':
+        holdState = HoldStates.Hold;
+        break;
+      case 'vacationhold':
+        holdState = HoldStates.VacationHold;
+        break;
+    }
+
+    await this.platform.omniService.setThermostatHoldState(this.getObjectId(topic), holdState);
+  }
+
   async setThermostatCoolSetPoint(topic: string, payload: string): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setThermostatCoolSetPoint', topic, payload);
 
@@ -457,6 +478,9 @@ export class MqttService {
   
     this.publish(`thermostat/${thermostatId}/mode/get`,
       ThermostatModes[status.mode].toLowerCase());
+
+    this.publish(`thermostat/${thermostatId}/hold/get`,
+      HoldStates[status.hold].toLowerCase());
 
     this.publish(`thermostat/${thermostatId}/temperature/get`,
       String(status.temperature.toFormat()));

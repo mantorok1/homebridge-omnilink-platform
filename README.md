@@ -373,6 +373,8 @@ Note: Brightness level is specified as an integer between 0 and 100 inclusive
 |`thermostat/{number}/humidifysetpoint/set`|Sets the Humidify Set Point of thermostat `{number}`|number<br/>(0 - 100)|
 |`thermostat/{number}/dehumidifysetpoint/get`|Gets the Dehumidify Set Point of thermostat `{number}`|number<br/>(0 - 100)|
 |`thermostat/{number}/dehumidifysetpoint/set`|Sets the Dehumidify Set Point of thermostat `{number}`|number<br/>(0 - 100)|
+|`thermostat/{number}/hold/get`|Gets the Hold state of thermostat `{number}`|"off", "hold", "vacationhold"|
+|`thermostat/{number}/hold/set`|Sets the Hold state of thermostat `{number}`|"off", "hold", "vacationhold"|
 
 Note: Temperatures are specified in either Celsius or Fahrenheit depending on how your Omni controller is configured.
 

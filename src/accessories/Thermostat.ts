@@ -2,7 +2,7 @@ import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { OmniLinkPlatform } from '../platform';
 import { AccessoryBase } from './AccessoryBase';
 import { TemperatureFormats } from '../models/SystemFormats';
-import { ThermostatStatus, ThermostatTypes, ThermostatModes } from '../models/Thermostat';
+import { ThermostatStatus, ThermostatTypes, ThermostatModes, HoldStates } from '../models/Thermostat';
 import { OmniObjectStatusTypes } from '../models/OmniObjectBase';
 
 export class Thermostat extends AccessoryBase {
@@ -247,11 +247,20 @@ export class Thermostat extends AccessoryBase {
       return;
     }
 
+    const currentHoldState = thermostatStatus.hold;
+    if (currentHoldState !== HoldStates.Off) {
+      await this.platform.omniService.setThermostatHoldState(this.platformAccessory.context.index, HoldStates.Off);
+    }
+
     if (thermostatStatus.mode === ThermostatModes.Cool) {
       await this.platform.omniService.setThermostatCoolSetPoint(this.platformAccessory.context.index, value as number);
-      return;
+    } else {
+      await this.platform.omniService.setThermostatHeatSetPoint(this.platformAccessory.context.index, value as number);
     }
-    await this.platform.omniService.setThermostatHeatSetPoint(this.platformAccessory.context.index, value as number);
+
+    if (currentHoldState !== HoldStates.Off) {
+      await this.platform.omniService.setThermostatHoldState(this.platformAccessory.context.index, currentHoldState);
+    }
   }
 
   private getTemperatureDisplayUnits(): CharacteristicValue {

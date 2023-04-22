@@ -45,7 +45,7 @@ import { Zone, ZoneStatus } from '../models/Zone';
 import { Button } from '../models/Button';
 import { Code } from '../models/Code';
 import { Unit, UnitStatus } from '../models/Unit';
-import { Thermostat, ThermostatStatus, ThermostatModes } from '../models/Thermostat';
+import { Thermostat, ThermostatStatus, ThermostatModes, HoldStates } from '../models/Thermostat';
 import { AuxiliarySensor, AuxiliarySensorStatus } from '../models/AuxiliarySensor';
 import { AccessControl, AccessControlLockStatus } from '../models/AccessControl';
 import { SystemInformation } from '../models/SystemInformation';
@@ -879,6 +879,32 @@ export class OmniService extends events.EventEmitter {
     } catch(error) {
       if (error instanceof Error) {
         this.platform.log.warn(`${thermostat}: Set Cool SetPoint failed [${error.message}]`);
+      }
+    }
+  }
+
+  async setThermostatHoldState(thermostatId: number, holdState: HoldStates): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatHoldState', thermostatId, holdState);
+
+    const thermostat = this.omni.thermostats[thermostatId];
+    try {
+      const message = new ControllerCommandRequest({
+        command: Commands.SetThermostatHoldState,
+        parameter1: holdState === HoldStates.Off ? 0 : 255,
+        parameter2: thermostatId,
+      });
+
+      if (this.platform.settings.showOmniEvents) {
+        this.platform.log.info(`${thermostat}: Set Hold State ${HoldStates[holdState]}`);
+      }
+  
+      const response = await this.session.sendApplicationDataMessage(message);
+      if (response.messageType !== MessageTypes.Acknowledge) {
+        throw new Error('Acknowledge not received');
+      }
+    } catch(error) {
+      if (error instanceof Error) {
+        this.platform.log.warn(`${thermostat}: Set Hold State failed [${error.message}]`);
       }
     }
   }
