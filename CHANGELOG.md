@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.12 (2023-11-18)
+
+* Support node 20.x and remove support for 14.x
+* Update dependencies
+
 ## 1.5.11 (2023-04-22)
 
 * Setting thermostat temperature will firstly turn off Hold mode (if on), set the temperature and then turn Hold mode back on ([#27](https://github.com/mantorok1/homebridge-omnilink-platform/issues/27))
