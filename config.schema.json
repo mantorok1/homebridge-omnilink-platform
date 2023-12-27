@@ -115,6 +115,18 @@
         "pattern": "^[0-9]{4}$",
         "required": false
       },
+      "includeHoldStatusSwitches": {
+        "title": "Include Hold Status Switches",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
+      "includeFanModeSwitches": {
+        "title": "Include Fan Mode Switches",
+        "type": "boolean",
+        "default": false,
+        "required": false
+      },
       "includeHumidityControls": {
         "title": "Include Humidity Controls",
         "type": "boolean",
@@ -666,6 +678,8 @@
                 "maxTemperature"
               ]
             },
+            "includeHoldStatusSwitches",
+            "includeFanModeSwitches",
             "includeHumidityControls",
             "targetHumiditySetPointType",
             "targetHumidityDifference"

@@ -226,6 +226,14 @@ export class Settings {
     return <number>this.config.maxTemperature ?? 40;
   }
 
+  get includeHoldStatusSwitches(): boolean {
+    return <boolean>this.config.includeHoldStatusSwitches ?? false;
+  }
+
+  get includeFanModeSwitches(): boolean {
+    return <boolean>this.config.includeFanModeSwitches ?? false;
+  }
+
   get includeHumidityControls(): boolean {
     return <boolean>this.config.includeHumidityControls ?? false;
   }

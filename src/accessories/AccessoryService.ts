@@ -16,6 +16,8 @@ import { GarageDoorOpener } from './GarageDoorOpener';
 import { UnitSwitch } from './UnitSwitch';
 import { UnitLightbulb } from './UnitLightbulb';
 import { Thermostat } from './Thermostat';
+import { FanOnSwitch } from './FanOnSwitch';
+import { FanCycleSwitch } from './FanCycleSwitch';
 import { EmergencyAlarmSwitch } from './EmergencyAlarmSwitch';
 import { LockMechanism } from './LockMechanism';
 import { TemperatureSensor} from './TemperatureSensor';
@@ -23,6 +25,7 @@ import { HumiditySensor } from './HumiditySensor';
 import { EmergencyTypes } from '../omni/messages/enums';
 import { ZoneTypes } from '../models/Zone';
 import { AudioZoneTelevision } from './AudioZoneTelevision';
+import { HoldStatusSwitch } from './HoldStatusSwitch';
 
 export class AccessoryService {
   private accessories: Map<string, AccessoryBase> = new Map();
@@ -525,12 +528,31 @@ export class AccessoryService {
 
     for(const [index, name] of thermostats) {
       this.addPlatformAccessory(Thermostat, Thermostat.type, name, index);
+      if (this.platform.settings.includeHoldStatusSwitches) {
+        this.addPlatformAccessory(HoldStatusSwitch, HoldStatusSwitch.type, name + ' Hold', index);
+      }
+      if (this.platform.settings.includeFanModeSwitches) {
+        this.addPlatformAccessory(FanOnSwitch, FanOnSwitch.type, name + ' Fan On', index);
+        this.addPlatformAccessory(FanCycleSwitch, FanCycleSwitch.type, name + ' Fan Cycle', index);
+      }
     }
 
     for(const accessory of this.accessories.values()) {
       if (accessory instanceof Thermostat) {
         if (!thermostats.has(accessory.platformAccessory.context.index)) {
           this.removeAccessory(Thermostat.type, accessory.platformAccessory.context.index);
+        }
+      } else if (accessory instanceof HoldStatusSwitch) {
+        if (!thermostats.has(accessory.platformAccessory.context.index) || !this.platform.settings.includeHoldStatusSwitches) {
+          this.removeAccessory(HoldStatusSwitch.type, accessory.platformAccessory.context.index);
+        }
+      } else if (accessory instanceof FanOnSwitch) {
+        if (!thermostats.has(accessory.platformAccessory.context.index) || !this.platform.settings.includeFanModeSwitches) {
+          this.removeAccessory(FanOnSwitch.type, accessory.platformAccessory.context.index);
+        }
+      } else if (accessory instanceof FanCycleSwitch) {
+        if (!thermostats.has(accessory.platformAccessory.context.index) || !this.platform.settings.includeFanModeSwitches) {
+          this.removeAccessory(FanCycleSwitch.type, accessory.platformAccessory.context.index);
         }
       }
     }

@@ -1,0 +1,6 @@
+# Troubleshooting
+- There is a limit of 149 HomeKit accessories on a single Bridge which includes those from other plugins. If you have a lot of accessories it is recommended that you run this plugin in a [Child Bridge](https://github.com/homebridge/homebridge/wiki/Child-Bridges).
+- If you see a lot of Homebridge log messages such as the `[homebridge-omnilink-platform] This plugin slows down Homebridge` after installing/upgrading the plugin try restarting Homebridge.
+- This plugin only supports a subset of the functionality provided by the Omni-Link II protocol. If there's specific functionality you'd like to see included with this plugin please [raise an issue](https://github.com/mantorok1/homebridge-omnilink-platform/issues) on GitHub and I'll see what I can do. I may need you to assist with beta testing though.
+- I've only been able to test this plugin using my own system. I can't guarantee it will work on others.
+- Thermostats, Access Controls, Auxiliary Sensors, Audio Zones & Sources were not able to be tested as my system doesn't have any. If you encounter a bug please [raise an issue](https://github.com/mantorok1/homebridge-omnilink-platform/issues) on GitHub and I'll attempt to fix it ASAP.

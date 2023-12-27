@@ -5,7 +5,7 @@ import { MqttSettings } from '../models/Settings';
 import { AreaStatus, ExtendedArmedModes, Alarms } from '../models/Area';
 import { ZoneStatus } from '../models/Zone';
 import { UnitStatus, UnitStates } from '../models/Unit';
-import { ThermostatStatus, ThermostatModes, ThermostatStates, HoldStates } from '../models/Thermostat';
+import { ThermostatStatus, ThermostatModes, ThermostatStates, HoldStates, FanModes } from '../models/Thermostat';
 import { AccessControlLockStatus } from '../models/AccessControl';
 import { AuxiliarySensorStatus } from '../models/AuxiliarySensor';
 import { EmergencyTypes } from '../omni/messages/enums';
@@ -23,6 +23,7 @@ export class MqttService {
   private readonly alarmModes: string[] = ['burglary', 'fire', 'auxiliary'];
   private readonly unitStates: string[] = ['off', 'on'];
   private readonly thermostatModes: string[] = ['off', 'cool', 'heat', 'auto'];
+  private readonly thermostatFanModes: string[] = ['auto', 'on', 'cycle'];
   private readonly thermostatHoldStates: string[] = ['off', 'hold', 'vacationhold'];
 
   constructor(
@@ -97,6 +98,8 @@ export class MqttService {
           this.setThermostatHumidifySetPoint.bind(this));
         this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/dehumidifysetpoint/set`,
           this.setThermostatDehumidifySetPoint.bind(this));
+        this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/fan/set`, this.setThermostatFanMode.bind(this));
+        this.subTopics.set(`${this.prefix}thermostat/${thermostatId}/hold/set`, this.setThermostatHoldState.bind(this));
 
         this.platform.omniService.on(this.platform.omniService.getEventKey(OmniObjectStatusTypes.Thermostat, thermostatId),
           this.publishThermostat.bind(this, thermostatId));
@@ -304,6 +307,26 @@ export class MqttService {
     await this.platform.omniService.setThermostatMode(this.getObjectId(topic), thermostatMode);
   }
 
+  async setThermostatFanMode(topic: string, payload: string): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'setThermostatFanMode', topic, payload);
+
+    if (!this.thermostatFanModes.includes(payload)) {
+      return;
+    }
+
+    let fanMode = FanModes.Auto;
+    switch (payload) {
+      case 'on':
+        fanMode = FanModes.On;
+        break;
+      case 'cycle':
+        fanMode = FanModes.Cycle;
+        break;
+    }
+
+    await this.platform.omniService.setThermostatFanMode(this.getObjectId(topic), fanMode);
+  }
+
   async setThermostatHoldState(topic: string, payload: string): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setThermostatHoldState', topic, payload);
 
@@ -478,6 +501,9 @@ export class MqttService {
   
     this.publish(`thermostat/${thermostatId}/mode/get`,
       ThermostatModes[status.mode].toLowerCase());
+
+    this.publish(`thermostat/${thermostatId}/fan/get`,
+      FanModes[status.fan].toLowerCase());
 
     this.publish(`thermostat/${thermostatId}/hold/get`,
       HoldStates[status.hold].toLowerCase());

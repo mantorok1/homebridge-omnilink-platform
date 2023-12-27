@@ -29,6 +29,7 @@ export enum HoldStates {
   Off = 0,
   Hold = 1,
   VacationHold = 2,
+  OtherHold = 3
 }
 
 export enum ThermostatStates {
@@ -175,7 +176,16 @@ export class ThermostatStatus {
   }
 
   get hold(): HoldStates {
-    return this._hold;
+    switch (this._hold) {
+      case 0:
+        return HoldStates.Off;
+      case 1:
+        return HoldStates.Hold;
+      case 2:
+        return HoldStates.VacationHold;
+      default:
+        return HoldStates.OtherHold;
+    }
   }
 
   get humidity(): OmniTemperature {

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.13 (2023-12-28)
+
+* Add switches to control a thermostat's hold status & fan mode
+* Improved documentation
+* Update dependencies
+
 ## 1.5.12 (2023-11-18)
 
 * Support node 20.x and remove support for 14.x
