@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.14 (2024-01-06)
+
+* Minor fixes to documentation & Thermostat logging
+
 ## 1.5.13 (2023-12-28)
 
 * Add switches to control a thermostat's hold status & fan mode

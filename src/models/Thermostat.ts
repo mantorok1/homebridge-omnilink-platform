@@ -148,7 +148,7 @@ export class ThermostatStatus {
         break;
     }
     return `Temp: ${this.temperature.toString()}; Mode: ${ThermostatModes[this.mode]}; ` +
-      `Set Point: ${setPoint}; Hold State: ${HoldStates[this.mode]}`;
+      `Set Point: ${setPoint}; Hold State: ${HoldStates[this.hold]}; Fan: ${FanModes[this.fan]}`;
   }
 
   get communicating(): number {

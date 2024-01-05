@@ -12,11 +12,13 @@ This plugin supports Omni systems that meet the following requirements:
 
 You can manually install from the command line as follows:
 
-    npm install -g homebridge-omnilink-platform
+```
+npm install -g homebridge-omnilink-platform
+```
 
 ## Configuration
 
-To configue manully you will need some basic knowledge of JSON. The Homebridge configuration can be found in the `config.json` file.
+To configue manually you will need some basic knowledge of JSON. The Homebridge configuration can be found in the `config.json` file.
 
 The following describes each of the available keys for the plugin:
 
@@ -51,7 +53,7 @@ The following describes each of the available keys for the plugin:
 |`map`|No|object|See [Map Configuration](#map-configuration)||
 |`exclude`|No|object|See [Exclude Configuration](#exclude-configuration)||
 |`garageDoors`|No|array|Defines 1 or more garage door accessories. Each definition requires the following properties:<br/><ul><li>`buttonId` - the button number correspnding to the button that opens/closes the door<li>`zoneId` - the zone number corresponding to the sensor that determines if the garage door is closed or not<li>`openTime` - the time taken (in seconds) for the garage door to fully open</ul>Example garage door definition: `{ "buttonId": 2, "zoneId": 3, "openTime": 10 }`||
-|`pushover`|No|object|See [Pushover Notification Configuration](./mqtt.md#configuration)||
+|`pushover`|No|object|See [Pushover Notification Configuration](./pushover.md#configuration)||
 |`mqtt`|No|object|See [MQTT Configuration](./mqtt.md#configuration)||
 |`syncTime`|No|boolean|Sync the controller's date and time with the Homebridge host|`false`|
 |`showHomebridgeEvents`|No|boolean|Show Homebridge events in the Homebridge log|`false`|
