@@ -18,8 +18,8 @@ export class ExtendedAudioZoneStatusResponse extends ApplicationDataResponse {
       this._id.push(message.readUInt16BE(offset));
       this._state.push(message[offset + 2]);
       this._sourceId.push(message[offset + 3]);
-      this._volume.push(message[offset + 3]);
-      this._mute.push(message[offset + 3]);
+      this._volume.push(message[offset + 4]);
+      this._mute.push(message[offset + 5]);
       offset += recordLength;
     }
   }

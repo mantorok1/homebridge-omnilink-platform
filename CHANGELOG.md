@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.15 (2024-01-27)
+
+* [FIX] Audio Zone volume not being set correctly ([#33](https://github.com/mantorok1/homebridge-omnilink-platform/issues/33))
+
 ## 1.5.14 (2024-01-06)
 
 * Minor fixes to documentation & Thermostat logging
