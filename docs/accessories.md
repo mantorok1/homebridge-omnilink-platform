@@ -81,7 +81,7 @@ Select the Audio Zone you want to control from the Drop Down at the top of the s
 |-|-|
 |Up Arrow (or Volume Up button)|Increase volume by 10%|
 |Down Arrow (or Volume Down button)|Decrease volume by 10%|
-|Select|Toggle Mute On and Off|
+|Mute (or Select)|Toggle Mute On and Off|
 |Left Arrow|Change Audio Source by cycling backwards|
 |Right Arrow|Change Audio Source by cycling forwards|
 |Play/Pause|Toggle Power On and Off|

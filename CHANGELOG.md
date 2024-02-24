@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.16 (2024-02-25)
+
+* Add Mute Characteristic to Audio Zones (used in Remote app)
+* Update dependencies
+
 ## 1.5.15 (2024-01-27)
 
 * [FIX] Audio Zone volume not being set correctly ([#33](https://github.com/mantorok1/homebridge-omnilink-platform/issues/33))

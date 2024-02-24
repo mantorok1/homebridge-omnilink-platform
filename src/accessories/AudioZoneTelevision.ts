@@ -70,6 +70,11 @@ export class AudioZoneTelevision extends AccessoryBase {
       .getCharacteristic(this.platform.Characteristic.VolumeSelector)
       .onSet(this.setCharacteristicValue.bind(this, this.setVolumeSelector.bind(this), 'VolumeSelector'));
 
+    this.speakerService
+      .getCharacteristic(this.platform.Characteristic.Mute)
+      .onGet(this.getCharacteristicValue.bind(this, this.getMute.bind(this), 'Mute'))
+      .onSet(this.setCharacteristicValue.bind(this, this.setMute.bind(this), 'Mute'));
+
     this.platform.omniService.on(
       this.platform.omniService.getEventKey(OmniObjectStatusTypes.AudioZone, this.platformAccessory.context.index),
       this.updateValues.bind(this));
@@ -166,7 +171,13 @@ export class AudioZoneTelevision extends AccessoryBase {
     await this.platform.omniService.setAudioZoneVolume(this.platformAccessory.context.index, volume);
   }
 
-  private async setMute(value: boolean): Promise<void> {
+  private getMute(): CharacteristicValue {
+    this.platform.log.debug(this.constructor.name, 'getMute');
+
+    return this.platform.omniService.omni.audioZones[this.platformAccessory.context.index].status.mute;
+  }
+
+  private async setMute(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setMute', value);
 
     const state = value
