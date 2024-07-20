@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.5.17 (2024-07-20)
+
+* Add log message for Remote Key Selected (Audio Zones)
+* Update dependencies, some of which had high severity vulnerabilities
+
 ## 1.5.16 (2024-02-25)
 
 * Add Mute Characteristic to Audio Zones (used in Remote app)

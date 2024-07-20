@@ -117,6 +117,8 @@ export class AudioZoneTelevision extends AccessoryBase {
   private async setRemoteKey(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug(this.constructor.name, 'setRemoteKey', value);
 
+    this.platform.log.info(`Remote Key Selected: ${value}`);
+
     switch(value) {
       case this.platform.Characteristic.RemoteKey.ARROW_UP: {
         await this.setVolumeSelector(this.platform.Characteristic.VolumeSelector.INCREMENT);
