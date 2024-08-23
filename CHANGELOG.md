@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.5.18 (2024-08-24)
+
+* Add support for Homebridge 2.0 Beta
+* Add support for node 22.x and remove support for 16.x
+* Update dependencies, one of which had a moderate severity vulnerability
+
 # 1.5.17 (2024-07-20)
 
 * Add log message for Remote Key Selected (Audio Zones)
