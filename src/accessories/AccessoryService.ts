@@ -15,6 +15,7 @@ import { BypassZoneSwitch } from './BypassZoneSwitch';
 import { GarageDoorOpener } from './GarageDoorOpener';
 import { UnitSwitch } from './UnitSwitch';
 import { UnitLightbulb } from './UnitLightbulb';
+import { UnitWindowCovering } from './UnitWindowCovering';
 import { Thermostat } from './Thermostat';
 import { FanOnSwitch } from './FanOnSwitch';
 import { FanCycleSwitch } from './FanCycleSwitch';
@@ -53,6 +54,7 @@ export class AccessoryService {
       this.discoverGarageDoors();
       this.discoverUnitSwitches();
       this.discoverUnitLightbulbs();
+      this.discoverUnitWindowCoverings();
       this.discoverThermostats();
       this.discoverEmergencyAlarmSwitches();
       this.discoverAccessControls();
@@ -494,6 +496,32 @@ export class AccessoryService {
     }
   }
 
+  discoverUnitWindowCoverings(): void {
+    this.platform.log.debug(this.constructor.name, 'discoverUnitWindowCoverings');
+
+    const units = new Map<number, string>();
+
+    if (this.platform.settings.includeUnits) {
+      for(const [index, unit] of this.platform.omniService.omni.units.entries()) {
+        if (this.isUnitOfAccessoryType(index, 'windowcovering')) {
+          units.set(index, unit.name);
+        }
+      }
+    }
+
+    for(const [index, name] of units) {
+      this.addPlatformAccessory(UnitWindowCovering, UnitWindowCovering.type, name, index);
+    }
+
+    for(const accessory of this.accessories.values()) {
+      if (accessory instanceof UnitWindowCovering) {
+        if (!units.has(accessory.platformAccessory.context.index)) {
+          this.removeAccessory(UnitWindowCovering.type, accessory.platformAccessory.context.index);
+        }
+      }
+    }
+  }
+
   private isUnitOfAccessoryType(index: number, accessoryType: string): boolean {
     if (this.platform.settings.exclude.units.includes(index)) {
       return false;
@@ -740,6 +768,8 @@ export class AccessoryService {
         return new UnitSwitch(this.platform, platformAccessory);
       case 'unitlightbulb':
         return new UnitLightbulb(this.platform, platformAccessory);
+      case 'unitwindowcovering':
+        return new UnitWindowCovering(this.platform, platformAccessory);
       case 'thermostat':
         return new Thermostat(this.platform, platformAccessory);
       case 'emergencyalarm':

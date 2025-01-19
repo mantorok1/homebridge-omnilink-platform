@@ -64,7 +64,7 @@
         "required": false
       },
       "includeUnits": {
-        "title": "Include Units (shown as Switch or Lightbulb accessories)",
+        "title": "Include Units (shown as Switch, Lightbulb or Window Covering accessories)",
         "type": "boolean",
         "default": true,
         "required": false
@@ -212,6 +212,7 @@
             "oneOf": [
               { "title": "Switch", "enum": [ "switch" ] },
               { "title": "Lightbulb", "enum": [ "lightbulb" ] },
+              { "title": "Window Covering", "enum": [ "windowcovering" ]},
               { "title": "None", "enum": [ "none" ] }
             ]
           }
@@ -279,6 +280,12 @@
               "lightbulb": {
                 "title": "Lightbulbs",
                 "description": "comma seperated list of unit numbers to be mapped to lightbulbs",
+                "type": "string",
+                "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
+              },
+              "windowcovering": {
+                "title": "Window Coverings",
+                "description": "comma seperated list of unit numbers to be mapped to window coverings",
                 "type": "string",
                 "pattern": "^[0-9]{1,3}(,[0-9]{1,3})*$"
               }
@@ -622,7 +629,8 @@
           "expanded": false,
           "items": [
             "map.units.switch",
-            "map.units.lightbulb"
+            "map.units.lightbulb",
+            "map.units.windowcovering"
           ]
         },
         {

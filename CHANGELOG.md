@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.5.19 (2025-01-19)
+
+* Add Window Covering accessory type for Omni units
+* Update dependencies, one of which had a high severity vulnerability
+
 # 1.5.18 (2024-08-24)
 
 * Add support for Homebridge 2.0 Beta

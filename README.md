@@ -15,6 +15,8 @@ Functions available:
 - Notify when system has troubles (eg. AC Power)
 - Execute buttons
 - Turn units (such as switches and lights) on/off
+- Control brightness level of lights
+- Control window coverings such as blinds
 - Control thermostats
 - Open/close garage doors
 - Activate emergency alarms (burglary, fire & auxiliary)

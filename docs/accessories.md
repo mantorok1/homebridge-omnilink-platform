@@ -9,7 +9,7 @@ This is a platform plugin that will register HomeKit accessories and their servi
 |[Zone](#zone)|`Motion Sensor`<br/>`Smoke Sensor`<br/>`Contact Sensor`<br/>`Carbon Dioxide Sensor`<br/>`Carbon Monoxide Sensor`<br/>`Leak Sensor`<br/>`Occupancy Sensor`<br/>`Garage Door Opener`|
 |[Bypass Zone](#bypass-zone)|`Switch`|
 |[Button](#button)|`Switch`<br/>`Garage Door Opener`|
-|[Unit](#unit)|`Switch`<br/>`Lightbulb`|
+|[Unit](#unit)|`Switch`<br/>`Lightbulb`<br/>`Window Covering`|
 |[Thermostat](#thermostat)|`Thermostat` and `Switches`|
 |[Auxiliary Sensor](#auxiliary-sensor)|`Temperature Sensor`<br/>`Humidity Sensor`|
 |[Access Contol](#access-control)|`Lock Mechanism`|
@@ -41,7 +41,9 @@ A button can also be configured to be a `Garage Door Opener`. This has the benef
 
 ## Unit
 
-By default a unit will be created as a `Switch` which can be either On or Off. If you have a dimmable light then you can configure the unit to a `Lightbulb` which allows you to control the brightness level as well.
+By default a unit will be created as a `Switch` which can be either On or Off. Other options are:
+- `Lightbulb` for dimmable lights which allow you to also control the brightness level
+- `Window Covering` for blinds etc. which allow you to control the position 
 
 ## Thermostat
 
