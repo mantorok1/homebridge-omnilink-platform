@@ -278,6 +278,10 @@ export class Settings {
     return <boolean | undefined>this.config.forceAutoDiscovery ?? false;
   }
 
+  get refreshStatusesInterval(): number {
+    return <number | undefined>this.config.refreshStatusesInterval ?? 60;
+  }
+
   get pushover(): Pushover | undefined {
     return <Pushover | undefined>this.config.pushover;
   }

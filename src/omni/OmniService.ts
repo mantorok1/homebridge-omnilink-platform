@@ -112,10 +112,10 @@ export class OmniService extends events.EventEmitter {
 
       await this.notify();
 
-      // Refresh statuses every minute (also ping controller so it doesn't close connection)
+      // Refresh statuses at regular intervals (also ping controller so it doesn't close connection)
       this.pingIntervalId = setInterval(async() => {
         await this.refreshAllStatuses();
-      }, 60000); // every minute
+      }, this.platform.settings.refreshStatusesInterval * 1000);
 
       // Sync time
       if (this.platform.settings.syncTime) {

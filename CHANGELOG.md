@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.5.20 (2025-08-03)
+
+* Add new "Refresh Statuses Interval" setting
+* Update dependencies, one of which had a critical severity vulnerability
+
 # 1.5.19 (2025-01-19)
 
 * Add Window Covering accessory type for Omni units

@@ -555,7 +555,15 @@
         "type": "boolean",
         "default": false,
         "required": false
-      }
+      },
+      "refreshStatusesInterval": {
+        "title": "Refresh Statuses Interval (secs)",
+        "type": "number",
+        "default": 60,
+        "minimum": 1,
+        "maximum": 60,
+        "required": false
+      }      
     }
   },
   "layout": [
@@ -787,7 +795,8 @@
         "excludeTemperatureChanges",
         "showRequestResponse",
         "clearCache",
-        "forceAutoDiscovery"
+        "forceAutoDiscovery",
+        "refreshStatusesInterval"
       ]
     }
   ]
