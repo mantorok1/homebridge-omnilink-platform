@@ -363,7 +363,6 @@
             "openTime": {
               "title": "Time taken to open (secs)",
               "type": "number",
-              "default": 10,
               "minimum": 1,
               "maximum": 60,
               "required": true

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.5.21 (2025-11-23)
+
+* Remove "Garage Door Opener" default setting to prevent Config Validation Error
+* Update dependencies, one of which had a high severity vulnerability
+
 # 1.5.20 (2025-08-03)
 
 * Add new "Refresh Statuses Interval" setting
