@@ -1,7 +1,7 @@
 {
   "displayName": "Omni-Link Platform",
   "name": "homebridge-omnilink-platform",
-  "version": "1.5.21",
+  "version": "1.5.22",
   "description": "Homebridge Plugin for HAI/Leviton Omni series Security & Home Automation Systems",
   "license": "Apache-2.0",
   "repository": {
@@ -12,8 +12,8 @@
     "url": "https://github.com/mantorok1/homebridge-omnilink-platform/issues"
   },
   "engines": {
-    "homebridge": "^1.6.0 || ^2.0.0-beta.0",
-    "node": "^18 || ^20 || ^22"
+    "homebridge": "^1.11.0 || ^2.0.0-beta.0",
+    "node": "^20 || ^22 || ^24"
   },
   "main": "dist/index.js",
   "funding": {

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.5.22 (2026-02-17)
+
+* Add support for node 24.x and remove support for 18.x
+* Update dependencies, two of which had a high severity vulnerability
+
 # 1.5.21 (2025-11-23)
 
 * Remove "Garage Door Opener" default setting to prevent Config Validation Error
