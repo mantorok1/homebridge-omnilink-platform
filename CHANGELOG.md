@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.5.23 (2026-04-11)
+
+* Update dependencies, some of which had vulnerabilities
+
 # 1.5.22 (2026-02-17)
 
 * Add support for node 24.x and remove support for 18.x
