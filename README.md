@@ -32,7 +32,7 @@ Functions available:
 For further details see:
 - [Setup](./docs/setup.md)
 - [HomeKit Accessories](./docs/homekit-accessories.md)
-- [Matter Accessories (BETA)](./doc/matter-accessories.md)
+- [Matter Accessories (BETA)](./docs/matter-accessories.md)
 - [Pushover Notifications](./docs/pushover.md)
 - [MQTT](./docs/mqtt.md)
 - [Version History](./CHANGELOG.md)
