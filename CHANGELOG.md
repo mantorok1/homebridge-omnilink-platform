@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 * Add support for Matter protocol (Beta)
 * [FIX] Fahrenheit rounding issue ([#47](https://github.com/mantorok1/homebridge-omnilink-platform/issues/47))
 * Remove support for Homebridge 1.x
+* Remove support for Node 20.x
 * Migrate plugin to use ECMAScript Modules (ESM)
 * Update dependencies, some of which had vulnerabilities
 

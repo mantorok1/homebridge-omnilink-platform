@@ -13,7 +13,7 @@
   },
   "engines": {
     "homebridge": "^2.0.0",
-    "node": "^20 || ^22 || ^24"
+    "node": "^22 || ^24"
   },
   "type": "module",
   "main": "dist/index.js",
