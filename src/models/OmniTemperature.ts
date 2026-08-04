@@ -1,69 +1,68 @@
-import { TemperatureFormats } from './SystemFormats';
-
+import { TemperatureFormats } from './SystemFormats.js'
 
 export class OmniTemperature {
   constructor(private omniTemperature: number, private format?: TemperatureFormats) {
   }
 
-  equals(temperature : OmniTemperature | undefined): boolean {
+  equals(temperature: OmniTemperature | undefined): boolean {
     return temperature === undefined
       ? false
-      : this.value === temperature.value;
+      : this.value === temperature.value
   }
 
   static fromCelcius(temperature: number): number {
-    return (40 + temperature) * 2;
+    return Math.round((40.0 + temperature) * 2.0)
   }
 
   static fromFahrenheit(temperature: number): number {
-    return Math.round((40 + temperature) / 229.5 * 255);
+    return Math.round((40.0 + temperature) / 229.5 * 255.0)
   }
 
   static fromPercentage(humidity: number): number {
     if (humidity <= 0) {
-      return 44;
+      return 44
     } else if (humidity >= 100) {
-      return 156;
+      return 156
     } else {
-      return 44 + Math.round(humidity / 100.0 * 112.0);
+      return 44 + Math.round(humidity / 100.0 * 112.0)
     }
   }
 
   get value(): number {
-    return this.omniTemperature;
+    return this.omniTemperature
   }
 
   toCelcius(): number {
-    return -40.0 + (this.omniTemperature / 2.0);
+    return -40.0 + (this.omniTemperature / 2.0)
   }
 
   toFahrenheit(): number {
-    return -40.0 + (Math.round((this.omniTemperature / 255.0 * 229.5) * 10.0) / 10.0);
+    return -40.0 + (Math.round((this.omniTemperature / 255.0 * 229.5) * 10.0) / 10.0)
   }
 
   toPercentage(): number {
-    return Math.max(0, Math.min(100, this.toFahrenheit()));
+    return Math.max(0, Math.min(100, this.toFahrenheit()))
   }
 
   toFormat(): number {
-    switch(this.format) {
+    switch (this.format) {
       case TemperatureFormats.Fahrenheit:
-        return this.toFahrenheit();
+        return this.toFahrenheit()
       case TemperatureFormats.Percentage:
-        return this.toPercentage();
+        return this.toPercentage()
       default:
-        return this.toCelcius();
+        return this.toCelcius()
     }
   }
 
   toString(): string {
-    switch(this.format) {
+    switch (this.format) {
       case TemperatureFormats.Fahrenheit:
-        return `${this.toFahrenheit()}F`;
+        return `${this.toFahrenheit()}F`
       case TemperatureFormats.Percentage:
-        return `${this.toPercentage()}%`;
+        return `${this.toPercentage()}%`
       default:
-        return `${this.toCelcius()}C`;
+        return `${this.toCelcius()}C`
     }
   }
 }

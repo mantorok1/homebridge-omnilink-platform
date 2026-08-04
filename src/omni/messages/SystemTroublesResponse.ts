@@ -1,19 +1,18 @@
-import { ApplicationDataResponse } from './ApplicationDataResponse';
+import { ApplicationDataResponse } from './ApplicationDataResponse.js'
 
 export class SystemTroublesResponse extends ApplicationDataResponse {
-
-  private _troubles: number[] = [];
+  private _troubles: number[] = []
 
   constructor(message: Buffer) {
-    super(message);
+    super(message)
 
-    const troubleCount = message[1] - 1;
-    for(let i = 0; i < troubleCount; i++) {
-      this._troubles.push(message[i + 3]);
+    const troubleCount = message[1] - 1
+    for (let i = 0; i < troubleCount; i++) {
+      this._troubles.push(message[i + 3])
     }
   }
 
   get troubles(): number[] {
-    return this._troubles;
+    return this._troubles
   }
 }

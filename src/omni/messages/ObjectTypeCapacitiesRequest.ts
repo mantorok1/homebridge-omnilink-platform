@@ -1,22 +1,23 @@
-import { MessageTypes, ObjectTypes } from './enums';
-import { ApplicationDataRequest } from './ApplicationDataRequest';
+import type { ObjectTypes } from './enums.js'
 
-type ObjectTypeCapacitiesRequestArgs = {
+import { ApplicationDataRequest } from './ApplicationDataRequest.js'
+import { MessageTypes } from './enums.js'
+
+interface ObjectTypeCapacitiesRequestArgs {
   objectType: ObjectTypes
 }
 
 export class ObjectTypeCapacitiesRequest extends ApplicationDataRequest {
-
-  private readonly type = MessageTypes.ObjectTypeCapacitiesRequest;
+  private readonly type = MessageTypes.ObjectTypeCapacitiesRequest
 
   constructor(args: ObjectTypeCapacitiesRequestArgs) {
-    super();
-    this.objectType = args.objectType;
+    super()
+    this.objectType = args.objectType
   }
 
-  objectType: ObjectTypes;
+  objectType: ObjectTypes
 
   get data(): Buffer {
-    return Buffer.from([this.type, this.objectType]);
+    return Buffer.from([this.type, this.objectType])
   }
 }

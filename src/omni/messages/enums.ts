@@ -1,4 +1,3 @@
-
 export enum MessageTypes {
   Acknowledge = 0x01,
   NegativeAcknowledge = 0x02,
@@ -29,7 +28,7 @@ export enum MessageTypes {
   KeypadEmergencyRequest = 0x2C,
 
   ExtendedObjectStatusRequest = 0x3A,
-  ExtendedObjectStatusResponse = 0x3B
+  ExtendedObjectStatusResponse = 0x3B,
 }
 
 export enum ObjectTypes {
@@ -81,7 +80,7 @@ export enum Commands {
   UnlockDoor = 106,
   SetAudioZoneState = 112,
   SetAudioZoneVolume = 113,
-  SetAudioZoneSource = 114 
+  SetAudioZoneSource = 114,
 }
 
 export enum SecurityModes {
@@ -108,25 +107,25 @@ export enum Alarms {
   Freeze = 16,
   Water = 32,
   Duress = 64,
-  Temperature = 128
+  Temperature = 128,
 }
 
 export enum AuthorityLevels {
   InvalidCode = 0,
   Master = 1,
   Manager = 2,
-  User = 3
+  User = 3,
 }
 
 export enum EmergencyTypes {
   Burglary = 1,
   Fire = 2,
-  Auxiliary = 3
+  Auxiliary = 3,
 }
 
 export enum AudioZoneCommandStates {
   Off = 0,
   On = 1,
   MuteOff = 2,
-  MuteOn = 3
+  MuteOn = 3,
 }

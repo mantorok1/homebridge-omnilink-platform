@@ -1,15 +1,14 @@
-import { MessageTypes } from './enums';
-import { ApplicationDataRequest } from './ApplicationDataRequest';
+import { ApplicationDataRequest } from './ApplicationDataRequest.js'
+import { MessageTypes } from './enums.js'
 
 export class SystemInformationRequest extends ApplicationDataRequest {
-
-  private readonly type = MessageTypes.SystemInformationRequest;
+  private readonly type = MessageTypes.SystemInformationRequest
 
   constructor() {
-    super();
+    super()
   }
 
   get data(): Buffer {
-    return Buffer.from([this.type]);
+    return Buffer.from([this.type])
   }
 }

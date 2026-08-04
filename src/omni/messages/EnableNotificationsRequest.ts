@@ -1,15 +1,14 @@
-import { MessageTypes } from './enums';
-import { ApplicationDataRequest } from './ApplicationDataRequest';
+import { ApplicationDataRequest } from './ApplicationDataRequest.js'
+import { MessageTypes } from './enums.js'
 
 export class EnableNotificationsRequest extends ApplicationDataRequest {
-
-  private readonly type = MessageTypes.EnableNotificationsRequest;
+  private readonly type = MessageTypes.EnableNotificationsRequest
 
   constructor(public enabled: boolean) {
-    super();
+    super()
   }
 
   get data(): Buffer {
-    return Buffer.from([this.type, this.enabled ? 1 : 0]);
+    return Buffer.from([this.type, this.enabled ? 1 : 0])
   }
 }

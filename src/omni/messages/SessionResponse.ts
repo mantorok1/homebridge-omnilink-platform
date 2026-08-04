@@ -1,22 +1,21 @@
-import { Response } from './Response';
+import { Response } from './Response.js'
 
 export class SessionResponse extends Response {
-
-  private readonly _version: Buffer;
-  private readonly _sessionId: Buffer;
+  private readonly _version: Buffer
+  private readonly _sessionId: Buffer
 
   constructor(message: Buffer) {
-    super(message);
+    super(message)
 
-    this._version = message.subarray(0, 1);
-    this._sessionId = message.subarray(2, 7);
+    this._version = message.subarray(0, 1)
+    this._sessionId = message.subarray(2, 7)
   }
 
   get version(): Buffer {
-    return this._version;
+    return this._version
   }
 
   get sessionId(): Buffer {
-    return this._sessionId;
+    return this._sessionId
   }
 }

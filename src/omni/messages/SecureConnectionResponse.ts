@@ -1,16 +1,15 @@
-import { Response } from './Response';
+import { Response } from './Response.js'
 
 export class SecureConnectionResponse extends Response {
-
-  private readonly _sessionId: Buffer;
+  private readonly _sessionId: Buffer
 
   constructor(message: Buffer) {
-    super(message);
+    super(message)
 
-    this._sessionId = message.subarray(0, 5);
+    this._sessionId = message.subarray(0, 5)
   }
 
   get sessionId(): Buffer {
-    return this._sessionId;
+    return this._sessionId
   }
 }

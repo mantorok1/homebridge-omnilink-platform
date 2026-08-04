@@ -3,6 +3,6 @@ export abstract class Response {
   }
 
   toString(): string {
-    return `${[...this.message.values()]} [${this.constructor.name}]`;
+    return `${[...this.message.values()]} [${this.constructor.name}]`
   }
 }

@@ -1,12 +1,11 @@
-import { Request } from './Request';
+import { Request } from './Request.js'
 
 export class SecureConnectionRequest extends Request {
-
   constructor(public readonly sessionId: Buffer) {
-    super();
+    super()
   }
-  
+
   serialize(): Buffer {
-    return this.sessionId;
+    return this.sessionId
   }
 }

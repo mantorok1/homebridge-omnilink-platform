@@ -27,10 +27,12 @@ Functions available:
 - Sync Omni controller's date & time with Homebridge host
 - Pushover notifications when alarms are triggered or system has troubles
 - MQTT client
+- Supports HomeKit and Matter protocols
 
 For further details see:
 - [Setup](./docs/setup.md)
-- [Accessories](./docs/accessories.md)
+- [HomeKit Accessories](./docs/homekit-accessories.md)
+- [Matter Accessories (BETA)](./doc/matter-accessories.md)
 - [Pushover Notifications](./docs/pushover.md)
 - [MQTT](./docs/mqtt.md)
 - [Version History](./CHANGELOG.md)

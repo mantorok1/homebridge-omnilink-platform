@@ -1,8 +1,7 @@
-import { ObjectPropertiesResponse } from './ObjectPropertiesResponse';
+import { ObjectPropertiesResponse } from './ObjectPropertiesResponse.js'
 
 export class AudioSourcePropertiesResponse extends ObjectPropertiesResponse {
-
   constructor(message: Buffer) {
-    super(message, 6, 18);
+    super(message, 6, 18)
   }
 }

@@ -8,7 +8,7 @@ export enum OmniObjectTypes {
   AuxiliarySensor,
   AudioSource,
   AudioZone,
-  AccessControl
+  AccessControl,
 }
 
 export enum OmniObjectStatusTypes {
@@ -20,42 +20,41 @@ export enum OmniObjectStatusTypes {
   AuxiliarySensor,
   AudioZone,
   AccessControlLock,
-  AccessControlReader
+  AccessControlReader,
 }
 
 export interface OmniObjectBaseArgs {
-  id: number,
+  id: number
   name: string
 }
 
 export abstract class OmniObjectBase {
-  private readonly _objectType: OmniObjectTypes;
-  private readonly _id: number;
-  private readonly _name: string;
+  private readonly _objectType: OmniObjectTypes
+  private readonly _id: number
+  private readonly _name: string
 
   constructor(objectType: OmniObjectTypes, args: OmniObjectBaseArgs) {
-    this._objectType = objectType;
-    this._id = args.id;
+    this._objectType = objectType
+    this._id = args.id
     this._name = (args.name === undefined || args.name.trim().length === 0)
       ? `${OmniObjectTypes[this._objectType]} ${this._id}`
-      : args.name.trim();
-
+      : args.name.trim()
   }
 
   get objectType(): OmniObjectTypes {
-    return this._objectType;
+    return this._objectType
   }
 
   get id(): number {
-    return this._id;
+    return this._id
   }
 
   get name(): string {
-    return this._name;
+    return this._name
   }
 
   toString(): string {
-    return `${OmniObjectTypes[this.objectType]} ${this.id} [${this.name}]`;
+    return `${OmniObjectTypes[this.objectType]} ${this.id} [${this.name}]`
   }
 }
 
@@ -64,6 +63,6 @@ export abstract class OmniObjectStatusBase {
   }
 
   get type(): OmniObjectStatusTypes {
-    return this.statusType;
+    return this.statusType
   }
 }

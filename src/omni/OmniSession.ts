@@ -1,449 +1,450 @@
-import net = require('net');
-import events = require('events');
-import cq = require('concurrent-queue');
-import NodeCache = require('node-cache');
+import type { OmniLinkPlatform } from '../platform.js'
+import type { ApplicationDataRequest } from './messages/ApplicationDataRequest.js'
+import type { OmniPacket } from './OmniPacket.js'
 
-import { OmniLinkPlatform } from '../platform';
-import { PacketTypes, OmniPacket, OmniPacketRequest, OmniPacketResponse } from './OmniPacket';
-import { MessageTypes, ObjectStatusTypes, ObjectTypes } from './messages/enums';
-import { AcknowledgeResponse } from './messages/AcknowledgeResponse';
-import { SessionResponse } from './messages/SessionResponse';
-import { SecureConnectionRequest } from './messages/SecureConnectionRequest';
-import { SecureConnectionResponse } from './messages/SecureConnectionResponse';
-import { ApplicationDataRequest } from './messages/ApplicationDataRequest';
-import { ApplicationDataResponse } from './messages/ApplicationDataResponse';
-import { SystemInformationResponse } from './messages/SystemInformationResponse';
-import { SystemStatusResponse } from './messages/SystemStatusResponse';
-import { SystemTroublesResponse } from './messages/SystemTroublesResponse';
-import { SystemFormatsResponse } from './messages/SystemFormatsResponse';
-import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse';
-import { ZonePropertiesResponse } from './messages/ZonePropertiesResponse';
-import { UnitPropertiesResponse } from './messages/UnitPropertiesResponse';
-import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse';
-import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse';
-import { ThermostatPropertiesResponse } from './messages/ThermostatPropertiesResponse';
-import { CodePropertiesResponse } from './messages/CodePropertiesResponse';
-import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse';
-import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse';
-import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusResponse';
-import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatStatusResponse';
-import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse';
-import { AccessControlPropertiesResponse } from './messages/AccessControlPropertiesResponse';
-import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAccessControlLockStatusResponse';
-import { AuxiliarySensorPropertiesResponse } from './messages/AuxiliarySensorPropertiesResponse';
-import { ExtendedAuxiliarySensorStatusResponse } from './messages/ExtendedAuxiliarySensorStatusResponse';
-import { AudioSourcePropertiesResponse } from './messages/AudioSourcePropertiesResponse';
-import { AudioZonePropertiesResponse } from './messages/AudioZonePropertiesResponse';
-import { ExtendedAudioZoneStatusResponse } from './messages/ExtendedAudioZoneStatusResponse';
+import { EventEmitter } from 'node:events'
+import net from 'node:net'
 
-export class OmniSession extends events.EventEmitter {
-  private socket: net.Socket;
-  private sequence: number;
-  private sessionId?: Buffer;
-  private sessionKey?: Buffer;
-  private queue?: cq;
-  private cache: NodeCache;
+import cq from 'concurrent-queue'
+import NodeCache from 'node-cache'
+
+import { AccessControlPropertiesResponse } from './messages/AccessControlPropertiesResponse.js'
+import { AcknowledgeResponse } from './messages/AcknowledgeResponse.js'
+import { ApplicationDataResponse } from './messages/ApplicationDataResponse.js'
+import { AreaPropertiesResponse } from './messages/AreaPropertiesResponse.js'
+import { AudioSourcePropertiesResponse } from './messages/AudioSourcePropertiesResponse.js'
+import { AudioZonePropertiesResponse } from './messages/AudioZonePropertiesResponse.js'
+import { AuxiliarySensorPropertiesResponse } from './messages/AuxiliarySensorPropertiesResponse.js'
+import { ButtonPropertiesResponse } from './messages/ButtonPropertiesResponse.js'
+import { CodePropertiesResponse } from './messages/CodePropertiesResponse.js'
+import { MessageTypes, ObjectStatusTypes, ObjectTypes } from './messages/enums.js'
+import { ExtendedAccessControlLockStatusResponse } from './messages/ExtendedAccessControlLockStatusResponse.js'
+import { ExtendedAreaStatusResponse } from './messages/ExtendedAreaStatusResponse.js'
+import { ExtendedAudioZoneStatusResponse } from './messages/ExtendedAudioZoneStatusResponse.js'
+import { ExtendedAuxiliarySensorStatusResponse } from './messages/ExtendedAuxiliarySensorStatusResponse.js'
+import { ExtendedThermostatStatusResponse } from './messages/ExtendedThermostatStatusResponse.js'
+import { ExtendedUnitStatusResponse } from './messages/ExtendedUnitStatusResponse.js'
+import { ExtendedZoneStatusResponse } from './messages/ExtendedZoneStatusResponse.js'
+import { ObjectTypeCapacitiesResponse } from './messages/ObjectTypeCapacitiesResponse.js'
+import { SecureConnectionRequest } from './messages/SecureConnectionRequest.js'
+import { SecureConnectionResponse } from './messages/SecureConnectionResponse.js'
+import { SecurityCodeValidationResponse } from './messages/SecurityCodeValidationResponse.js'
+import { SessionResponse } from './messages/SessionResponse.js'
+import { SystemFormatsResponse } from './messages/SystemFormatsResponse.js'
+import { SystemInformationResponse } from './messages/SystemInformationResponse.js'
+import { SystemStatusResponse } from './messages/SystemStatusResponse.js'
+import { SystemTroublesResponse } from './messages/SystemTroublesResponse.js'
+import { ThermostatPropertiesResponse } from './messages/ThermostatPropertiesResponse.js'
+import { UnitPropertiesResponse } from './messages/UnitPropertiesResponse.js'
+import { ZonePropertiesResponse } from './messages/ZonePropertiesResponse.js'
+import { OmniPacketRequest, OmniPacketResponse, PacketTypes } from './OmniPacket.js'
+
+export class OmniSession extends EventEmitter {
+  private socket: net.Socket
+  private sequence: number
+  private sessionId?: Buffer
+  private sessionKey?: Buffer
+  private queue?: cq
+  private cache: NodeCache
 
   constructor(private readonly platform: OmniLinkPlatform) {
-    super();
+    super()
 
-    this.socket = new net.Socket();
-    this.sequence = 0;
-    this.cache = new NodeCache({ stdTTL: 1 });
+    this.socket = new net.Socket()
+    this.sequence = 0
+    this.cache = new NodeCache({ stdTTL: 1 })
 
     // Special Event handler for Notifications
-    this.on('0', this.notificationHandler.bind(this));
+    this.on('0', this.notificationHandler.bind(this))
   }
 
   openConnection(): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'openConnection');
+    this.platform.log.debug(this.constructor.name, 'openConnection')
 
     return new Promise((resolve, reject) => {
+      this.socket = new net.Socket()
 
-      this.socket = new net.Socket();
-    
       this.socket.once('error', (error) => {
-        this.platform.log.info('TCP Connection: Error');
-        this.socket.setTimeout(0);
-        this.socket.removeAllListeners();
-        reject(error);
-      });
+        this.platform.log.info('TCP Connection: Error')
+        this.socket.setTimeout(0)
+        this.socket.removeAllListeners()
+        reject(error)
+      })
 
       this.socket.once('timeout', () => {
-        this.platform.log.info('TCP Connection: Timeout');
-        this.socket.setTimeout(0);
-        this.socket.removeAllListeners();
-        reject(new Error('TCP Connection timed out'));
-      });
+        this.platform.log.info('TCP Connection: Timeout')
+        this.socket.setTimeout(0)
+        this.socket.removeAllListeners()
+        reject(new Error('TCP Connection timed out'))
+      })
 
       this.socket.once('ready', async () => {
-        this.platform.log.info('TCP Connection: Open');
-        this.socket.setTimeout(0);
-        this.socket.removeAllListeners();
-        resolve();
-      });
-      
-      this.socket.setTimeout(10000);
-      this.socket.connect(this.platform.settings.port, this.platform.settings.address);
-    });
+        this.platform.log.info('TCP Connection: Open')
+        this.socket.setTimeout(0)
+        this.socket.removeAllListeners()
+        resolve()
+      })
+
+      this.socket.setTimeout(10000)
+      this.socket.connect(this.platform.settings.port, this.platform.settings.address)
+    })
   }
 
   closeConnection(): void {
-    this.platform.log.debug(this.constructor.name, 'closeConnection');
+    this.platform.log.debug(this.constructor.name, 'closeConnection')
 
     try {
-      this.socket.removeAllListeners();
-      this.socket.destroy();
+      this.socket.removeAllListeners()
+      this.socket.destroy()
     } finally {
-      this.platform.log.info('TCP Connection: Closed');
+      this.platform.log.info('TCP Connection: Closed')
     }
   }
 
   async startSession(): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'startSession');
+    this.platform.log.debug(this.constructor.name, 'startSession')
 
     try {
       this.socket.on('error', (error) => {
-        this.emit('tcp-error', error);
-      });
-      
-      this.socket.on('data', this.receivePacket.bind(this));
+        this.emit('tcp-error', error)
+      })
 
-      await this.startNewSession();
-      await this.openSecureConnection();
+      this.socket.on('data', this.receivePacket.bind(this))
+
+      await this.startNewSession()
+      await this.openSecureConnection()
 
       this.queue = cq()
         .limit({ concurrency: 1 })
-        .process(this.sendPacket.bind(this));
-
+        .process(this.sendPacket.bind(this))
     } catch (error) {
       if (error instanceof Error) {
-        this.platform.log.error(`Failed to start Omni session: ${error.message}`);
+        this.platform.log.error(`Failed to start Omni session: ${error.message}`)
       }
-      throw error;
+      throw error
     }
   }
 
   async stopSession(): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'stopSession');
+    this.platform.log.debug(this.constructor.name, 'stopSession')
 
     try {
-      await this.stopNewSession();
+      await this.stopNewSession()
     } catch (error) {
       if (error instanceof Error) {
-        this.platform.log.error(`Failed to stop Omni session: ${error.message}`);
+        this.platform.log.error(`Failed to stop Omni session: ${error.message}`)
       }
-      throw error;
+      throw error
     }
   }
 
   private getNextSequence(): number {
-    this.sequence++;
-    if (this.sequence> 65535) {
-      this.sequence = 1;
+    this.sequence++
+    if (this.sequence > 65535) {
+      this.sequence = 1
     }
-    return this.sequence;
+    return this.sequence
   }
 
   private async startNewSession(): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'startNewSession');
+    this.platform.log.debug(this.constructor.name, 'startNewSession')
 
-    const sequence = this.getNextSequence();
+    const sequence = this.getNextSequence()
     const packetRequest = new OmniPacketRequest({
-      sequence: sequence,
+      sequence,
       type: PacketTypes.NewSessionRequest,
-    });
+    })
 
-    this.platform.log.debug(`[${sequence}] New Session Request: Sent`);
-    const packetResponse = await this.sendPacket(packetRequest);
+    this.platform.log.debug(`[${sequence}] New Session Request: Sent`)
+    const packetResponse = await this.sendPacket(packetRequest)
 
-    const message = this.processPacket(packetResponse);
+    const message = this.processPacket(packetResponse)
 
     if (message instanceof SessionResponse) {
-      const session = message as SessionResponse;
-      this.platform.log.debug(`[${sequence}] New Session Request: Complete (${session.sessionId?.toString('hex')})`);
-      this.processSessionId(session.sessionId!);
-      return;
+      const session = message as SessionResponse
+      this.platform.log.debug(`[${sequence}] New Session Request: Complete (${session.sessionId?.toString('hex')})`)
+      this.processSessionId(session.sessionId!)
+      return
     }
 
-    this.platform.log.debug(`[${sequence}] New Session Request: Failed`);
-    throw new Error('New Session failed');
+    this.platform.log.debug(`[${sequence}] New Session Request: Failed`)
+    throw new Error('New Session failed')
   }
 
   private processSessionId(sessionId: Buffer) {
-    this.sessionId = sessionId;
-    this.sessionKey = Buffer.from(this.platform.settings.privateKey);
-    for(let i = 0; i < this.sessionId!.length; i++) {
-      this.sessionKey[11 + i] ^= this.sessionId![i]; 
+    this.sessionId = sessionId
+    this.sessionKey = Buffer.from(this.platform.settings.privateKey)
+    for (let i = 0; i < this.sessionId!.length; i++) {
+      this.sessionKey[11 + i] ^= this.sessionId![i]
     }
   }
 
   private async stopNewSession(): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'stopNewSession');
+    this.platform.log.debug(this.constructor.name, 'stopNewSession')
 
-    const sequence = this.getNextSequence();
+    const sequence = this.getNextSequence()
     const packetRequest = new OmniPacketRequest({
-      sequence: sequence,
+      sequence,
       type: PacketTypes.ClientSessionTerminated,
-    });
+    })
 
-    this.platform.log.debug(`[${sequence}] Session Terminate Request: Sent`);
-    await this.sendPacket(packetRequest);
+    this.platform.log.debug(`[${sequence}] Session Terminate Request: Sent`)
+    await this.sendPacket(packetRequest)
 
-    this.platform.log.debug(`[${sequence}] Session Terminate Request: Complete`);
+    this.platform.log.debug(`[${sequence}] Session Terminate Request: Complete`)
   }
 
   private async openSecureConnection(): Promise<void> {
-    this.platform.log.debug(this.constructor.name, 'openSecureConnection');
+    this.platform.log.debug(this.constructor.name, 'openSecureConnection')
 
-    const sequence = this.getNextSequence();
+    const sequence = this.getNextSequence()
     const packetRequest = new OmniPacketRequest({
-      sequence: sequence,
+      sequence,
       type: PacketTypes.SecureConnectionRequest,
       message: new SecureConnectionRequest(this.sessionId!),
       sessionKey: this.sessionKey,
-    });
+    })
 
-    this.platform.log.debug(`[${sequence}] Secure Connection Request: Sent`);
-    const packetResponse = await this.sendPacket(packetRequest);
+    this.platform.log.debug(`[${sequence}] Secure Connection Request: Sent`)
+    const packetResponse = await this.sendPacket(packetRequest)
 
-    const message = this.processPacket(packetResponse);
+    const message = this.processPacket(packetResponse)
 
     if (message instanceof SecureConnectionResponse) {
-      this.platform.log.debug(`[${sequence}] Secure Connection Request: Complete`);
-      return;
+      this.platform.log.debug(`[${sequence}] Secure Connection Request: Complete`)
+      return
     }
 
-    this.platform.log.warn('Unable to create a secure connection to controller. Private key may be incorrect');
-    throw new Error('Secure Connection failed');
+    this.platform.log.warn('Unable to create a secure connection to controller. Private key may be incorrect')
+    throw new Error('Secure Connection failed')
   }
 
   async sendApplicationDataMessage(message: ApplicationDataRequest): Promise<ApplicationDataResponse> {
-    this.platform.log.debug(this.constructor.name, 'sendApplicationDataMessage', message.serialize());
+    this.platform.log.debug(this.constructor.name, 'sendApplicationDataMessage', message.serialize())
 
-    const sequence = this.getNextSequence();
+    const sequence = this.getNextSequence()
     const packetRequest = new OmniPacketRequest({
-      sequence: sequence,
+      sequence,
       type: PacketTypes.ApplicationData,
-      message: message,
+      message,
       sessionKey: this.sessionKey,
-    });
+    })
 
-    this.platform.log.debug(`[${sequence}] Application Data Request: Sent`);
-    const packetResponse = await this.queue(packetRequest);
+    this.platform.log.debug(`[${sequence}] Application Data Request: Sent`)
+    const packetResponse = await this.queue(packetRequest)
 
-    const response = this.processPacket(packetResponse);
+    const response = this.processPacket(packetResponse)
 
     if (response instanceof ApplicationDataResponse) {
-      this.platform.log.debug(`[${sequence}] Application Data Request: Complete`);
-      return response;
+      this.platform.log.debug(`[${sequence}] Application Data Request: Complete`)
+      return response
     }
 
-    this.platform.log.debug(`[${sequence}] Application Data Request: Failed`);
-    throw new Error('Application Data failed');
+    this.platform.log.debug(`[${sequence}] Application Data Request: Failed`)
+    throw new Error('Application Data failed')
   }
-  
-  private sendPacket(packet: OmniPacket): Promise<OmniPacket>{
-    this.platform.log.debug(this.constructor.name, 'sendPacket', packet.serialise());
+
+  private sendPacket(packet: OmniPacket): Promise<OmniPacket> {
+    this.platform.log.debug(this.constructor.name, 'sendPacket', packet.serialise())
 
     if (this.platform.settings.showRequestResponse) {
-      this.platform.log.info(`Request: ${[...packet.message?.values() ?? '']}`);
+      this.platform.log.info(`Request: ${[...packet.message?.values() ?? '']}`)
     }
 
     return new Promise((resolve, reject) => {
-      const key = packet.type === PacketTypes.ApplicationData ? packet.message!.toString('hex') : '';
+      const key = packet.type === PacketTypes.ApplicationData ? packet.message!.toString('hex') : ''
       if (key.length > 0) {
-        const value: OmniPacket | undefined = this.cache.get(key);
+        const value: OmniPacket | undefined = this.cache.get(key)
         if (value !== undefined) {
-          resolve(value);
-          return;
+          resolve(value)
+          return
         }
       }
 
       const timer = setTimeout(() => {
-        clearTimeout(timer);
-        this.removeAllListeners(packet.sequence.toString());
-        reject(`Request timed out [${[...packet.message?.values() ?? '']}]`);
-      }, 10000);
+        clearTimeout(timer)
+        this.removeAllListeners(packet.sequence.toString())
+        reject(new Error(`Request timed out [${[...packet.message?.values() ?? '']}]`))
+      }, 10000)
 
       this.once(packet.sequence.toString(), (response: OmniPacket) => {
-        clearTimeout(timer);
+        clearTimeout(timer)
         if (key.length > 0) {
-          this.cache.set(key, response);
+          this.cache.set(key, response)
         }
-        resolve(response);
-      });
+        resolve(response)
+      })
 
-      this.socket.write(packet.serialise());
-    });
+      this.socket.write(packet.serialise())
+    })
   }
-  
+
   private receivePacket(response: Buffer) {
-    this.platform.log.debug(this.constructor.name, 'receivePacket', response);
+    this.platform.log.debug(this.constructor.name, 'receivePacket', response)
 
     const packet = new OmniPacketResponse({
-      response: response,
+      response,
       sessionKey: this.sessionKey,
-    });
+    })
 
-    this.emit(packet.sequence.toString(), packet);
+    this.emit(packet.sequence.toString(), packet)
   }
 
   processPacket(packet: OmniPacket): SessionResponse | SecureConnectionResponse | ApplicationDataResponse | undefined {
-    this.platform.log.debug(this.constructor.name, 'processPacket', packet.message);
+    this.platform.log.debug(this.constructor.name, 'processPacket', packet.message)
 
     try {
-      switch(packet.type) {
+      switch (packet.type) {
         case PacketTypes.NewSessionAcknowledge:
-          return new SessionResponse(packet.message!);
+          return new SessionResponse(packet.message!)
         case PacketTypes.SecureConnectionAcknowledge:
-          return new SecureConnectionResponse(packet.message!);
+          return new SecureConnectionResponse(packet.message!)
         case PacketTypes.ClientSessionTerminated:
         case PacketTypes.ControllerSessionTerminated:
         case PacketTypes.ControllerSessionFailed:
-          return undefined;
+          return undefined
         case PacketTypes.ApplicationData:
-          return this.processMessage(packet.message!);
+          return this.processMessage(packet.message!)
         default:
-          throw new Error(`Packet type ${packet.type} not supported`);
+          throw new Error(`Packet type ${packet.type} not supported`)
       }
     } catch (error) {
       if (error instanceof Error) {
-        this.platform.log.warn(error.message);
+        this.platform.log.warn(error.message)
       }
     }
   }
 
   processMessage(message: Buffer): ApplicationDataResponse | undefined {
-    this.platform.log.debug(this.constructor.name, 'processMessage', message);
+    this.platform.log.debug(this.constructor.name, 'processMessage', message)
 
-    let response: ApplicationDataResponse | undefined;
-    const type: MessageTypes = message[2];
+    let response: ApplicationDataResponse | undefined
+    const type: MessageTypes = message[2]
 
     switch (type) {
       case MessageTypes.Acknowledge:
       case MessageTypes.NegativeAcknowledge:
       case MessageTypes.EndOfData:
-        response = new AcknowledgeResponse(message);
-        break;
+        response = new AcknowledgeResponse(message)
+        break
       case MessageTypes.SystemInformationResponse:
-        response = new SystemInformationResponse(message);
-        break;
+        response = new SystemInformationResponse(message)
+        break
       case MessageTypes.SystemStatusResponse:
-        response = new SystemStatusResponse(message);
-        break;
+        response = new SystemStatusResponse(message)
+        break
       case MessageTypes.SystemTroublesResponse:
-        response = new SystemTroublesResponse(message);
-        break;
+        response = new SystemTroublesResponse(message)
+        break
       case MessageTypes.SystemFormatsResponse:
-        response = new SystemFormatsResponse(message);
-        break;
+        response = new SystemFormatsResponse(message)
+        break
       case MessageTypes.ObjectTypeCapacitiesResponse:
-        response = new ObjectTypeCapacitiesResponse(message);
-        break;
+        response = new ObjectTypeCapacitiesResponse(message)
+        break
       case MessageTypes.SecurityCodeValidationResponse:
-        response = new SecurityCodeValidationResponse(message);
-        break;
+        response = new SecurityCodeValidationResponse(message)
+        break
       case MessageTypes.ObjectPropertiesResponse:
         switch (<ObjectTypes>message[3]) {
           case ObjectTypes.Zone:
-            response = new ZonePropertiesResponse(message);
-            break;
+            response = new ZonePropertiesResponse(message)
+            break
           case ObjectTypes.Unit:
-            response = new UnitPropertiesResponse(message);
-            break;
+            response = new UnitPropertiesResponse(message)
+            break
           case ObjectTypes.Button:
-            response = new ButtonPropertiesResponse(message);
-            break;
+            response = new ButtonPropertiesResponse(message)
+            break
           case ObjectTypes.Code:
-            response = new CodePropertiesResponse(message);
-            break;
+            response = new CodePropertiesResponse(message)
+            break
           case ObjectTypes.Area:
-            response = new AreaPropertiesResponse(message);
-            break;
+            response = new AreaPropertiesResponse(message)
+            break
           case ObjectTypes.Thermostat:
-            response = new ThermostatPropertiesResponse(message);
-            break;
+            response = new ThermostatPropertiesResponse(message)
+            break
           case ObjectTypes.AuxiliarySensor:
-            response = new AuxiliarySensorPropertiesResponse(message);
-            break;
+            response = new AuxiliarySensorPropertiesResponse(message)
+            break
           case ObjectTypes.AudioSource:
-            response = new AudioSourcePropertiesResponse(message);
-            break;
+            response = new AudioSourcePropertiesResponse(message)
+            break
           case ObjectTypes.AudioZone:
-            response = new AudioZonePropertiesResponse(message);
-            break;
+            response = new AudioZonePropertiesResponse(message)
+            break
           case ObjectTypes.AccessControl:
-            response = new AccessControlPropertiesResponse(message);
-            break;
+            response = new AccessControlPropertiesResponse(message)
+            break
           default:
-            this.platform.log.debug(`Object type ${message[3]} not supported for ObjectPropertiesResponse`);
-            break;
+            this.platform.log.debug(`Object type ${message[3]} not supported for ObjectPropertiesResponse`)
+            break
         }
-        break;
+        break
       case MessageTypes.ExtendedObjectStatusResponse:
         switch (<ObjectStatusTypes>message[3]) {
           case ObjectStatusTypes.Zone:
-            response = new ExtendedZoneStatusResponse(message);
-            break;
+            response = new ExtendedZoneStatusResponse(message)
+            break
           case ObjectStatusTypes.Unit:
-            response = new ExtendedUnitStatusResponse(message);
-            break;
+            response = new ExtendedUnitStatusResponse(message)
+            break
           case ObjectStatusTypes.Area:
-            response = new ExtendedAreaStatusResponse(message);
-            break;
+            response = new ExtendedAreaStatusResponse(message)
+            break
           case ObjectStatusTypes.Thermostat:
-            response = new ExtendedThermostatStatusResponse(message);
-            break;
+            response = new ExtendedThermostatStatusResponse(message)
+            break
           case ObjectStatusTypes.AuxiliarySensor:
-            response = new ExtendedAuxiliarySensorStatusResponse(message);
-            break;
+            response = new ExtendedAuxiliarySensorStatusResponse(message)
+            break
           case ObjectStatusTypes.AudioZone:
-            response = new ExtendedAudioZoneStatusResponse(message);
-            break;
+            response = new ExtendedAudioZoneStatusResponse(message)
+            break
           case ObjectStatusTypes.AccessControlReader:
             // response = new ExtendedAccessControlReaderStatusResponse(message);
-            break;
+            break
           case ObjectStatusTypes.AccessControlLock:
-            response = new ExtendedAccessControlLockStatusResponse(message);
-            break;
+            response = new ExtendedAccessControlLockStatusResponse(message)
+            break
           default:
-            this.platform.log.debug(`Object type ${message[3]} not supported for ExtendedObjectStatusResponse`);
-            break;
+            this.platform.log.debug(`Object type ${message[3]} not supported for ExtendedObjectStatusResponse`)
+            break
         }
-        break;
+        break
     }
 
     if (this.platform.settings.showRequestResponse) {
-      this.platform.log.info(`Response: ${response ?? [...message.values()]}`);
+      this.platform.log.info(`Response: ${response ?? [...message.values()]}`)
     }
 
-    return response;
+    return response
   }
 
   notificationHandler(packet: OmniPacket) {
-    this.platform.log.debug(this.constructor.name, 'notificationHandler', packet);
+    this.platform.log.debug(this.constructor.name, 'notificationHandler', packet)
 
     if (packet.message === undefined) {
-      return;
+      return
     }
 
-    const response = this.processMessage(packet.message);
+    const response = this.processMessage(packet.message)
 
     if (response instanceof ExtendedAreaStatusResponse) {
-      this.emit('areas', response);
+      this.emit('areas', response)
     } else if (response instanceof ExtendedZoneStatusResponse) {
-      this.emit('zones', response);
+      this.emit('zones', response)
     } else if (response instanceof ExtendedUnitStatusResponse) {
-      this.emit('units', response);
+      this.emit('units', response)
     } else if (response instanceof ExtendedThermostatStatusResponse) {
-      this.emit('thermostats', response);
+      this.emit('thermostats', response)
     } else if (response instanceof ExtendedAccessControlLockStatusResponse) {
-      this.emit('locks', response);
+      this.emit('locks', response)
     } else if (response instanceof ExtendedAuxiliarySensorStatusResponse) {
-      this.emit('sensors', response);
+      this.emit('sensors', response)
     } else if (response instanceof ExtendedAudioZoneStatusResponse) {
-      this.emit('audio_zones', response);
+      this.emit('audio_zones', response)
     }
   }
 }

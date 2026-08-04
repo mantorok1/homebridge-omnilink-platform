@@ -1,4 +1,6 @@
-import { OmniObjectBase, OmniObjectBaseArgs, OmniObjectTypes } from './OmniObjectBase';
+import type { OmniObjectBaseArgs } from './OmniObjectBase.js'
+
+import { OmniObjectBase, OmniObjectTypes } from './OmniObjectBase.js'
 
 export enum UnitTypes {
   Standard = 1,
@@ -15,82 +17,82 @@ export enum UnitTypes {
   Flag = 12,
   Output = 13,
   AudioZone = 14,
-  AudioSource = 15
+  AudioSource = 15,
 }
 
 export enum UnitStates {
   Off = 0,
-  On = 1
+  On = 1,
 }
 
 interface UnitStatusArgs {
-  state: number,
+  state: number
   timeRemaining: number
 }
 
 interface UnitArgs extends OmniObjectBaseArgs, UnitStatusArgs {
-  type: number,
+  type: number
 }
 
 export class Unit extends OmniObjectBase {
-  private readonly _type: UnitTypes;
-  private _status: UnitStatus;
+  private readonly _type: UnitTypes
+  private _status: UnitStatus
 
   constructor(args: UnitArgs) {
-    super(OmniObjectTypes.Unit, args);
-    this._type = args.type;
-    this._status = new UnitStatus(args);
+    super(OmniObjectTypes.Unit, args)
+    this._type = args.type
+    this._status = new UnitStatus(args)
   }
 
   get type(): UnitTypes {
-    return this._type;
+    return this._type
   }
 
   get status(): UnitStatus {
-    return this._status;
+    return this._status
   }
 
   set status(value: UnitStatus) {
-    this._status = value;
+    this._status = value
   }
 }
 
 export class UnitStatus {
-  private readonly _state: UnitStates;
-  private readonly _brightness: number;
-  private readonly _timeRemaining: number;
+  private readonly _state: UnitStates
+  private readonly _brightness: number
+  private readonly _timeRemaining: number
 
   constructor(args: UnitStatusArgs) {
-    this._state = args.state;
-    this._timeRemaining = args.timeRemaining;
+    this._state = args.state
+    this._timeRemaining = args.timeRemaining
 
     this._state = (args.state === 0 || args.state === 2)
       ? UnitStates.Off
-      : UnitStates.On;
+      : UnitStates.On
     this._brightness = (args.state >= 100 && args.state <= 200)
       ? args.state - 100
-      : this._state === UnitStates.Off ? 0 : 100;
+      : this._state === UnitStates.Off ? 0 : 100
   }
 
   equals(status: UnitStatus | undefined): boolean {
     return status === undefined
       ? false
-      : (this.state === status.state && this.brightness === status.brightness && this.timeRemaining === status.timeRemaining);
+      : (this.state === status.state && this.brightness === status.brightness && this.timeRemaining === status.timeRemaining)
   }
 
   toString(): string {
-    return `${UnitStates[this.state]}`;
+    return `${UnitStates[this.state]}`
   }
 
   get state(): UnitStates {
-    return this._state;
+    return this._state
   }
 
   get brightness(): number {
-    return this._brightness;
+    return this._brightness
   }
 
   get timeRemaining(): number {
-    return this._timeRemaining;
+    return this._timeRemaining
   }
 }
