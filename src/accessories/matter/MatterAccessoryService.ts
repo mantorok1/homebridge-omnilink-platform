@@ -11,6 +11,7 @@ import { BypassZoneSwitch } from './BypassZoneSwitch.js'
 import { ContactSensor } from './ContactSensor.js'
 import { DoorLock } from './DoorLock.js'
 import { EmergencyAlarmSwitch } from './EmergencyAlarmSwitch.js'
+import { GarageDoorClosure } from './GarageDoorClosure.js'
 import { HumiditySensor } from './HumiditySensor.js'
 import { LeakSensor } from './LeakSensor.js'
 import { MotionSensor } from './MotionSensor.js'
@@ -45,6 +46,7 @@ export class MatterAccessoryService {
       await this.discoverZoneTemperatureSensors()
       await this.discoverZoneHumiditySensors()
       await this.discoverBypassZoneSwitches()
+      await this.discoverGarageDoors()
       await this.discoverButtonSwitches()
       await this.discoverUnitSwitches()
       await this.discoverUnitDimmableLights()
@@ -235,6 +237,15 @@ export class MatterAccessoryService {
 
     for (const [index, name] of buttons) {
       await this.addMatterAccessory(ButtonSwitch, ButtonSwitch.type, name, index)
+    }
+  }
+
+  async discoverGarageDoors(): Promise<void> {
+    this.platform.log.debug(this.constructor.name, 'discoverGarageDoors')
+
+    for (const buttonId of this.platform.settings.garageDoors.keys()) {
+      const button = this.platform.omniService.omni.buttons[buttonId]
+      await this.addMatterAccessory(GarageDoorClosure, GarageDoorClosure.type, button.name, buttonId)
     }
   }
 

@@ -5,7 +5,7 @@ This plugin now supports registering Matter accessories with the bridge provided
 See [Enabling Matter](https://github.com/homebridge-plugins/homebridge-matter/wiki/Enabling-Matter) for details on how to set it up.
 
 **NOTES:**
- - Matter support is still in Beta and does not support all the accessory types that HomeKit does. In particular it does not support `Security System`, `Garage Door Opener` and `Television` accessories which this plugin requires for some functionality
+ - Matter support is still in Beta and does not support all the accessory types that HomeKit does. In particular it does not support `Security System` and `Television` accessories which this plugin requires for some functionality
  - I am not able to test all the accessory types as my Omni system does not have them. If you encounter a bug please [raise an issue](https://github.com/mantorok1/homebridge-omnilink-platform/issues) on GitHub.
 
 
@@ -15,12 +15,12 @@ See [Enabling Matter](https://github.com/homebridge-plugins/homebridge-matter/wi
 |[Emergency Alarms](#emergency-alarm)|`Switch`|Yes|
 |[Zone](#zone)|`Motion/Occupancy Sensor`<br/>`Smoke/CO Sensor`<br/>`Contact Sensor`<br/>`Leak Sensor`|Yes|
 |[Bypass Zone](#bypass-zone)|`Switch`|Yes|
-|[Button](#button)|`Switch`|Yes|
+|[Button](#button)|`Switch`<br/>`Closure`|Yes|
 |[Unit](#unit)|`Switch`<br/>`Dimmable Light`<br/>`Window Covering`|Yes|
 |[Thermostat](#thermostat)|`Thermostat`|Partial|
 |[Auxiliary Sensor](#auxiliary-sensor)|`Temperature Sensor`<br/>`Humidity Sensor`|Yes|
 |[Access Contol](#access-control)|`Door Lock`|Yes|
-|[Audio Zone](#audio-zone)|N/A|No|
+|[Audio Zone](#audio-zone)|`Media Player` and `Speaker`|No|
 
 
 ## Area
@@ -37,7 +37,7 @@ If a zone is configured as an `Occupancy Sensor` then it will be created as a `M
 
 If a zone is configured as `Carbon Monoxide Sensor` or `Carbon Dioxide Sensor` then it will created as a `Smoke/CO Sensor`
 
-`Garage Door Opener` is not currently supported by Homebridge's Matter implementation.
+A zone can also be used in combination with a button to create a `Closure` for controlling a Garage Door. When this is the case the zone is not able to be used as sensor. See [Button](#button) for more details.
 
 ## Emergency Alarm
 
@@ -51,7 +51,7 @@ A `Switch` can be created for each zone allowing you to toggle the bypassing of 
 
 A `Switch` accessory is created for each Button. As a button has no state (i.e. neither On nor Off) the switch will always be in the Off state. Moving the switch into the On state will "run" the button and the switch will return to the Off state.
 
-`Garage Door Opener` is not currently supported by Homebridge's Matter implementation.
+A button can also be configured to be a `Closure` for controlling a Garage Door. For this to work there needs to be a zone that can be used to determine the state of the garage door (i.e. Open or Closed). When configured in this way the zone and button will not be able to be used as a `Sensor` or `Switch` respectively. Note that the Apple Home app does not currently support `Closure` devices but may work on other Matter apps (like Google Home or Amazon Alexa). 
 
 ## Unit
 
@@ -77,4 +77,4 @@ Each Access Control can be created as a `Door Lock` to allow you to lock/unlock 
 
 ## Audio Zone
 
-Audio Systems are not currently supported by Homebridge's Matter implementation. 
+Audio Systems are not currently implemented but might be able to using Homebridge's Matter `Media Player` and `Speaker` devices. These device types are not currently supported by the Apple Home app but may work on other Matter apps.

@@ -153,8 +153,8 @@ export class OmniLinkPlatform implements DynamicPlatformPlugin {
       // Clear cached accessories if required
       if (this.settings.clearCache) {
         this.log.info('Clear Cached Accessories')
-        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, this.deletedHomekitAccessories)
 
+        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, this.deletedHomekitAccessories)
         await this.api.matter?.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, this.deletedMatterAccessories)
 
         this.deletedHomekitAccessories = []

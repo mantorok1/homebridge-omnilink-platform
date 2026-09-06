@@ -74,8 +74,8 @@ export class OmniService extends EventEmitter {
   private readonly session: OmniSession
   private readonly _omni: OmniObjectModel = new OmniObjectModel()
 
-  private pingIntervalId?: NodeJS.Timeout | undefined
-  private syncTimeIntervalId?: NodeJS.Timeout | undefined
+  private pingIntervalId?: ReturnType<typeof setTimeout> | undefined
+  private syncTimeIntervalId?: ReturnType<typeof setTimeout> | undefined
 
   constructor(private readonly platform: OmniLinkPlatform) {
     super()

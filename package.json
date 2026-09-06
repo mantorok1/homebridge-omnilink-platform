@@ -1,7 +1,7 @@
 {
   "displayName": "Omni-Link Platform",
   "name": "homebridge-omnilink-platform",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Homebridge Plugin for HAI/Leviton Omni series Security & Home Automation Systems",
   "license": "Apache-2.0",
   "repository": {
@@ -22,7 +22,7 @@
     "url": "https://paypal.me/Mantorok1"
   },
   "scripts": {
-    "lint": "eslint src/**.ts",
+    "lint": "eslint \"src/**/*.ts\"",
     "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",
     "prepublishOnly": "npm run lint && npm run build"

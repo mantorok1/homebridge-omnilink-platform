@@ -14,7 +14,7 @@ export class SystemInformationResponse extends ApplicationDataResponse {
     this._majorVersion = message[4]
     this._minorVersion = message[5]
     this._revision = message[6]
-    this._localPhoneNumber = message.toString('utf8', 7, 31).replace(/[^ -~\u0020-\u007e]+/g, '')
+    this._localPhoneNumber = message.toString('utf8', 7, 31).replace(/[^\u0020-\u007E]+/gu, '')
   }
 
   get modelNumber(): number {

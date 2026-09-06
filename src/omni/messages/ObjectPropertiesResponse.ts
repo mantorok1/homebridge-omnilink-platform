@@ -7,7 +7,7 @@ export abstract class ObjectPropertiesResponse extends ApplicationDataResponse {
   constructor(message: Buffer, nameStart: number, nameEnd: number) {
     super(message)
     this._index = message.readUInt16BE(4)
-    this._name = message.toString('utf8', nameStart, nameEnd).replace(/[^ -~\u0020-\u007e]+/g, '')
+    this._name = message.toString('utf8', nameStart, nameEnd).replace(/[^\u0020-\u007E]+/gu, '')
   }
 
   get index(): number {

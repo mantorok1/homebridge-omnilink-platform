@@ -453,7 +453,7 @@ export class MqttService {
     // Triggered Alarms
     for (const alarm in Alarms) {
       const alarmMode = Number(alarm)
-      if (isNaN(alarmMode)) {
+      if (Number.isNaN(alarmMode)) {
         continue
       }
       this.publish(`area/${areaId}/${Alarms[alarmMode].toLowerCase()}/get`, String(status.alarmsTriggered.includes(alarmMode)))
@@ -539,7 +539,7 @@ export class MqttService {
 
     for (const trouble in SystemTroubles) {
       const troubleType = Number(trouble)
-      if (isNaN(troubleType)) {
+      if (Number.isNaN(troubleType)) {
         continue
       }
       this.publish(`system/troubles/${SystemTroubles[troubleType].toLowerCase()}/get`, String(troubles.includes(troubleType)))
@@ -560,7 +560,7 @@ export class MqttService {
 
   private parseTemperature(value: string): number | undefined {
     const temperature = Number(value)
-    if (isNaN(temperature)) {
+    if (Number.isNaN(temperature)) {
       return
     }
     if (this.platform.omniService.omni.formats.temperature === TemperatureFormats.Celsius) {
@@ -571,7 +571,7 @@ export class MqttService {
 
   private parseHumidity(value: string): number | undefined {
     const humidity = Number(value)
-    return isNaN(humidity)
+    return Number.isNaN(humidity)
       ? undefined
       : Math.round(humidity)
   }

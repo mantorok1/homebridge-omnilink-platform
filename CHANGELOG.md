@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.6.1 (2026-09-06)
+
+* Add Matter Closure for Garage Doors (equivalent to HomeKit's "Garage Door Opener")
+* Fix linting issue
+* Update dependencies, some of which had vulnerabilities
+
 # 1.6.0 (2026-08-04)
 
 * Add support for Matter protocol (Beta)

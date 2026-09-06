@@ -1,4 +1,4 @@
-import type { API, ClusterStateMap, EndpointType, Logger, MatterAccessory, MatterAPI } from 'homebridge'
+import type { ClusterStateMap, EndpointType, MatterAccessory } from 'homebridge'
 
 import type { OmniLinkPlatform } from '../../platform.js'
 
