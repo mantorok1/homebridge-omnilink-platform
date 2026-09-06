@@ -1,10 +1,14 @@
 import type { ZoneStatus } from '../../models/Zone.js'
 import type { OmniLinkPlatform } from '../../platform.js'
 
-import { ClosureControl } from '@matter/main/clusters/closure-control'
-
 import { OmniObjectStatusTypes } from '../../models/OmniObjectBase.js'
 import { MatterAccessoryBase } from './MatterAccessoryBase.js'
+
+export interface MoveToRequest {
+  position?: number
+  latch?: boolean
+  speed?: number
+}
 
 export class GarageDoorClosure extends MatterAccessoryBase {
   private zoneId?: number
@@ -68,37 +72,37 @@ export class GarageDoorClosure extends MatterAccessoryBase {
     this.platform.omniService.on(eventKey, this.updateValues.bind(this))
   }
 
-  private static getMainState(platform: OmniLinkPlatform, status: ZoneStatus): ClosureControl.MainState | undefined {
+  private static getMainState(platform: OmniLinkPlatform, status: ZoneStatus): number | undefined {
     return platform.api.matter?.types.ClosureControl.MainState.Stopped
   }
 
   private static getOverallCurrentStatePosition(platform: OmniLinkPlatform, status: ZoneStatus): number | undefined {
     return status.ready
-      ? ClosureControl.CurrentPosition.FullyClosed
-      : ClosureControl.CurrentPosition.FullyOpened
+      ? platform.api.matter!.types.ClosureControl.CurrentPosition.FullyClosed
+      : platform.api.matter!.types.ClosureControl.CurrentPosition.FullyOpened
   }
 
   private static getOverallTargetStatePosition(platform: OmniLinkPlatform, status: ZoneStatus): number | undefined {
     return status.ready
-      ? ClosureControl.TargetPosition.MoveToFullyClosed
-      : ClosureControl.TargetPosition.MoveToFullyOpen
+      ? platform.api.matter!.types.ClosureControl.TargetPosition.MoveToFullyClosed
+      : platform.api.matter!.types.ClosureControl.TargetPosition.MoveToFullyOpen
   }
 
   private static getCountdownTime(platform: OmniLinkPlatform, index: number): number {
     return platform.settings.garageDoors.get(index!)?.openTime ?? 10
   }
 
-  private async setMoveTo(request: ClosureControl.MoveToRequest): Promise<void> {
+  private async setMoveTo(request: MoveToRequest): Promise<void> {
     this.platform.log.warn(this.constructor.name, 'setMoveTo', request)
 
     const status = this.platform.omniService.omni.zones[this.zoneId!].status
 
-    if (request.position === ClosureControl.TargetPosition.MoveToFullyClosed && !status.ready) {
+    if (request.position === this.platform.api.matter!.types.ClosureControl.TargetPosition.MoveToFullyClosed && !status.ready) {
       await this.platform.omniService.executeButton(this.context.index as number)
       return
     }
 
-    if (request.position === ClosureControl.TargetPosition.MoveToFullyOpen && status.ready) {
+    if (request.position === this.platform.api.matter!.types.ClosureControl.TargetPosition.MoveToFullyOpen && status.ready) {
       await this.platform.omniService.executeButton(this.context.index as number)
     }
   }

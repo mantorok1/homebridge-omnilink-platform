@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# 1.6.2 (2026-09-06)
+
+* Fix runtime error: Cannot find package '@matter/main'  
+
 # 1.6.1 (2026-09-06)
 
 * Add Matter Closure for Garage Doors (equivalent to HomeKit's "Garage Door Opener")
